@@ -37,3 +37,6 @@ firebase-debug.log*
 firestore-debug.log*
 ui-debug.log*
 emulator-data/
+
+# Local Claude Code launch config (machine-specific paths)
+/.claude/

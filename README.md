@@ -91,7 +91,26 @@ npm run dev           # Vite dev server with hot reload
 `npm run emulators` saves emulator data to `./emulator-data` when it exits and
 loads it on the next start. Use `npm run emulators:fresh` to start empty.
 
-### 5. Emulator notes
+### 5. First run: make yourself admin
+
+1. Open <http://127.0.0.1:8000/login> and choose **Create an account**. You'll land on
+   "Waiting for admin approval".
+2. Promote yourself:
+   ```bash
+   php artisan app:make-admin you@example.com
+   ```
+3. Click **Check again** on the waiting page. You'll go to the dashboard, and
+   **Members** appears in the header. Approve everyone else from there.
+
+How approval works:
+- New sign-ups get a `users/{uid}` doc with `status: "pending"`.
+- **Approve** sets the custom claims (`approved`, plus `admin` for admins), then the status.
+  A waiting user's page notices within a second and lets them in.
+- **Reject / Revoke** sets `status: "rejected"`, removes the claims and revokes
+  refresh tokens. Open tabs of that user sign out immediately. The server also re-checks
+  status on every request (cached for up to 60s).
+
+### 6. Emulator notes
 
 - With `FIREBASE_AUTH_EMULATOR_HOST` / `FIRESTORE_EMULATOR_HOST` set, the Admin SDK
   talks to the emulators and acts as an admin, bypassing rules, just like in production.
@@ -101,7 +120,7 @@ loads it on the next start. Use `npm run emulators:fresh` to start empty.
 - The browser connects to the emulators when `VITE_USE_FIREBASE_EMULATORS=true`
   (see `resources/js/firebase.js`).
 
-### 6. Tests
+### 7. Tests
 
 ```bash
 php artisan test
@@ -153,16 +172,21 @@ project outside OneDrive). Syncing thousands of small files is slow.
    new private key*). Save it as `storage/app/firebase/service-account.json`.
    **Never commit it.**
 7. After your first sign-up, bootstrap yourself as admin:
-   `php artisan app:make-admin you@example.com` (added in Phase 1).
+   `php artisan app:make-admin you@example.com`.
 
 ---
 
 ## Project layout
 
 ```
+app/Services/                               Firebase Auth + Firestore access (server side)
+app/Http/Middleware/EnsureApproved.php      approved session + live status re-check
+app/Http/Middleware/EnsureAdmin.php         admin-only routes
+app/Console/Commands/MakeAdmin.php          php artisan app:make-admin {email}
 app/Support/Firebase/EmulatorAdminAuth.php  emulator-only Admin SDK plumbing
 config/firebase.php                         kreait config (credentials, project_id)
 resources/js/firebase.js                    Firebase JS init + emulator connection
+resources/js/auth.js                        sign-in, token → session exchange, session guard
 firebase.json / .firebaserc                 emulator + deploy config
 firestore.rules / firestore.indexes.json    security rules + composite indexes
 ```

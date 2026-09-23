@@ -1,8 +1,9 @@
 import './bootstrap';
 import Alpine from 'alpinejs';
 
-// Feature modules register their Alpine components before Alpine starts.
-// (Added phase by phase: auth, calendar, voting, itinerary, chat.)
+// Feature modules register their Alpine components on import, before Alpine
+// starts. Later phases add: calendar, voting, itinerary, chat.
+import './auth';
 
 window.Alpine = Alpine;
 Alpine.start();

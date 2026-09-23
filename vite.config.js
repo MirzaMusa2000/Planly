@@ -10,6 +10,19 @@ export default defineConfig({
         }),
         tailwindcss(),
     ],
+    build: {
+        // The Firebase chunk alone is ~530 kB (~160 kB gzipped).
+        chunkSizeWarningLimit: 600,
+        rollupOptions: {
+            output: {
+                // Keep the (large, rarely changing) Firebase SDK in its own
+                // long-cached chunk, separate from app code.
+                manualChunks: {
+                    firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+                },
+            },
+        },
+    },
     server: {
         watch: {
             ignored: ['**/storage/framework/views/**'],
