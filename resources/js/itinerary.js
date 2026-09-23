@@ -69,7 +69,8 @@ Alpine.data('dayPanel', () => {
 
         /** Escape closes the top layer only: an overlay above us, then the form, then the panel. */
         onEscape() {
-            if (!this.open || Alpine.store('overlays').propose || this.store.selected) return;
+            const overlays = Alpine.store('overlays');
+            if (!this.open || overlays.propose || overlays.chat || this.store.selected) return;
             if (this.form.eventId) this.cancelForm();
             else this.close();
         },

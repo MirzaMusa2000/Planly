@@ -3,10 +3,6 @@ import Alpine from 'alpinejs';
 import { format, formatShort, monthGrid, today, toUtcDate } from './dates';
 import { LIMITS, proposeEvent } from './events';
 
-// Which stacked overlays are open, so lower layers (the day panel) can ignore
-// Escape while something sits on top of them.
-Alpine.store('overlays', { propose: false });
-
 Alpine.data('proposeModal', () => ({
     LIMITS,
     open: false,

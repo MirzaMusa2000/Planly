@@ -1,6 +1,6 @@
 {{-- Event details, voting and RSVP: bottom sheet on mobile, right-hand drawer on desktop. --}}
 <div x-data x-show="$store.planner.selected" x-cloak class="fixed inset-0 z-[60]"
-     @keydown.escape.window="$store.planner.selected && $store.planner.close()">
+     @keydown.escape.window="$store.planner.selected && !$store.overlays.chat && $store.planner.close()">
     <div class="absolute inset-0 bg-ink-950/50 backdrop-blur-sm" x-show="$store.planner.selected" x-transition.opacity
          @click="$store.planner.close()"></div>
 

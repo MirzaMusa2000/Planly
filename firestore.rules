@@ -25,7 +25,8 @@ service cloud.firestore {
       allow update: if signedIn() && request.auth.uid == uid
                     && changed().hasOnly(['lastReadChatAt', 'displayName'])
                     && (!('displayName' in changed()) || isStr(request.resource.data.displayName, 1, 60))
-                    && (!('lastReadChatAt' in changed()) || request.resource.data.lastReadChatAt is timestamp);
+                    // Read receipts use the server clock (serverTimestamp()).
+                    && (!('lastReadChatAt' in changed()) || request.resource.data.lastReadChatAt == request.time);
 
       allow create, delete: if false;
     }
@@ -170,11 +171,18 @@ service cloud.firestore {
     match /chats/{room}/messages/{msgId} {
       allow read: if approved();
 
+      // One group room. The sender name must be your own display name (no
+      // impersonation), text must contain something other than whitespace.
       allow create: if approved()
+                    && room == 'main'
                     && request.resource.data.keys().hasOnly(['senderId', 'senderName', 'text', 'createdAt'])
+                    && request.resource.data.keys().hasAll(['senderId', 'senderName', 'text', 'createdAt'])
                     && request.resource.data.senderId == request.auth.uid
                     && isStr(request.resource.data.senderName, 0, 60)
+                    && request.resource.data.senderName
+                         == get(/databases/$(db)/documents/users/$(request.auth.uid)).data.get('displayName', '')
                     && isStr(request.resource.data.text, 1, 1000)
+                    && request.resource.data.text.matches('(?s).*\\S.*')
                     && request.resource.data.createdAt == request.time;
 
       allow update, delete: if isAdmin();

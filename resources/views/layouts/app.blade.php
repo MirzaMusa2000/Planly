@@ -117,5 +117,5 @@
         </template>
     </div>
 
-    {{-- Phase 5: floating chat button goes here. --}}
+    @include('partials.chat')
 @endsection

@@ -1,6 +1,7 @@
-// Tiny toast notifications: Alpine.store('toast').show('Saved!')
+// Small shared UI stores.
 import Alpine from 'alpinejs';
 
+// Toast notifications: Alpine.store('toast').show('Saved!')
 Alpine.store('toast', {
     items: [],
     nextId: 1,
@@ -15,3 +16,7 @@ Alpine.store('toast', {
         this.items = this.items.filter((t) => t.id !== id);
     },
 });
+
+// Which top-level overlays are open. Escape handlers use it so a single press
+// closes only the top layer (chat > propose form / event sheet > day panel).
+Alpine.store('overlays', { propose: false, chat: false });

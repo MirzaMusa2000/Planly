@@ -203,6 +203,8 @@ resources/js/calendar.js                    FullCalendar (lazy-loaded), colour c
 resources/js/propose.js                     "Propose event" sheet + multi-date picker
 resources/js/voting.js                      availability / RSVP transactions, confirm + cancel calls
 resources/js/itinerary.js                   day panel: events on a date + live itinerary (add/edit/delete/reorder)
+resources/js/chat.js                        group chat: live latest 50, load older, unread badge (lastReadChatAt)
+resources/js/ui.js                          shared UI stores (toasts, open overlays for Escape priority)
 resources/js/dates.js                       YYYY-MM-DD helpers (app timezone, no off-by-one)
 firebase.json / .firebaserc                 emulator + deploy config
 firestore.rules / firestore.indexes.json    security rules + composite indexes
