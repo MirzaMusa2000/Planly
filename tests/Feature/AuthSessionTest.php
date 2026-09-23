@@ -108,7 +108,7 @@ class AuthSessionTest extends TestCase
             'displayName' => 'Ali',
         ], session('user'));
 
-        $this->get('/dashboard')->assertOk()->assertSee('Hi Ali');
+        $this->get('/dashboard')->assertOk()->assertSee('Ali')->assertSee('Good ');
     }
 
     public function test_missing_claims_are_repaired_for_approved_users(): void

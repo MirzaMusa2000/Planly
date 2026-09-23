@@ -2,46 +2,67 @@
 
 @section('title', 'Sign in')
 
+@section('hero')
+    <p class="text-sm font-medium text-white/80">Plans with friends, sorted</p>
+    <h1 class="text-2xl font-bold tracking-tight">Find the day<br>everyone's free</h1>
+@endsection
+
 @section('content')
-    <div x-data="loginForm" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h1 class="text-xl font-semibold text-slate-900" x-text="isSignup ? 'Create your account' : 'Welcome back'">Welcome back</h1>
-        <p class="mt-1 text-sm text-slate-500"
-           x-text="isSignup ? 'An admin will approve you before you can join in.' : 'Sign in to plan with your friends.'">
-            Sign in to plan with your friends.
+    <div x-data="loginForm">
+        {{-- Sign in / Create account switch --}}
+        <div class="grid grid-cols-2 rounded-2xl bg-slate-100 p-1 text-sm font-semibold" role="tablist">
+            <button type="button" role="tab" :aria-selected="!isSignup" @click="isSignup && toggleMode()"
+                    :class="!isSignup ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'"
+                    class="rounded-xl py-2 transition">Sign in</button>
+            <button type="button" role="tab" :aria-selected="isSignup" @click="!isSignup && toggleMode()"
+                    :class="isSignup ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'"
+                    class="rounded-xl py-2 text-slate-500 transition">Create account</button>
+        </div>
+
+        <p class="mt-4 text-sm text-slate-500"
+           x-text="isSignup ? 'An admin approves new accounts before you can join in.' : 'Welcome back! Sign in to see what’s planned.'">
+            Welcome back! Sign in to see what’s planned.
         </p>
 
-        <form class="mt-6 space-y-4" @submit.prevent="submit" novalidate>
+        <form class="mt-5 space-y-4" @submit.prevent="submit" novalidate>
             <div x-show="isSignup" x-cloak>
-                <label for="displayName" class="block text-sm font-medium text-slate-700">Your name</label>
-                <input id="displayName" type="text" x-model="displayName" maxlength="60" autocomplete="name"
-                       :required="isSignup"
-                       class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none sm:text-sm">
+                <label for="displayName" class="label">Your name</label>
+                <div class="relative">
+                    <x-icon name="user" class="pointer-events-none absolute top-1/2 left-4 h-[18px] w-[18px] -translate-y-1/2 text-slate-400"/>
+                    <input id="displayName" type="text" x-model="displayName" maxlength="60" autocomplete="name"
+                           placeholder="What should friends call you?" :required="isSignup" class="input pl-11">
+                </div>
             </div>
 
             <div>
-                <label for="email" class="block text-sm font-medium text-slate-700">Email</label>
-                <input id="email" type="email" x-model="email" required autocomplete="email" inputmode="email"
-                       class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none sm:text-sm">
+                <label for="email" class="label">Email</label>
+                <div class="relative">
+                    <x-icon name="mail" class="pointer-events-none absolute top-1/2 left-4 h-[18px] w-[18px] -translate-y-1/2 text-slate-400"/>
+                    <input id="email" type="email" x-model="email" required autocomplete="email" inputmode="email"
+                           placeholder="you@example.com" class="input pl-11">
+                </div>
             </div>
 
             <div>
                 <div class="flex items-center justify-between">
-                    <label for="password" class="block text-sm font-medium text-slate-700">Password</label>
+                    <label for="password" class="label">Password</label>
                     <button type="button" x-show="!isSignup" @click="resetPassword"
-                            class="text-xs font-medium text-indigo-600 hover:text-indigo-500">Forgot password?</button>
+                            class="mb-1.5 text-xs font-semibold text-brand-600 hover:text-brand-500">Forgot password?</button>
                 </div>
-                <input id="password" type="password" x-model="password" required minlength="6"
-                       :autocomplete="isSignup ? 'new-password' : 'current-password'"
-                       class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none sm:text-sm">
+                <div class="relative">
+                    <x-icon name="lock" class="pointer-events-none absolute top-1/2 left-4 h-[18px] w-[18px] -translate-y-1/2 text-slate-400"/>
+                    <input id="password" type="password" x-model="password" required minlength="6"
+                           :autocomplete="isSignup ? 'new-password' : 'current-password'"
+                           :placeholder="isSignup ? 'At least 6 characters' : '••••••••'" class="input pl-11">
+                </div>
             </div>
 
             <p x-show="error" x-text="error" x-cloak role="alert"
-               class="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700"></p>
+               class="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700"></p>
             <p x-show="info" x-text="info" x-cloak role="status"
-               class="rounded-lg bg-indigo-50 px-3 py-2 text-sm text-indigo-700"></p>
+               class="rounded-2xl bg-brand-50 px-4 py-3 text-sm font-medium text-brand-700"></p>
 
-            <button type="submit" :disabled="busy"
-                    class="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-60">
+            <button type="submit" :disabled="busy" class="btn btn-primary w-full py-3">
                 <svg x-show="busy" x-cloak class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"/>
                     <path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
@@ -49,11 +70,5 @@
                 <span x-text="isSignup ? 'Create account' : 'Sign in'">Sign in</span>
             </button>
         </form>
-
-        <p class="mt-6 text-center text-sm text-slate-500">
-            <span x-text="isSignup ? 'Already have an account?' : 'New here?'">New here?</span>
-            <button type="button" @click="toggleMode" class="font-semibold text-indigo-600 hover:text-indigo-500"
-                    x-text="isSignup ? 'Sign in' : 'Create an account'">Create an account</button>
-        </p>
     </div>
 @endsection

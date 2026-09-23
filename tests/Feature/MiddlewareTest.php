@@ -64,7 +64,7 @@ class MiddlewareTest extends TestCase
         $users->shouldReceive('access')->andReturnNull();
         $this->signIn('member', users: $users);
 
-        $this->get('/dashboard')->assertRedirect('/login');
+        $this->get('/dashboard')->assertRedirect('/login')->assertSessionMissing('error');
     }
 
     public function test_role_changes_are_picked_up_without_relogin(): void

@@ -32,7 +32,7 @@ class EnsureApproved
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
-            return $this->deny($request, 'Your access has been revoked.');
+            return $this->deny($request, $access === null ? null : 'Your access has been revoked.');
         }
 
         // Pick up role changes (e.g. promoted to admin) without a re-login.

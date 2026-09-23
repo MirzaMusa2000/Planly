@@ -4,11 +4,99 @@
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
+/*
+ * Design tokens. Dark navy chrome, lavender canvas, white cards, indigo-violet
+ * accent, pastel colour-coding.
+ */
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* Navy chrome: sidebar, dark sheets and forms */
+    --color-ink-950: #0b1020;
+    --color-ink-900: #111a2e;
+    --color-ink-800: #1a2440;
+    --color-ink-700: #263152;
+    --color-ink-600: #36426a;
+
+    /* Page background */
+    --color-canvas: #f3f4fb;
+
+    /* Indigo-violet accent */
+    --color-brand-50: #eef0ff;
+    --color-brand-100: #e0e3ff;
+    --color-brand-200: #c7cbfe;
+    --color-brand-300: #a5aafc;
+    --color-brand-400: #8288f8;
+    --color-brand-500: #6366f1;
+    --color-brand-600: #5850e8;
+    --color-brand-700: #4a42cc;
+
+    --shadow-soft: 0 1px 2px rgb(15 23 42 / 0.04), 0 10px 30px -14px rgb(30 27 75 / 0.18);
+    --shadow-lift: 0 12px 32px -12px rgb(79 70 229 / 0.45);
 }
 
 [x-cloak] {
     display: none !important;
+}
+
+@layer base {
+    body {
+        background:
+            radial-gradient(60rem 30rem at 100% -10%, rgb(199 203 254 / 0.45), transparent 60%),
+            radial-gradient(40rem 30rem at -10% 110%, rgb(233 213 255 / 0.4), transparent 60%),
+            var(--color-canvas);
+        background-attachment: fixed;
+    }
+}
+
+@layer components {
+    .card {
+        @apply rounded-3xl border border-white/80 bg-white shadow-soft;
+    }
+
+    .btn {
+        @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold transition
+            focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500
+            disabled:cursor-not-allowed disabled:opacity-60;
+    }
+    .btn-primary {
+        @apply bg-brand-500 text-white shadow-lift hover:bg-brand-600;
+    }
+    .btn-secondary {
+        @apply border border-slate-200 bg-white text-slate-700 hover:bg-slate-50;
+    }
+    .btn-danger {
+        @apply border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100;
+    }
+    .btn-success {
+        @apply bg-emerald-500 text-white hover:bg-emerald-600;
+    }
+
+    .label {
+        @apply mb-1.5 block text-sm font-semibold text-slate-700;
+    }
+    .input {
+        @apply block w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3 text-base text-slate-900
+            placeholder:text-slate-400 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-500/15
+            focus:outline-none sm:text-sm;
+    }
+    /* Dark variant for navy form sheets */
+    .input-dark {
+        @apply block w-full rounded-2xl border border-ink-700 bg-ink-800 px-4 py-3 text-base text-white
+            placeholder:text-slate-500 focus:border-brand-400 focus:ring-4 focus:ring-brand-500/20 focus:outline-none
+            sm:text-sm;
+    }
+
+    .chip {
+        @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+    }
+
+    .nav-link {
+        @apply flex items-center gap-3 rounded-2xl px-3.5 py-2.5 text-sm font-medium text-slate-400 transition
+            hover:bg-white/5 hover:text-white;
+    }
+    .nav-link-active {
+        @apply bg-ink-700/80 text-white;
+    }
 }
