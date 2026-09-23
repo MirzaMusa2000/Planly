@@ -105,9 +105,8 @@
 
                 <ul class="mt-3 space-y-2">
                     <template x-for="e in $store.planner.upcoming" :key="e.id">
-                        <li>
-                            <button type="button" @click="$store.planner.open(e.id)"
-                                    class="flex w-full items-center gap-3 rounded-2xl border border-slate-100 p-3 text-left transition hover:border-emerald-200 hover:bg-emerald-50/40">
+                        <li class="rounded-2xl border border-slate-100 p-3 transition hover:border-emerald-200">
+                            <button type="button" @click="$store.planner.open(e.id)" class="flex w-full items-center gap-3 text-left">
                                 <span class="grid w-12 shrink-0 place-items-center rounded-2xl bg-emerald-50 py-1.5 text-emerald-700">
                                     <span class="text-[10px] font-bold tracking-wide uppercase" x-text="$dates.month(e.finalDate)"></span>
                                     <span class="text-lg leading-none font-bold" x-text="$dates.day(e.finalDate)"></span>
@@ -115,12 +114,30 @@
                                 <span class="min-w-0 flex-1">
                                     <span class="block truncate font-semibold text-slate-900" x-text="e.title"></span>
                                     <span class="block truncate text-xs text-slate-500" x-text="$dates.weekday(e.finalDate) + (e.location ? ' · ' + e.location : '')"></span>
-                                    <span class="mt-1 flex gap-2 text-[11px] font-semibold">
-                                        <span class="text-emerald-600" x-text="e.rsvpSummary.join + ' joining'"></span>
-                                        <span class="text-slate-400" x-text="e.rsvpSummary.notAvailable + ' not available'"></span>
-                                    </span>
                                 </span>
                             </button>
+
+                            {{-- Inline RSVP --}}
+                            <div class="mt-2.5 grid grid-cols-2 gap-2" role="group" :aria-label="'RSVP for ' + e.title">
+                                <button type="button" @click="$store.planner.rsvp(e, 'join')"
+                                        :disabled="$store.planner.isPending(e.id + ':rsvp')"
+                                        :aria-pressed="$store.planner.myVote(e.id).rsvp === 'join'"
+                                        :class="$store.planner.myVote(e.id).rsvp === 'join'
+                                            ? 'bg-emerald-500 text-white'
+                                            : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'"
+                                        class="rounded-xl px-2 py-1.5 text-xs font-bold transition disabled:opacity-60">
+                                    Join · <span x-text="e.rsvpSummary.join"></span>
+                                </button>
+                                <button type="button" @click="$store.planner.rsvp(e, 'not_available')"
+                                        :disabled="$store.planner.isPending(e.id + ':rsvp')"
+                                        :aria-pressed="$store.planner.myVote(e.id).rsvp === 'not_available'"
+                                        :class="$store.planner.myVote(e.id).rsvp === 'not_available'
+                                            ? 'bg-slate-700 text-white'
+                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                                        class="rounded-xl px-2 py-1.5 text-xs font-bold transition disabled:opacity-60">
+                                    Not available · <span x-text="e.rsvpSummary.notAvailable"></span>
+                                </button>
+                            </div>
                         </li>
                     </template>
                 </ul>
@@ -149,7 +166,11 @@
                                     <span class="block truncate font-semibold text-slate-900" x-text="e.title"></span>
                                     <span class="block truncate text-xs text-slate-500"
                                           x-text="e.candidateDates.length + (e.candidateDates.length === 1 ? ' date' : ' dates') + ' · by ' + (e.proposedByName || 'someone')"></span>
-                                    <span x-show="$store.planner.hasEveryoneFreeDate(e)" class="chip mt-1 bg-amber-100 text-amber-700">⭐ Everyone free on a date</span>
+                                    <span class="mt-1 flex flex-wrap gap-1">
+                                        <span x-show="$store.planner.hasVoted(e.id)" class="chip bg-emerald-100 text-emerald-700">✓ You voted</span>
+                                        <span x-show="!$store.planner.hasVoted(e.id)" class="chip bg-brand-100 text-brand-700">Vote now</span>
+                                        <span x-show="$store.planner.hasEveryoneFreeDate(e)" class="chip bg-amber-100 text-amber-700">⭐ Everyone free</span>
+                                    </span>
                                 </span>
                             </button>
                         </li>

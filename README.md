@@ -110,6 +110,16 @@ How approval works:
   refresh tokens. Open tabs of that user sign out immediately. The server also re-checks
   status on every request (cached for up to 60s).
 
+How voting works:
+- Each person has one vote doc per event (`events/{id}/votes/{uid}`). While an event is
+  **proposed** it holds `availableDates`; once **confirmed** it holds `rsvp`.
+- The calendar reads only the cached `availabilitySummary` / `rsvpSummary` on the event.
+  The browser writes a vote and its summary change in **one transaction**, and
+  `firestore.rules` checks that the summary moved by exactly that vote's change (±1 on the
+  toggled date, or the RSVP swap). Counts can't be faked or drift.
+- **Confirm** and **Cancel** go through Laravel (`POST /events/{id}/confirm|cancel`). Only the
+  admin or the event's proposer may use them, and they run as Firestore transactions.
+
 ### 6. Emulator notes
 
 - With `FIREBASE_AUTH_EMULATOR_HOST` / `FIRESTORE_EMULATOR_HOST` set, the Admin SDK
@@ -179,7 +189,8 @@ project outside OneDrive). Syncing thousands of small files is slow.
 ## Project layout
 
 ```
-app/Services/                               Firebase Auth + Firestore access (server side)
+app/Services/                               Firebase Auth + Firestore access (users, events)
+app/Http/Controllers/EventController.php    confirm / cancel (admin or proposer only)
 app/Http/Middleware/EnsureApproved.php      approved session + live status re-check
 app/Http/Middleware/EnsureAdmin.php         admin-only routes
 app/Console/Commands/MakeAdmin.php          php artisan app:make-admin {email}
@@ -190,6 +201,7 @@ resources/js/auth.js                        sign-in, token → session exchange,
 resources/js/events.js                      realtime planner store (events + members), propose write
 resources/js/calendar.js                    FullCalendar (lazy-loaded), colour coding, ⭐ everyone free
 resources/js/propose.js                     "Propose event" sheet + multi-date picker
+resources/js/voting.js                      availability / RSVP transactions, confirm + cancel calls
 resources/js/dates.js                       YYYY-MM-DD helpers (app timezone, no off-by-one)
 firebase.json / .firebaserc                 emulator + deploy config
 firestore.rules / firestore.indexes.json    security rules + composite indexes

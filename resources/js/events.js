@@ -1,10 +1,11 @@
 // Realtime event data shared by the calendar, lists and sheets, plus the
 // client-side "propose event" write (protected by firestore.rules).
 import Alpine from 'alpinejs';
-import { addDoc, collection, onSnapshot, query, serverTimestamp, where } from 'firebase/firestore';
+import { addDoc, collection, doc, onSnapshot, query, serverTimestamp, where } from 'firebase/firestore';
 import { approvedUser } from './auth';
 import { db } from './firebase';
 import { format, formatLong, formatShort, today } from './dates';
+import { cancelEvent, confirmEvent, errorMessage, setAvailability, setRsvp } from './voting';
 
 // $dates in templates: $dates.short(d), $dates.long(d), $dates.month(d), $dates.day(d)
 Alpine.magic('dates', () => ({
@@ -36,15 +37,120 @@ function normalise(snap) {
     };
 }
 
+const toast = (message, type) => Alpine.store('toast').show(message, type);
+
 Alpine.store('planner', {
     events: [],
     members: [], // approved users: { uid, displayName }
     loading: true,
     error: null,
     selectedId: null,
+    myVotes: {}, // eventId -> { availableDates, rsvp } (my own vote per listed event)
+    selectedVotes: [], // all votes of the selected event: { uid, displayName, availableDates, rsvp }
+    votesLoading: false,
+    pending: {}, // in-flight writes, keyed "eventId:date" / "eventId:rsvp" / "eventId:manage"
 
     get approvedCount() {
         return this.members.length;
+    },
+
+    get me() {
+        return window.Planly.user;
+    },
+
+    /** Admin or the proposer may confirm / cancel. */
+    canManage(event) {
+        return this.me?.role === 'admin' || event?.proposedBy === this.me?.uid;
+    },
+
+    myVote(eventId) {
+        return this.myVotes[eventId] ?? { availableDates: [], rsvp: null };
+    },
+
+    iAmFree(eventId, date) {
+        return this.myVote(eventId).availableDates.includes(date);
+    },
+
+    hasVoted(eventId) {
+        return this.myVote(eventId).availableDates.length > 0;
+    },
+
+    isPending(key) {
+        return Boolean(this.pending[key]);
+    },
+
+    // --- Names, from the selected event's votes (current members only) ------
+
+    memberVotes() {
+        const members = new Map(this.members.map((m) => [m.uid, m.displayName]));
+        return this.selectedVotes
+            .filter((v) => members.has(v.uid))
+            .map((v) => ({ ...v, displayName: members.get(v.uid) }));
+    },
+
+    freeNames(date) {
+        return this.memberVotes().filter((v) => v.availableDates.includes(date)).map((v) => v.displayName).sort();
+    },
+
+    /** "3/4 free: Ali, Mei, Raj" */
+    freeLine(event, date) {
+        const names = this.votesLoading ? null : this.freeNames(date);
+        const count = names ? names.length : this.availableCount(event, date);
+        const base = `${count}/${this.approvedCount} free`;
+        return names?.length ? `${base}: ${names.join(', ')}` : base;
+    },
+
+    /** Everyone-free check for the open sheet, from live votes (falls back to the cached summary). */
+    everyoneFreeLive(event, date) {
+        if (this.votesLoading) return this.everyoneFree(event, date);
+        return this.approvedCount > 0 && this.freeNames(date).length >= this.approvedCount;
+    },
+
+    rsvpNames(choice) {
+        return this.memberVotes().filter((v) => v.rsvp === choice).map((v) => v.displayName).sort();
+    },
+
+    noResponseNames() {
+        const answered = new Set(this.memberVotes().filter((v) => v.rsvp).map((v) => v.uid));
+        return this.members.filter((m) => !answered.has(m.uid)).map((m) => m.displayName).sort();
+    },
+
+    // --- Actions ------------------------------------------------------------
+
+    async run(key, fn, success) {
+        if (this.pending[key]) return;
+        this.pending = { ...this.pending, [key]: true };
+        try {
+            const result = await fn();
+            if (success) toast(typeof success === 'function' ? success(result) : success);
+        } catch (e) {
+            toast(errorMessage(e), 'error');
+        } finally {
+            const { [key]: _, ...rest } = this.pending;
+            this.pending = rest;
+        }
+    },
+
+    toggleFree(event, date) {
+        return this.run(`${event.id}:${date}`, () => setAvailability(event.id, date, !this.iAmFree(event.id, date)));
+    },
+
+    rsvp(event, choice) {
+        return this.run(`${event.id}:rsvp`, () => setRsvp(event.id, choice));
+    },
+
+    confirmDate(event, date) {
+        if (!window.confirm(`Confirm ${formatLong(date)} for “${event.title}”? Voting will close and people can RSVP.`)) return;
+        return this.run(`${event.id}:manage`, () => confirmEvent(event.id, date), (r) => r.message);
+    },
+
+    cancel(event) {
+        if (!window.confirm(`Cancel “${event.title}”? It will disappear from everyone’s calendar.`)) return;
+        return this.run(`${event.id}:manage`, async () => {
+            const result = await cancelEvent(event.id);
+            this.close();
+            return result;
+        }, (r) => r.message);
     },
 
     get selected() {
@@ -82,12 +188,74 @@ Alpine.store('planner', {
 
     open(id) {
         this.selectedId = id;
+        watchSelectedVotes(id);
     },
 
     close() {
         this.selectedId = null;
+        watchSelectedVotes(null);
     },
 });
+
+// --- Vote listeners ----------------------------------------------------------
+
+let unsubscribeSelectedVotes = null;
+
+/** Listen to every vote of the event whose sheet is open (names + live counts). */
+function watchSelectedVotes(eventId) {
+    const store = Alpine.store('planner');
+    unsubscribeSelectedVotes?.();
+    unsubscribeSelectedVotes = null;
+    store.selectedVotes = [];
+
+    if (!eventId) return;
+
+    store.votesLoading = true;
+    unsubscribeSelectedVotes = onSnapshot(
+        collection(db, 'events', eventId, 'votes'),
+        (snapshot) => {
+            store.selectedVotes = snapshot.docs.map((d) => ({
+                uid: d.id,
+                displayName: d.data().displayName ?? '',
+                availableDates: d.data().availableDates ?? [],
+                rsvp: d.data().rsvp ?? null,
+            }));
+            store.votesLoading = false;
+        },
+        (error) => {
+            console.error(error);
+            store.votesLoading = false;
+        },
+    );
+}
+
+const myVoteListeners = new Map(); // eventId -> unsubscribe
+
+/** Keep one listener on my own vote doc for every listed event. */
+function syncMyVoteListeners(eventIds) {
+    const store = Alpine.store('planner');
+    const uid = window.Planly.user.uid;
+    const wanted = new Set(eventIds);
+
+    for (const [id, unsubscribe] of myVoteListeners) {
+        if (!wanted.has(id)) {
+            unsubscribe();
+            myVoteListeners.delete(id);
+        }
+    }
+
+    for (const id of wanted) {
+        if (myVoteListeners.has(id)) continue;
+        myVoteListeners.set(id, onSnapshot(doc(db, 'events', id, 'votes', uid), (snap) => {
+            store.myVotes = {
+                ...store.myVotes,
+                [id]: snap.exists()
+                    ? { availableDates: snap.data().availableDates ?? [], rsvp: snap.data().rsvp ?? null }
+                    : { availableDates: [], rsvp: null },
+            };
+        }, (error) => console.error(error)));
+    }
+}
 
 let started = false;
 
@@ -112,6 +280,10 @@ export async function startEventsFeed() {
             store.events = snapshot.docs.map(normalise);
             store.loading = false;
             store.error = null;
+            syncMyVoteListeners(store.events.map((e) => e.id));
+
+            // The open event was cancelled (or deleted) by someone else.
+            if (store.selectedId && !store.selected) store.close();
         },
         onError,
     );

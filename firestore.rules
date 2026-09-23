@@ -53,36 +53,84 @@ service cloud.firestore {
           && (!('rsvpSummary' in d) || d.rsvpSummary == {'join': 0, 'notAvailable': 0});
     }
 
+    // A vote before it exists behaves like an empty vote.
+    function emptyVote() { return {'availableDates': [], 'rsvp': null}; }
+    function isJoin(v) { return v.rsvp == 'join' ? 1 : 0; }
+    function isNotAvailable(v) { return v.rsvp == 'not_available' ? 1 : 0; }
+
+    // The availability counts must move exactly with one vote's change:
+    // at most one date toggled, and only that date's count changes by ±1.
+    function availabilityMatches(oldDates, newDates, oldMap, newMap) {
+      // Lists (not sets): rules sets can't be indexed.
+      let added = newDates.removeAll(oldDates);
+      let removed = oldDates.removeAll(newDates);
+      let touched = newMap.diff(oldMap).affectedKeys();
+      return added.size() + removed.size() <= 1
+          && touched.hasOnly(added.concat(removed))
+          && touched.hasAll(added.concat(removed))
+          && (added.size() == 0 || newMap.get(added[0], 0) == oldMap.get(added[0], 0) + 1)
+          && (removed.size() == 0 || newMap.get(removed[0], 0) == oldMap.get(removed[0], 0) - 1);
+    }
+
+    function summariesMatch(oldVote, newVote, oldEvent, newEvent) {
+      return availabilityMatches(oldVote.availableDates, newVote.availableDates,
+                                 oldEvent.availabilitySummary, newEvent.availabilitySummary)
+          && newEvent.rsvpSummary.join - oldEvent.rsvpSummary.join == isJoin(newVote) - isJoin(oldVote)
+          && newEvent.rsvpSummary.notAvailable - oldEvent.rsvpSummary.notAvailable
+               == isNotAvailable(newVote) - isNotAvailable(oldVote);
+    }
+
     match /events/{eventId} {
-      function event() { return get(/databases/$(db)/documents/events/$(eventId)).data; }
+      function eventPath() { return /databases/$(db)/documents/events/$(eventId); }
+      function votePath(uid) { return /databases/$(db)/documents/events/$(eventId)/votes/$(uid); }
+      function event() { return get(eventPath()).data; }
 
       allow read: if approved();
       allow create: if approved() && validNewEvent(request.resource.data);
 
-      // status / finalDate changes are server-only; clients may only update
-      // the cached summaries.
+      // status / finalDate changes are server-only. Clients may only update
+      // the cached summaries, and only together with their own vote in the
+      // same write, by exactly the amount that vote changed.
       allow update: if approved()
                     && changed().hasOnly(['availabilitySummary', 'rsvpSummary'])
-                    && request.resource.data.availabilitySummary is map
-                    && request.resource.data.rsvpSummary is map;
+                    && (resource.data.status == 'proposed' || !('availabilitySummary' in changed()))
+                    && (resource.data.status == 'confirmed' || !('rsvpSummary' in changed()))
+                    && getAfter(votePath(request.auth.uid)).data.updatedAt == request.time
+                    && summariesMatch(
+                         exists(votePath(request.auth.uid)) ? get(votePath(request.auth.uid)).data : emptyVote(),
+                         getAfter(votePath(request.auth.uid)).data,
+                         resource.data,
+                         request.resource.data);
 
       allow delete: if isAdmin();
 
       // One vote doc per user (doc ID == uid).
       match /votes/{uid} {
+        function validVote(before, d, e) {
+          return d.keys().hasOnly(['displayName', 'availableDates', 'rsvp', 'updatedAt'])
+              && d.keys().hasAll(['availableDates', 'rsvp', 'updatedAt'])
+              && (!('displayName' in d) || isStr(d.displayName, 0, 60))
+              && d.availableDates is list
+              && d.availableDates.size() <= 31
+              && d.availableDates.hasOnly(e.candidateDates)
+              && (d.rsvp == null || d.rsvp in ['join', 'not_available'])
+              && d.updatedAt == request.time
+              // Availability while proposed; RSVP once confirmed. Nothing when cancelled.
+              && ((e.status == 'proposed' && d.rsvp == before.rsvp)
+                  || (e.status == 'confirmed' && d.availableDates == before.availableDates))
+              // A vote that changes anything must update the event summaries in
+              // the same write (the event rule checks the amounts).
+              && ((d.availableDates == before.availableDates && d.rsvp == before.rsvp)
+                  || getAfter(eventPath()).data.diff(e).affectedKeys().size() > 0);
+        }
+
         allow read: if approved();
 
         allow create, update: if approved() && uid == request.auth.uid
-          && event().status != 'cancelled'
-          && request.resource.data.keys().hasOnly(['displayName', 'availableDates', 'rsvp', 'updatedAt'])
-          && isStr(request.resource.data.displayName, 0, 60)
-          && request.resource.data.availableDates is list
-          && request.resource.data.availableDates.hasOnly(event().candidateDates)
-          && (request.resource.data.rsvp == null
-              || (request.resource.data.rsvp in ['join', 'not_available'] && event().status == 'confirmed'))
-          && request.resource.data.updatedAt == request.time;
+          && validVote(resource == null ? emptyVote() : resource.data, request.resource.data, event());
 
-        allow delete: if approved() && uid == request.auth.uid;
+        // Deleting would leave the summaries counting a vote that no longer exists.
+        allow delete: if false;
       }
 
       match /itinerary/{itemId} {

@@ -59,37 +59,94 @@
                         <p class="mt-1.5 text-sm whitespace-pre-line text-slate-200 break-words" x-text="e.description"></p>
                     </section>
 
-                    {{-- Candidate dates (proposed) --}}
+                    {{-- Availability voting (proposed) --}}
                     <section class="mt-6" x-show="e.status === 'proposed'">
-                        <h3 class="text-sm font-semibold text-slate-300">Candidate dates</h3>
+                        <div class="flex items-baseline justify-between">
+                            <h3 class="text-sm font-semibold text-slate-300">When are you free?</h3>
+                            <p class="text-xs text-slate-500">Tap every date that works</p>
+                        </div>
                         <ul class="mt-2 space-y-2">
                             <template x-for="date in e.candidateDates" :key="date">
-                                <li class="flex items-center justify-between gap-3 rounded-2xl px-4 py-3"
-                                    :class="$store.planner.everyoneFree(e, date) ? 'bg-amber-300/15 ring-1 ring-amber-300/40' : 'bg-ink-800'">
-                                    <span class="font-medium" x-text="$dates.short(date)"></span>
-                                    <span class="text-xs font-semibold"
-                                          :class="$store.planner.everyoneFree(e, date) ? 'text-amber-200' : 'text-slate-400'"
-                                          x-text="$store.planner.everyoneFree(e, date)
-                                                ? 'Everyone free ⭐'
-                                                : $store.planner.availableCount(e, date) + '/' + $store.planner.approvedCount + ' free'"></span>
+                                <li class="rounded-2xl px-4 py-3 transition"
+                                    :class="$store.planner.everyoneFreeLive(e, date) ? 'bg-amber-300/15 ring-1 ring-amber-300/40' : 'bg-ink-800'">
+                                    <div class="flex items-center gap-3">
+                                        <div class="min-w-0 flex-1">
+                                            <p class="flex items-center gap-2 font-semibold">
+                                                <span x-text="$dates.short(date)"></span>
+                                                <span x-show="$store.planner.everyoneFreeLive(e, date)" class="chip bg-amber-300/20 text-amber-200">Everyone free ⭐</span>
+                                            </p>
+                                            <p class="mt-0.5 text-xs break-words text-slate-400" x-text="$store.planner.freeLine(e, date)"></p>
+                                        </div>
+
+                                        <button type="button" role="checkbox"
+                                                :aria-checked="$store.planner.iAmFree(e.id, date)"
+                                                :aria-label="'I’m free on ' + $dates.short(date)"
+                                                :disabled="$store.planner.isPending(e.id + ':' + date)"
+                                                @click="$store.planner.toggleFree(e, date)"
+                                                :class="$store.planner.iAmFree(e.id, date)
+                                                    ? 'border-emerald-400 bg-emerald-400 text-ink-950'
+                                                    : 'border-ink-600 text-slate-300 hover:border-slate-400'"
+                                                class="inline-flex shrink-0 items-center gap-1.5 rounded-full border-2 px-3 py-1.5 text-xs font-bold transition disabled:opacity-60">
+                                            <x-icon name="check" class="h-3.5 w-3.5" x-show="$store.planner.iAmFree(e.id, date)"/>
+                                            I'm free
+                                        </button>
+                                    </div>
+
+                                    <div x-show="$store.planner.canManage(e)" class="mt-2 flex justify-end">
+                                        <button type="button" @click="$store.planner.confirmDate(e, date)"
+                                                :disabled="$store.planner.isPending(e.id + ':manage')"
+                                                class="rounded-full px-3 py-1 text-xs font-semibold text-brand-200 hover:bg-brand-500/20 disabled:opacity-50">
+                                            Confirm this date →
+                                        </button>
+                                    </div>
                                 </li>
                             </template>
                         </ul>
                     </section>
 
-                    {{-- RSVP counts (confirmed) --}}
+                    {{-- RSVP (confirmed) --}}
                     <section class="mt-6" x-show="e.status === 'confirmed'">
-                        <h3 class="text-sm font-semibold text-slate-300">Who's coming</h3>
-                        <div class="mt-2 grid grid-cols-2 gap-2 text-center">
-                            <div class="rounded-2xl bg-emerald-400/10 px-3 py-3">
-                                <p class="text-2xl font-bold text-emerald-300" x-text="e.rsvpSummary.join"></p>
-                                <p class="text-xs text-slate-400">Joining</p>
-                            </div>
-                            <div class="rounded-2xl bg-ink-800 px-3 py-3">
-                                <p class="text-2xl font-bold text-slate-200" x-text="e.rsvpSummary.notAvailable"></p>
-                                <p class="text-xs text-slate-400">Not available</p>
-                            </div>
+                        <h3 class="text-sm font-semibold text-slate-300">Are you coming?</h3>
+                        <div class="mt-2 grid grid-cols-2 gap-2">
+                            <button type="button" @click="$store.planner.rsvp(e, 'join')"
+                                    :disabled="$store.planner.isPending(e.id + ':rsvp')"
+                                    :aria-pressed="$store.planner.myVote(e.id).rsvp === 'join'"
+                                    :class="$store.planner.myVote(e.id).rsvp === 'join' ? 'bg-emerald-400 text-ink-950' : 'bg-ink-800 text-slate-200 hover:bg-ink-700'"
+                                    class="btn py-3 disabled:opacity-60">
+                                <x-icon name="check" class="h-4 w-4"/> Join
+                            </button>
+                            <button type="button" @click="$store.planner.rsvp(e, 'not_available')"
+                                    :disabled="$store.planner.isPending(e.id + ':rsvp')"
+                                    :aria-pressed="$store.planner.myVote(e.id).rsvp === 'not_available'"
+                                    :class="$store.planner.myVote(e.id).rsvp === 'not_available' ? 'bg-rose-300 text-ink-950' : 'bg-ink-800 text-slate-200 hover:bg-ink-700'"
+                                    class="btn py-3 disabled:opacity-60">
+                                <x-icon name="x" class="h-4 w-4"/> Not available
+                            </button>
                         </div>
+
+                        <dl class="mt-4 space-y-3 text-sm">
+                            <div class="rounded-2xl bg-emerald-400/10 px-4 py-3">
+                                <dt class="font-semibold text-emerald-300">Joining (<span x-text="e.rsvpSummary.join"></span>)</dt>
+                                <dd class="mt-0.5 text-slate-300" x-text="$store.planner.rsvpNames('join').join(', ') || '—'"></dd>
+                            </div>
+                            <div class="rounded-2xl bg-ink-800 px-4 py-3">
+                                <dt class="font-semibold text-slate-200">Not available (<span x-text="e.rsvpSummary.notAvailable"></span>)</dt>
+                                <dd class="mt-0.5 text-slate-400" x-text="$store.planner.rsvpNames('not_available').join(', ') || '—'"></dd>
+                            </div>
+                            <div class="px-1" x-show="!$store.planner.votesLoading && $store.planner.noResponseNames().length">
+                                <dt class="text-xs font-semibold text-slate-500">No reply yet</dt>
+                                <dd class="text-xs text-slate-500" x-text="$store.planner.noResponseNames().join(', ')"></dd>
+                            </div>
+                        </dl>
+                    </section>
+
+                    {{-- Manage --}}
+                    <section class="mt-8 border-t border-white/10 pt-5" x-show="$store.planner.canManage(e)">
+                        <button type="button" @click="$store.planner.cancel(e)" :disabled="$store.planner.isPending(e.id + ':manage')"
+                                class="btn w-full border border-rose-400/30 py-2.5 text-rose-300 hover:bg-rose-400/10">
+                            Cancel event
+                        </button>
+                        <p class="mt-2 text-center text-xs text-slate-500">Only the admin and the person who proposed it can do this.</p>
                     </section>
                 </div>
             </div>
