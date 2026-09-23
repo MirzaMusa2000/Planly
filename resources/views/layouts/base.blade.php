@@ -11,7 +11,7 @@
     <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800" rel="stylesheet">
 
     <script>
-        window.Planly = @json(['user' => $currentUser ?? null]);
+        window.Planly = @json(['user' => $currentUser ?? null, 'timezone' => config('app.timezone')]);
     </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('head')

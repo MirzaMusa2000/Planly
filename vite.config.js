@@ -23,6 +23,16 @@ export default defineConfig({
             },
         },
     },
+    // Pre-bundle lazily imported deps so the dev server doesn't discover them
+    // mid-session and force a full page reload.
+    optimizeDeps: {
+        include: [
+            '@fullcalendar/core',
+            '@fullcalendar/daygrid',
+            '@fullcalendar/list',
+            '@fullcalendar/interaction',
+        ],
+    },
     server: {
         watch: {
             ignored: ['**/storage/framework/views/**'],

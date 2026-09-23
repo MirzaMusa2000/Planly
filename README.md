@@ -187,6 +187,10 @@ app/Support/Firebase/EmulatorAdminAuth.php  emulator-only Admin SDK plumbing
 config/firebase.php                         kreait config (credentials, project_id)
 resources/js/firebase.js                    Firebase JS init + emulator connection
 resources/js/auth.js                        sign-in, token → session exchange, session guard
+resources/js/events.js                      realtime planner store (events + members), propose write
+resources/js/calendar.js                    FullCalendar (lazy-loaded), colour coding, ⭐ everyone free
+resources/js/propose.js                     "Propose event" sheet + multi-date picker
+resources/js/dates.js                       YYYY-MM-DD helpers (app timezone, no off-by-one)
 firebase.json / .firebaserc                 emulator + deploy config
 firestore.rules / firestore.indexes.json    security rules + composite indexes
 ```

@@ -7,6 +7,12 @@
         ['route' => 'dashboard', 'active' => 'dashboard', 'label' => 'Home', 'icon' => 'home'],
         $isAdmin ? ['route' => 'admin.users.index', 'active' => 'admin.*', 'label' => 'Members', 'icon' => 'users'] : null,
     ]));
+    // The propose form lives on the dashboard; elsewhere "+" links there and opens it.
+    $onDashboard = request()->routeIs('dashboard');
+    $proposeAttrs = $onDashboard
+        ? 'type="button" x-data @click="$dispatch(\'propose-event\')"'
+        : 'href="'.e(route('dashboard')).'#propose"';
+    $proposeTag = $onDashboard ? 'button' : 'a';
 @endphp
 
 @section('body')
@@ -23,7 +29,11 @@
             <span class="text-xl font-bold tracking-tight text-white">{{ config('app.name') }}</span>
         </a>
 
-        <nav class="mt-10 space-y-1" aria-label="Main">
+        <{{ $proposeTag }} {!! $proposeAttrs !!} class="btn btn-primary mt-8 w-full py-3">
+            <x-icon name="plus" class="h-4 w-4"/> Propose event
+        </{{ $proposeTag }}>
+
+        <nav class="mt-6 space-y-1" aria-label="Main">
             @foreach ($nav as $item)
                 <a href="{{ route($item['route']) }}"
                    @class(['nav-link', 'nav-link-active' => request()->routeIs($item['active'])])
@@ -64,25 +74,48 @@
 
     {{-- Mobile bottom tab bar --}}
     <nav class="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/70 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden" aria-label="Main">
-        <div class="mx-auto flex h-16 max-w-md items-stretch justify-around px-2">
-            @foreach ($nav as $item)
-                <a href="{{ route($item['route']) }}"
-                   @class([
-                       'flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold',
-                       'text-brand-600' => request()->routeIs($item['active']),
-                       'text-slate-400' => ! request()->routeIs($item['active']),
-                   ])>
-                    <x-icon :name="$item['icon']" class="h-[22px] w-[22px]"/>
-                    {{ $item['label'] }}
-                </a>
-            @endforeach
-            {{-- Phase 2: centre "+" (propose event). Phase 5: chat. --}}
-            <button type="submit" form="logout-form" class="flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold text-slate-400">
-                <x-icon name="logout" class="h-[22px] w-[22px]"/>
-                Sign out
-            </button>
+        <div class="mx-auto flex h-16 max-w-md items-stretch px-2">
+            <div class="flex flex-1 items-stretch justify-around">
+                @foreach ($nav as $item)
+                    <a href="{{ route($item['route']) }}"
+                       @class([
+                           'flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold',
+                           'text-brand-600' => request()->routeIs($item['active']),
+                           'text-slate-400' => ! request()->routeIs($item['active']),
+                       ])>
+                        <x-icon :name="$item['icon']" class="h-[22px] w-[22px]"/>
+                        {{ $item['label'] }}
+                    </a>
+                @endforeach
+            </div>
+
+            {{-- Centre "+" --}}
+            <div class="flex w-20 items-start justify-center">
+                <{{ $proposeTag }} {!! $proposeAttrs !!} class="-mt-5 grid h-14 w-14 place-items-center rounded-full bg-brand-500 text-white shadow-lift ring-4 ring-white transition hover:bg-brand-600">
+                    <x-icon name="plus" class="h-6 w-6"/>
+                    <span class="sr-only">Propose event</span>
+                </{{ $proposeTag }}>
+            </div>
+
+            <div class="flex flex-1 items-stretch justify-around">
+                <button type="submit" form="logout-form" class="flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold text-slate-400">
+                    <x-icon name="logout" class="h-[22px] w-[22px]"/>
+                    Sign out
+                </button>
+            </div>
         </div>
     </nav>
+
+    {{-- Toasts --}}
+    <div x-data class="pointer-events-none fixed inset-x-0 bottom-24 z-[60] flex flex-col items-center gap-2 px-4 lg:bottom-6" aria-live="polite">
+        <template x-for="t in $store.toast.items" :key="t.id">
+            <div x-transition.opacity class="pointer-events-auto flex max-w-sm items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold shadow-lg"
+                 :class="t.type === 'error' ? 'bg-rose-600 text-white' : 'bg-ink-900 text-white'">
+                <span x-text="t.type === 'error' ? '⚠️' : '✅'" aria-hidden="true"></span>
+                <span x-text="t.message"></span>
+            </div>
+        </template>
+    </div>
 
     {{-- Phase 5: floating chat button goes here. --}}
 @endsection

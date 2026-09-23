@@ -19,6 +19,7 @@
         "vite": "^7.0.7"
     },
     "dependencies": {
+        "@alpinejs/focus": "^3.17.4",
         "@fullcalendar/core": "^6.1.21",
         "@fullcalendar/daygrid": "^6.1.21",
         "@fullcalendar/interaction": "^6.1.21",

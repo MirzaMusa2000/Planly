@@ -44,6 +44,24 @@ export function authReady() {
 }
 
 /**
+ * The signed-in user, with a token that carries the `approved` claim. Feature
+ * modules await this before attaching Firestore listeners, so the security
+ * rules never see a stale, claim-less token. Resolves to null if signed out.
+ */
+let approvedUserPromise = null;
+export function approvedUser() {
+    approvedUserPromise ??= authReady().then(async (user) => {
+        if (!user) return null;
+        const { claims } = await user.getIdTokenResult();
+        if (claims.approved !== true) {
+            await user.getIdToken(true);
+        }
+        return user;
+    });
+    return approvedUserPromise;
+}
+
+/**
  * Send a fresh ID token to Laravel. Always force-refreshes so newly granted
  * custom claims (approved/admin) are included.
  */
@@ -253,10 +271,7 @@ export function startSessionGuard(me) {
             return;
         }
 
-        const { claims } = await user.getIdTokenResult();
-        if (claims.approved !== true) {
-            await user.getIdToken(true);
-        }
+        await approvedUser();
 
         unsubscribeUserDoc = onSnapshot(
             doc(db, 'users', user.uid),

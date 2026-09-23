@@ -48,8 +48,9 @@ service cloud.firestore {
           && d.candidateDates is list
           && d.candidateDates.size() >= 1 && d.candidateDates.size() <= 31
           && (!('finalDate' in d) || d.finalDate == null)
-          && (!('availabilitySummary' in d) || d.availabilitySummary is map)
-          && (!('rsvpSummary' in d) || d.rsvpSummary is map);
+          // New events start with no votes.
+          && (!('availabilitySummary' in d) || (d.availabilitySummary is map && d.availabilitySummary.size() == 0))
+          && (!('rsvpSummary' in d) || d.rsvpSummary == {'join': 0, 'notAvailable': 0});
     }
 
     match /events/{eventId} {
