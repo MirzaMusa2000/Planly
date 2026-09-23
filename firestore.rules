@@ -5,9 +5,13 @@ service cloud.firestore {
     // ---------------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------------
+    // Access comes from your own users/{uid} doc (status + role), re-checked on
+    // every request: approving or revoking someone takes effect immediately.
+    // (A missing doc makes get() fail, which denies.)
     function signedIn() { return request.auth != null; }
-    function approved() { return signedIn() && request.auth.token.approved == true; }
-    function isAdmin()  { return signedIn() && request.auth.token.admin == true; }
+    function me() { return get(/databases/$(db)/documents/users/$(request.auth.uid)).data; }
+    function approved() { return signedIn() && me().status == 'approved'; }
+    function isAdmin()  { return approved() && me().role == 'admin'; }
 
     function isStr(v, min, max) { return v is string && v.size() >= min && v.size() <= max; }
     function isDate(v) { return v is string && v.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'); }
@@ -16,19 +20,41 @@ service cloud.firestore {
     function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
 
     // ---------------------------------------------------------------------
-    // users/{uid}  — created and approved by the server (Admin SDK) only
+    // users/{uid}
     // ---------------------------------------------------------------------
     match /users/{uid} {
       allow read: if approved() || (signedIn() && request.auth.uid == uid);
 
-      // Members may only update their own lastReadChatAt / displayName.
+      // Sign-up: you may create only your own profile, as a pending member,
+      // with the email you actually signed in with.
+      allow create: if signedIn() && request.auth.uid == uid
+                    && request.resource.data.keys().hasOnly(['email', 'displayName', 'photoUrl', 'role', 'status',
+                                                             'createdAt', 'approvedAt', 'approvedBy', 'lastReadChatAt'])
+                    && request.resource.data.email == request.auth.token.email
+                    && isStr(request.resource.data.displayName, 1, 60)
+                    && request.resource.data.role == 'member'
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.createdAt == request.time
+                    && request.resource.data.get('approvedAt', null) == null
+                    && request.resource.data.get('approvedBy', null) == null
+                    && request.resource.data.get('lastReadChatAt', null) == null;
+
+      // You may update only your own name and chat read receipt.
       allow update: if signedIn() && request.auth.uid == uid
                     && changed().hasOnly(['lastReadChatAt', 'displayName'])
                     && (!('displayName' in changed()) || isStr(request.resource.data.displayName, 1, 60))
                     // Read receipts use the server clock (serverTimestamp()).
                     && (!('lastReadChatAt' in changed()) || request.resource.data.lastReadChatAt == request.time);
 
-      allow create, delete: if false;
+      // Admins approve / reject / revoke / promote others, never themselves.
+      allow update: if isAdmin() && request.auth.uid != uid
+                    && changed().hasOnly(['status', 'role', 'approvedAt', 'approvedBy'])
+                    && request.resource.data.status in ['pending', 'approved', 'rejected']
+                    && request.resource.data.role in ['member', 'admin']
+                    && (!('approvedAt' in changed()) || request.resource.data.approvedAt == request.time)
+                    && (!('approvedBy' in changed()) || request.resource.data.approvedBy == request.auth.uid);
+
+      allow delete: if false;
     }
 
     // ---------------------------------------------------------------------
@@ -89,9 +115,24 @@ service cloud.firestore {
       allow read: if approved();
       allow create: if approved() && validNewEvent(request.resource.data);
 
-      // status / finalDate changes are server-only. Clients may only update
-      // the cached summaries, and only together with their own vote in the
-      // same write, by exactly the amount that vote changed.
+      function canManage() { return isAdmin() || resource.data.proposedBy == request.auth.uid; }
+
+      // Confirm: admin or proposer, proposed -> confirmed on a candidate date.
+      allow update: if approved() && canManage()
+                    && changed().hasOnly(['status', 'finalDate'])
+                    && resource.data.status == 'proposed'
+                    && request.resource.data.status == 'confirmed'
+                    && request.resource.data.finalDate in resource.data.candidateDates;
+
+      // Cancel: admin or proposer, proposed/confirmed -> cancelled.
+      allow update: if approved() && canManage()
+                    && changed().hasOnly(['status'])
+                    && resource.data.status in ['proposed', 'confirmed']
+                    && request.resource.data.status == 'cancelled';
+
+      // Everyone else may only update the cached summaries, together with
+      // their own vote in the same write, by exactly the amount that vote
+      // changed.
       allow update: if approved()
                     && changed().hasOnly(['availabilitySummary', 'rsvpSummary'])
                     && (resource.data.status == 'proposed' || !('availabilitySummary' in changed()))

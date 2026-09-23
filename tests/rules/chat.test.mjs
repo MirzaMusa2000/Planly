@@ -1,15 +1,14 @@
 import { after, before, beforeEach, describe, test } from 'node:test';
 import { addDoc, collection, deleteDoc, doc, getDocs, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
-import { as, asAdmin, asPending, assertFails, assertSucceeds, seed, setupEnv } from './helpers.mjs';
+import { as, asAdmin, asPending, assertFails, assertSucceeds, seed, seedMembers, setupEnv } from './helpers.mjs';
 
 let env;
 before(async () => (env = await setupEnv()));
 after(async () => env.cleanup());
 beforeEach(async () => {
     await env.clearFirestore();
+    await seedMembers(env);
     await seed(env, async (db) => {
-        await setDoc(doc(db, 'users/ali'), { displayName: 'Ali', role: 'member', status: 'approved' });
-        await setDoc(doc(db, 'users/mei'), { displayName: 'Mei Lin', role: 'member', status: 'approved' });
         await setDoc(doc(db, 'chats/main/messages/m1'), { senderId: 'mei', senderName: 'Mei Lin', text: 'Hi', createdAt: new Date() });
     });
 });
@@ -27,8 +26,8 @@ describe('chats/main/messages', () => {
     });
 
     test('pending users can neither read nor send', async () => {
-        await assertFails(getDocs(collection(asPending(env, 'p'), 'chats/main/messages')));
-        await assertFails(send(asPending(env, 'p'), message({ senderId: 'p', senderName: '' })));
+        await assertFails(getDocs(collection(asPending(env), 'chats/main/messages')));
+        await assertFails(send(asPending(env), message({ senderId: 'pending', senderName: 'Newbie' })));
     });
 
     test('text must be 1–1000 characters and not just whitespace', async () => {

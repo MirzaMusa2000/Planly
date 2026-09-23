@@ -1,13 +1,17 @@
 import { after, before, beforeEach, describe, test } from 'node:test';
 import { addDoc, collection, deleteDoc, doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
-import { as, asAdmin, asGuest, asPending, assertFails, assertSucceeds, D1, newEvent, seed, setupEnv } from './helpers.mjs';
+import { as, asAdmin, asGuest, asPending, assertFails, assertSucceeds, D1, D2, newEvent, seed, seedMembers, setupEnv } from './helpers.mjs';
 
 let env;
 before(async () => (env = await setupEnv()));
 after(async () => env.cleanup());
 beforeEach(async () => {
     await env.clearFirestore();
-    await seed(env, (db) => setDoc(doc(db, 'events/e1'), { ...newEvent('ali'), createdAt: new Date() }));
+    await seedMembers(env);
+    await seed(env, async (db) => {
+        await setDoc(doc(db, 'events/e1'), { ...newEvent('ali'), createdAt: new Date() });
+        await setDoc(doc(db, 'events/c1'), { ...newEvent('ali', { status: 'confirmed', finalDate: D1 }), createdAt: new Date() });
+    });
 });
 
 const propose = (db, data) => addDoc(collection(db, 'events'), { ...data, createdAt: serverTimestamp() });
@@ -24,7 +28,9 @@ describe('events/{eventId}', () => {
     });
 
     test('pending users cannot propose', async () => {
-        await assertFails(propose(asPending(env, 'p'), newEvent('p')));
+        await assertFails(propose(asPending(env), newEvent('pending')));
+        await assertFails(propose(as(env, 'rejected'), newEvent('rejected')));
+        await assertFails(propose(as(env, 'stranger'), newEvent('stranger'))); // no profile at all
     });
 
     test('proposals must be honest and start empty', async () => {
@@ -40,9 +46,29 @@ describe('events/{eventId}', () => {
         await assertFails(propose(db, newEvent('mei', { secret: true }))); // unknown field
     });
 
-    test('status and finalDate are server-only', async () => {
-        await assertFails(updateDoc(doc(as(env, 'ali'), 'events/e1'), { status: 'confirmed', finalDate: D1 }));
-        await assertFails(updateDoc(doc(asAdmin(env), 'events/e1'), { status: 'cancelled' }));
+    test('the proposer or the admin confirms onto a candidate date', async () => {
+        await assertSucceeds(updateDoc(doc(as(env, 'ali'), 'events/e1'), { status: 'confirmed', finalDate: D2 }));
+        await seed(env, (db) => setDoc(doc(db, 'events/e2'), { ...newEvent('mei'), createdAt: new Date() }));
+        await assertSucceeds(updateDoc(doc(asAdmin(env), 'events/e2'), { status: 'confirmed', finalDate: D1 }));
+    });
+
+    test('confirming is guarded', async () => {
+        await assertFails(updateDoc(doc(as(env, 'mei'), 'events/e1'), { status: 'confirmed', finalDate: D1 })); // not the proposer
+        await assertFails(updateDoc(doc(as(env, 'ali'), 'events/e1'), { status: 'confirmed', finalDate: '2026-12-25' })); // not a candidate
+        await assertFails(updateDoc(doc(as(env, 'ali'), 'events/e1'), { status: 'confirmed', finalDate: D1, title: 'Renamed' })); // extra change
+        await assertFails(updateDoc(doc(as(env, 'ali'), 'events/c1'), { status: 'confirmed', finalDate: D2 })); // already confirmed
+    });
+
+    test('the proposer or the admin cancels', async () => {
+        await assertSucceeds(updateDoc(doc(as(env, 'ali'), 'events/e1'), { status: 'cancelled' }));
+        await assertSucceeds(updateDoc(doc(asAdmin(env), 'events/c1'), { status: 'cancelled' }));
+    });
+
+    test('cancelling is guarded', async () => {
+        await assertFails(updateDoc(doc(as(env, 'mei'), 'events/e1'), { status: 'cancelled' })); // not the proposer
+        await assertFails(updateDoc(doc(as(env, 'ali'), 'events/e1'), { status: 'proposed' })); // not a valid transition
+        await updateDoc(doc(as(env, 'ali'), 'events/e1'), { status: 'cancelled' });
+        await assertFails(updateDoc(doc(as(env, 'ali'), 'events/e1'), { status: 'confirmed', finalDate: D1 })); // no resurrecting
     });
 
     test('summaries cannot be edited on their own', async () => {

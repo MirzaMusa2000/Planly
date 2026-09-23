@@ -1,35 +1,16 @@
-*.log
-.DS_Store
-.env
-.env.backup
-.env.production
-.phpactor.json
-.phpunit.result.cache
-/.fleet
-/.idea
-/.nova
-/.phpunit.cache
-/.vscode
-/.zed
-/auth.json
+# Dependencies and build output
 /node_modules
-/public/build
-/public/hot
-/public/storage
-/storage/*.key
-/storage/pail
-/vendor
-Homestead.json
-Homestead.yaml
-Thumbs.db
+/dist
 
-# Firebase / Google credentials — never commit
-/storage/app/firebase/*
-!/storage/app/firebase/.gitignore
+# Secrets — never commit
+/secrets/*
+!/secrets/.gitkeep
 service-account*.json
 *-firebase-adminsdk-*.json
+.env
 .env.*
 !.env.example
+!.env.emulators
 
 # Firebase CLI / emulator artefacts
 .firebase/
@@ -38,5 +19,10 @@ firestore-debug.log*
 ui-debug.log*
 emulator-data/
 
-# Local Claude Code launch config (machine-specific paths)
+# Local tooling
 /.claude/
+/.idea
+/.vscode
+*.log
+.DS_Store
+Thumbs.db

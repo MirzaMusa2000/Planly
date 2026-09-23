@@ -4,13 +4,14 @@
 import { after, before, beforeEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { deleteDoc, doc, FieldPath, getDoc, increment, runTransaction, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore';
-import { as, assertFails, assertSucceeds, D1, D2, newEvent, seed, setupEnv } from './helpers.mjs';
+import { as, asPending, assertFails, assertSucceeds, D1, D2, newEvent, seed, seedMembers, setupEnv } from './helpers.mjs';
 
 let env;
 before(async () => (env = await setupEnv()));
 after(async () => env.cleanup());
 beforeEach(async () => {
     await env.clearFirestore();
+    await seedMembers(env);
     await seed(env, async (db) => {
         await setDoc(doc(db, 'events/p'), { ...newEvent('boss'), createdAt: new Date() });
         await setDoc(doc(db, 'events/c'), { ...newEvent('boss', { status: 'confirmed', finalDate: D1 }), createdAt: new Date() });
@@ -100,7 +101,7 @@ describe('availability votes (proposed events)', () => {
     });
 
     test('pending users cannot vote', async () => {
-        await assertFails(vote(env.authenticatedContext('p').firestore(), 'p', 'p', { dates: [D1], inc: { [D1]: 1 } }));
+        await assertFails(vote(asPending(env), 'p', 'pending', { dates: [D1], inc: { [D1]: 1 } }));
     });
 
     test('no voting on cancelled events', async () => {

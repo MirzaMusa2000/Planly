@@ -1,54 +1,110 @@
 import { after, before, beforeEach, describe, test } from 'node:test';
-import { deleteDoc, doc, getDoc, serverTimestamp, setDoc, Timestamp, updateDoc } from 'firebase/firestore';
-import { as, asGuest, asPending, assertFails, assertSucceeds, seed, setupEnv } from './helpers.mjs';
+import { collection, deleteDoc, doc, getDoc, getDocs, serverTimestamp, setDoc, Timestamp, updateDoc } from 'firebase/firestore';
+import { as, asAdmin, asGuest, asPending, assertFails, assertSucceeds, seedMembers, setupEnv } from './helpers.mjs';
 
 let env;
 before(async () => (env = await setupEnv()));
 after(async () => env.cleanup());
 beforeEach(async () => {
     await env.clearFirestore();
-    await seed(env, async (db) => {
-        await setDoc(doc(db, 'users/ali'), { email: 'ali@x', displayName: 'Ali', role: 'member', status: 'approved', lastReadChatAt: null });
-        await setDoc(doc(db, 'users/newbie'), { email: 'n@x', displayName: 'Newbie', role: 'member', status: 'pending', lastReadChatAt: null });
-    });
+    await seedMembers(env);
 });
 
-describe('users/{uid}', () => {
-    test('approved members can read any profile', async () => {
-        await assertSucceeds(getDoc(doc(as(env, 'ali'), 'users/newbie')));
+/** The profile the browser creates on first sign-in. */
+const signUpProfile = (uid, overrides = {}) => ({
+    email: `${uid}@planly.test`, displayName: 'New Person', photoUrl: null, role: 'member', status: 'pending',
+    createdAt: serverTimestamp(), approvedAt: null, approvedBy: null, lastReadChatAt: null, ...overrides,
+});
+
+describe('users/{uid}: reading', () => {
+    test('approved members can read everyone', async () => {
+        await assertSucceeds(getDocs(collection(as(env, 'ali'), 'users')));
     });
 
-    test('pending users can read only their own profile', async () => {
-        await assertSucceeds(getDoc(doc(asPending(env, 'newbie'), 'users/newbie')));
-        await assertFails(getDoc(doc(asPending(env, 'newbie'), 'users/ali')));
+    test('pending and rejected users can read only their own profile', async () => {
+        await assertSucceeds(getDoc(doc(asPending(env), 'users/pending')));
+        await assertFails(getDoc(doc(asPending(env), 'users/ali')));
+        await assertSucceeds(getDoc(doc(as(env, 'rejected'), 'users/rejected')));
+        await assertFails(getDocs(collection(as(env, 'rejected'), 'users')));
     });
 
     test('guests can read nothing', async () => {
         await assertFails(getDoc(doc(asGuest(env), 'users/ali')));
     });
+});
 
-    test('nobody creates or deletes profiles from the browser', async () => {
-        await assertFails(setDoc(doc(as(env, 'x'), 'users/x'), { email: 'x@x', displayName: 'X', role: 'member', status: 'approved' }));
-        await assertFails(deleteDoc(doc(as(env, 'ali'), 'users/ali')));
+describe('users/{uid}: sign-up', () => {
+    test('a new user creates their own pending profile', async () => {
+        await assertSucceeds(setDoc(doc(as(env, 'newbie'), 'users/newbie'), signUpProfile('newbie')));
     });
 
-    test('a user cannot approve or promote themselves', async () => {
-        await assertFails(updateDoc(doc(asPending(env, 'newbie'), 'users/newbie'), { status: 'approved' }));
+    test('sign-up cannot self-approve, self-promote or lie about the email', async () => {
+        const db = as(env, 'newbie');
+        await assertFails(setDoc(doc(db, 'users/newbie'), signUpProfile('newbie', { status: 'approved' })));
+        await assertFails(setDoc(doc(db, 'users/newbie'), signUpProfile('newbie', { role: 'admin' })));
+        await assertFails(setDoc(doc(db, 'users/newbie'), signUpProfile('newbie', { email: 'admin@planly.test' })));
+        await assertFails(setDoc(doc(db, 'users/newbie'), signUpProfile('newbie', { approvedBy: 'newbie' })));
+        await assertFails(setDoc(doc(db, 'users/newbie'), signUpProfile('newbie', { createdAt: Timestamp.fromDate(new Date('2020-01-01')) })));
+    });
+
+    test("you can't create someone else's profile", async () => {
+        await assertFails(setDoc(doc(as(env, 'newbie'), 'users/other'), signUpProfile('other')));
+    });
+
+    test("an existing profile can't be overwritten by re-signing up", async () => {
+        await assertFails(setDoc(doc(asPending(env), 'users/pending'), signUpProfile('pending')));
+    });
+});
+
+describe('users/{uid}: your own profile', () => {
+    test('display name (1–60 characters) and server-time read receipt', async () => {
+        const ali = as(env, 'ali');
+        await assertSucceeds(updateDoc(doc(ali, 'users/ali'), { displayName: 'Ali B' }));
+        await assertSucceeds(updateDoc(doc(ali, 'users/ali'), { lastReadChatAt: serverTimestamp() }));
+        await assertFails(updateDoc(doc(ali, 'users/ali'), { displayName: '' }));
+        await assertFails(updateDoc(doc(ali, 'users/ali'), { lastReadChatAt: Timestamp.fromDate(new Date('2099-01-01')) }));
+    });
+
+    test('you cannot approve or promote yourself', async () => {
+        await assertFails(updateDoc(doc(asPending(env), 'users/pending'), { status: 'approved' }));
         await assertFails(updateDoc(doc(as(env, 'ali'), 'users/ali'), { role: 'admin' }));
     });
 
-    test('read receipt must be the server time', async () => {
-        await assertSucceeds(updateDoc(doc(as(env, 'ali'), 'users/ali'), { lastReadChatAt: serverTimestamp() }));
-        await assertFails(updateDoc(doc(as(env, 'ali'), 'users/ali'), { lastReadChatAt: Timestamp.fromDate(new Date('2099-01-01')) }));
+    test('nobody deletes profiles', async () => {
+        await assertFails(deleteDoc(doc(as(env, 'ali'), 'users/ali')));
+        await assertFails(deleteDoc(doc(asAdmin(env), 'users/ali')));
+    });
+});
+
+describe('users/{uid}: admin moderation', () => {
+    test('admin approves a pending user', async () => {
+        await assertSucceeds(updateDoc(doc(asAdmin(env), 'users/pending'), {
+            status: 'approved', approvedAt: serverTimestamp(), approvedBy: 'admin',
+        }));
     });
 
-    test("you can't touch someone else's profile", async () => {
-        await assertFails(updateDoc(doc(as(env, 'ali'), 'users/newbie'), { lastReadChatAt: serverTimestamp() }));
+    test('admin rejects, revokes and promotes', async () => {
+        const admin = asAdmin(env);
+        await assertSucceeds(updateDoc(doc(admin, 'users/pending'), { status: 'rejected' }));
+        await assertSucceeds(updateDoc(doc(admin, 'users/ali'), { status: 'rejected' }));
+        await assertSucceeds(updateDoc(doc(admin, 'users/mei'), { role: 'admin' }));
     });
 
-    test('display name: 1–60 characters', async () => {
-        await assertSucceeds(updateDoc(doc(as(env, 'ali'), 'users/ali'), { displayName: 'Ali B' }));
-        await assertFails(updateDoc(doc(as(env, 'ali'), 'users/ali'), { displayName: '' }));
-        await assertFails(updateDoc(doc(as(env, 'ali'), 'users/ali'), { displayName: 'x'.repeat(61) }));
+    test('a revoked user loses access immediately', async () => {
+        await assertSucceeds(getDocs(collection(as(env, 'ali'), 'users')));
+        await updateDoc(doc(asAdmin(env), 'users/ali'), { status: 'rejected' });
+        await assertFails(getDocs(collection(as(env, 'ali'), 'users')));
+    });
+
+    test('admin moderation is validated', async () => {
+        const admin = asAdmin(env);
+        await assertFails(updateDoc(doc(admin, 'users/pending'), { status: 'superuser' }));
+        await assertFails(updateDoc(doc(admin, 'users/pending'), { status: 'approved', approvedBy: 'someone-else' }));
+        await assertFails(updateDoc(doc(admin, 'users/ali'), { email: 'x@x' }));
+        await assertFails(updateDoc(doc(admin, 'users/admin'), { role: 'member' })); // never yourself
+    });
+
+    test('members cannot moderate', async () => {
+        await assertFails(updateDoc(doc(as(env, 'ali'), 'users/pending'), { status: 'approved' }));
     });
 });

@@ -1,0 +1,169 @@
+// Sign-in / sign-up (login page) and the waiting-for-approval page.
+import Alpine from 'alpinejs';
+import {
+    createUserWithEmailAndPassword,
+    sendPasswordResetEmail,
+    signInWithEmailAndPassword,
+    signOut,
+    updateProfile,
+} from 'firebase/auth';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { auth, db } from './firebase';
+import { ensureUserDoc, homeFor } from './session';
+
+// ---------------------------------------------------------------------------
+// Sign-in methods. Each resolves to a Firebase User. To add Email Link
+// (passwordless) later, add an `emailLink` provider with the same shape and a
+// matching mode in the login form; the rest of the flow stays the same.
+// ---------------------------------------------------------------------------
+export const providers = {
+    emailPassword: {
+        async signIn({ email, password }) {
+            const { user } = await signInWithEmailAndPassword(auth, email, password);
+            return user;
+        },
+        async signUp({ email, password, displayName }) {
+            const { user } = await createUserWithEmailAndPassword(auth, email, password);
+            if (displayName) {
+                await updateProfile(user, { displayName });
+            }
+            return user;
+        },
+    },
+};
+
+const FRIENDLY_ERRORS = {
+    'auth/invalid-credential': 'Wrong email or password.',
+    'auth/invalid-login-credentials': 'Wrong email or password.',
+    'auth/wrong-password': 'Wrong email or password.',
+    'auth/user-not-found': 'Wrong email or password.',
+    'auth/email-already-in-use': 'That email already has an account. Try signing in.',
+    'auth/invalid-email': 'That email address looks wrong.',
+    'auth/weak-password': 'Use at least 6 characters for your password.',
+    'auth/too-many-requests': 'Too many attempts. Wait a moment and try again.',
+    'auth/network-request-failed': 'Network problem. Check your connection.',
+    'auth/user-disabled': 'This account has been disabled.',
+    'permission-denied': 'Your account couldn’t be set up. Please try again.',
+    unavailable: 'We can’t reach Planly right now. Check your connection and try again.',
+};
+
+const errorMessage = (error) => FRIENDLY_ERRORS[error?.code] ?? 'Something went wrong. Please try again.';
+
+const NOTICES = {
+    revoked: 'Your access has been revoked.',
+};
+
+// ---------------------------------------------------------------------------
+// /login
+// ---------------------------------------------------------------------------
+Alpine.data('loginForm', () => ({
+    mode: 'signin', // 'signin' | 'signup'
+    email: '',
+    password: '',
+    displayName: '',
+    busy: false,
+    error: '',
+    info: '',
+    notice: NOTICES[new URLSearchParams(window.location.search).get('reason')] ?? '',
+
+    get isSignup() {
+        return this.mode === 'signup';
+    },
+
+    toggleMode() {
+        this.mode = this.isSignup ? 'signin' : 'signup';
+        this.error = '';
+        this.info = '';
+    },
+
+    async submit() {
+        if (this.busy) return;
+        this.busy = true;
+        this.error = '';
+        this.info = '';
+        this.notice = '';
+
+        try {
+            const provider = providers.emailPassword;
+            const user = this.isSignup
+                ? await provider.signUp({
+                      email: this.email.trim(),
+                      password: this.password,
+                      displayName: this.displayName.trim(),
+                  })
+                : await provider.signIn({ email: this.email.trim(), password: this.password });
+
+            const profile = await ensureUserDoc(user, this.displayName.trim() || null);
+            window.location.assign(homeFor(profile));
+        } catch (e) {
+            console.error(e);
+            this.error = errorMessage(e);
+            this.busy = false;
+            // Don't leave a half-signed-in state if the profile couldn't be set up.
+            if (auth.currentUser && e?.code && !e.code.startsWith('auth/')) await signOut(auth).catch(() => {});
+        }
+    },
+
+    async resetPassword() {
+        this.error = '';
+        this.info = '';
+        if (!this.email.trim()) {
+            this.error = 'Enter your email first, then tap "Forgot password?".';
+            return;
+        }
+        try {
+            await sendPasswordResetEmail(auth, this.email.trim());
+            this.info = 'If that email has an account, a reset link is on its way.';
+        } catch (e) {
+            this.error = errorMessage(e);
+        }
+    },
+}));
+
+// ---------------------------------------------------------------------------
+// /pending: waits for admin approval, updates live
+// ---------------------------------------------------------------------------
+Alpine.data('pendingPage', () => ({
+    status: window.Planly.pending?.status ?? 'pending',
+    email: window.Planly.pending?.email ?? '',
+    signedIn: Boolean(window.Planly.pending),
+    checking: false,
+    message: '',
+    unsubscribe: null,
+
+    init() {
+        const pending = window.Planly.pending;
+        if (!pending) return;
+
+        // Rules let you read your own users/{uid} doc even before approval.
+        this.unsubscribe = onSnapshot(doc(db, 'users', pending.uid), (snap) => {
+            const next = snap.data()?.status;
+            if (!next) return;
+            this.status = next;
+            if (next === 'approved') window.location.replace('/');
+        }, () => {});
+    },
+
+    destroy() {
+        this.unsubscribe?.();
+    },
+
+    /** Manual re-check (the live listener normally does this by itself). */
+    async check() {
+        if (this.checking || !auth.currentUser) return;
+        this.checking = true;
+        this.message = '';
+        try {
+            const profile = await ensureUserDoc(auth.currentUser);
+            this.status = profile.status;
+            if (profile.status === 'approved') {
+                window.location.replace('/');
+                return;
+            }
+            this.message = profile.status === 'pending' ? 'Still waiting. We’ll keep checking.' : '';
+        } catch (e) {
+            this.message = errorMessage(e);
+        }
+        this.checking = false;
+    },
+}));

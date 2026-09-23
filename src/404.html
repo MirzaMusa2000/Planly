@@ -1,0 +1,26 @@
+<!-- layout: guest | title: Page not found | page: 404 | access: public -->
+    <div class="card overflow-hidden">
+        <div class="relative h-44">
+            <include src="partials/hero-art.html" class="absolute inset-0 h-full w-full"></include>
+            <div class="relative flex h-full flex-col justify-between p-6 text-white">
+                <div class="flex items-center gap-2.5">
+                    <include src="partials/logo.html" size="h-8 w-8" id="guest"></include>
+                    <span class="text-lg font-bold tracking-tight">Planly</span>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-white/80">Error 404</p>
+                    <h1 class="text-2xl font-bold tracking-tight">Page not found</h1>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-6 sm:p-8">
+            <div class="text-center">
+                <div class="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-brand-50 text-3xl" aria-hidden="true">🧭</div>
+                <p class="mt-4 text-sm text-slate-600">We couldn&#8217;t find that page. It may have moved, or the event was removed.</p>
+                <div class="mt-6 grid gap-2">
+                    <a href="/" class="btn btn-primary w-full py-3">Back to the calendar</a>
+                </div>
+            </div>
+        </div>
+    </div>

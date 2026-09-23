@@ -1,12 +1,13 @@
 import { after, before, beforeEach, describe, test } from 'node:test';
 import { addDoc, collection, deleteDoc, doc, getDocs, setDoc, updateDoc } from 'firebase/firestore';
-import { as, asPending, assertFails, assertSucceeds, D1, D2, newEvent, seed, setupEnv } from './helpers.mjs';
+import { as, asPending, assertFails, assertSucceeds, D1, D2, newEvent, seed, seedMembers, setupEnv } from './helpers.mjs';
 
 let env;
 before(async () => (env = await setupEnv()));
 after(async () => env.cleanup());
 beforeEach(async () => {
     await env.clearFirestore();
+    await seedMembers(env);
     await seed(env, async (db) => {
         await setDoc(doc(db, 'events/c'), { ...newEvent('ali', { status: 'confirmed', finalDate: D1 }), createdAt: new Date() });
         await setDoc(doc(db, 'events/p'), { ...newEvent('ali'), createdAt: new Date() });
@@ -30,7 +31,7 @@ describe('events/{id}/itinerary', () => {
 
     test('pending users have no access', async () => {
         await assertFails(getDocs(collection(asPending(env), 'events/c/itinerary')));
-        await assertFails(add(asPending(env, 'p'), 'c', item('p')));
+        await assertFails(add(asPending(env), 'c', item('pending')));
     });
 
     test('items belong on the confirmed date of a confirmed event', async () => {

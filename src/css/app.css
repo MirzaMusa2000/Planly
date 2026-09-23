@@ -1,0 +1,264 @@
+@import 'tailwindcss';
+
+@source '../**/*.html';
+@source '../js/**/*.js';
+@source '../../build/*.js'; /* default icon classes */
+
+/*
+ * Design tokens. Dark navy chrome, lavender canvas, white cards, indigo-violet
+ * accent, pastel colour-coding.
+ */
+@theme {
+    --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* Navy chrome: sidebar, dark sheets and forms */
+    --color-ink-950: #0b1020;
+    --color-ink-900: #111a2e;
+    --color-ink-800: #1a2440;
+    --color-ink-700: #263152;
+    --color-ink-600: #36426a;
+
+    /* Page background */
+    --color-canvas: #f3f4fb;
+
+    /* Indigo-violet accent */
+    --color-brand-50: #eef0ff;
+    --color-brand-100: #e0e3ff;
+    --color-brand-200: #c7cbfe;
+    --color-brand-300: #a5aafc;
+    --color-brand-400: #8288f8;
+    --color-brand-500: #6366f1;
+    --color-brand-600: #5850e8;
+    --color-brand-700: #4a42cc;
+
+    --shadow-soft: 0 1px 2px rgb(15 23 42 / 0.04), 0 10px 30px -14px rgb(30 27 75 / 0.18);
+    --shadow-lift: 0 12px 32px -12px rgb(79 70 229 / 0.45);
+}
+
+[x-cloak] {
+    display: none !important;
+}
+
+@layer base {
+    body {
+        background:
+            radial-gradient(60rem 30rem at 100% -10%, rgb(199 203 254 / 0.45), transparent 60%),
+            radial-gradient(40rem 30rem at -10% 110%, rgb(233 213 255 / 0.4), transparent 60%),
+            var(--color-canvas);
+        background-attachment: fixed;
+    }
+}
+
+@layer components {
+    .card {
+        @apply rounded-3xl border border-white/80 bg-white shadow-soft;
+    }
+
+    .btn {
+        @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold transition
+            focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500
+            disabled:cursor-not-allowed disabled:opacity-60;
+    }
+    .btn-primary {
+        @apply bg-brand-500 text-white shadow-lift hover:bg-brand-600;
+    }
+    .btn-secondary {
+        @apply border border-slate-200 bg-white text-slate-700 hover:bg-slate-50;
+    }
+    .btn-danger {
+        @apply border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100;
+    }
+    .btn-success {
+        @apply bg-emerald-500 text-white hover:bg-emerald-600;
+    }
+
+    .label {
+        @apply mb-1.5 block text-sm font-semibold text-slate-700;
+    }
+    .input {
+        @apply block w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3 text-base text-slate-900
+            placeholder:text-slate-400 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-500/15
+            focus:outline-none sm:text-sm;
+    }
+    /* Dark variant for navy form sheets */
+    .input-dark {
+        @apply block w-full rounded-2xl border border-ink-700 bg-ink-800 px-4 py-3 text-base text-white
+            placeholder:text-slate-500 focus:border-brand-400 focus:ring-4 focus:ring-brand-500/20 focus:outline-none
+            sm:text-sm;
+    }
+
+    .chip {
+        @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+    }
+
+    .nav-link {
+        @apply flex items-center gap-3 rounded-2xl px-3.5 py-2.5 text-sm font-medium text-slate-400 transition
+            hover:bg-white/5 hover:text-white;
+    }
+    .nav-link-active {
+        @apply bg-ink-700/80 text-white;
+    }
+}
+
+/* ---------------------------------------------------------------------------
+ * FullCalendar theme
+ * ------------------------------------------------------------------------- */
+.planly-calendar {
+    --fc-border-color: #eef0f6;
+    --fc-page-bg-color: #fff;
+    --fc-neutral-bg-color: #f8fafc;
+    --fc-today-bg-color: transparent;
+    --fc-list-event-hover-bg-color: #f5f6ff;
+    --fc-small-font-size: 0.75rem;
+    font-size: 0.8125rem;
+}
+
+.planly-calendar .fc-scrollgrid {
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.planly-calendar .fc-col-header-cell {
+    padding: 0.5rem 0;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #94a3b8;
+    background: #fafbff;
+}
+
+.planly-calendar .fc-col-header-cell-cushion,
+.planly-calendar .fc-daygrid-day-number,
+.planly-calendar .fc-list-day-text,
+.planly-calendar .fc-list-day-side-text {
+    color: inherit;
+    text-decoration: none;
+}
+
+.planly-calendar .fc-daygrid-day {
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+.planly-calendar .fc-daygrid-day:hover {
+    background: #f8f9ff;
+}
+
+.planly-calendar .fc-daygrid-day-number {
+    margin: 0.25rem;
+    display: grid;
+    height: 1.75rem;
+    min-width: 1.75rem;
+    place-items: center;
+    border-radius: 9999px;
+    font-weight: 600;
+    color: #475569;
+}
+
+.planly-calendar .fc-day-today .fc-daygrid-day-number {
+    background: var(--color-brand-500);
+    color: #fff;
+}
+
+.planly-calendar .fc-day-other .fc-daygrid-day-number {
+    color: #cbd5e1;
+}
+
+.planly-calendar .fc-daygrid-day-frame {
+    min-height: 5.25rem;
+}
+
+/* Event pills */
+.planly-calendar .fc-daygrid-event.ev {
+    margin: 1px 4px 2px;
+    border-width: 0 0 0 3px;
+    border-radius: 0.5rem;
+    padding: 2px 6px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.planly-calendar .ev-label {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    overflow: hidden;
+    white-space: nowrap;
+}
+/* In narrow cells the "(proposed)" suffix gives way long before the title does. */
+.planly-calendar .ev-title {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.planly-calendar .ev-suffix {
+    flex: 0 1000 auto;
+    min-width: 0;
+    overflow: hidden;
+    font-weight: 500;
+    opacity: 0.7;
+}
+.planly-calendar .ev-star-badge {
+    flex-shrink: 0;
+}
+.planly-calendar .ev-star {
+    box-shadow: 0 0 0 1.5px #fbbf24;
+}
+.planly-calendar .fc-daygrid-more-link {
+    margin-left: 6px;
+    font-weight: 600;
+    color: var(--color-brand-600);
+}
+
+/* List view */
+.planly-calendar .fc-list {
+    border-radius: 1rem;
+    overflow: hidden;
+}
+.planly-calendar .fc-list-day-cushion {
+    background: #fafbff;
+    font-weight: 700;
+}
+.planly-calendar .fc-list-event {
+    cursor: pointer;
+}
+.planly-calendar .fc-list-event-title {
+    font-weight: 600;
+    color: #0f172a;
+}
+/* Every event is all-day, so the time column only wastes space. */
+.planly-calendar .fc-list-event-time {
+    display: none;
+}
+.planly-calendar .fc-list .ev-label {
+    flex-wrap: wrap;
+    white-space: normal;
+}
+.planly-calendar .fc-list-empty {
+    background: #fafbff;
+    color: #94a3b8;
+}
+
+/* Small screens: tighter cells, hide the "(proposed)" suffix (colour says it). */
+@media (max-width: 639px) {
+    .planly-calendar {
+        font-size: 0.6875rem;
+    }
+    .planly-calendar .fc-daygrid-day-frame {
+        min-height: 3.75rem;
+    }
+    .planly-calendar .fc-daygrid-day-number {
+        height: 1.5rem;
+        min-width: 1.5rem;
+        margin: 0.125rem;
+    }
+    .planly-calendar .fc-daygrid-event.ev {
+        margin: 1px 2px;
+        padding: 1px 3px;
+        border-left-width: 2px;
+    }
+    .planly-calendar .fc-dayGridMonth-view .ev-suffix {
+        display: none;
+    }
+}
