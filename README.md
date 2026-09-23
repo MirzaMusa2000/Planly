@@ -133,8 +133,12 @@ How voting works:
 ### 7. Tests
 
 ```bash
-php artisan test
+php artisan test        # Laravel feature + unit tests (Firebase mocked)
+npm run test:rules      # Firestore security rules, against a throwaway emulator
 ```
+
+`test:rules` uses `@firebase/rules-unit-testing` (`tests/rules/*.test.mjs`) and starts
+its own Firestore emulator, so stop `npm run emulators` first (both use port 8080).
 
 ### Windows + OneDrive gotcha
 
@@ -186,6 +190,93 @@ project outside OneDrive). Syncing thousands of small files is slow.
 
 ---
 
+## Deploying to Google Cloud Run
+
+The `Dockerfile` builds one project-agnostic image: PHP 8.3 + Apache, with the
+`grpc` and `protobuf` extensions, and assets built by Vite. **All configuration is
+runtime environment variables**, including the browser's Firebase config, which the
+server renders into the page. The first build compiles gRPC, which takes about 10–15 minutes.
+
+### 1. One-time Google Cloud setup
+
+Use the Google Cloud project that backs your Firebase project.
+
+```bash
+gcloud config set project YOUR_PROJECT_ID
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com secretmanager.googleapis.com
+
+# A dedicated identity for the service. It uses Application Default Credentials,
+# so no key file is needed in production.
+gcloud iam service-accounts create planly-run --display-name "Planly (Cloud Run)"
+SA=planly-run@YOUR_PROJECT_ID.iam.gserviceaccount.com
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID --member "serviceAccount:$SA" --role roles/datastore.user          # Firestore
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID --member "serviceAccount:$SA" --role roles/firebaseauth.admin      # custom claims, revoke tokens
+
+# APP_KEY as a secret
+php artisan key:generate --show | tr -d '\n' | gcloud secrets create planly-app-key --data-file=-
+gcloud secrets add-iam-policy-binding planly-app-key --member "serviceAccount:$SA" --role roles/secretmanager.secretAccessor
+```
+
+### 2. Deploy
+
+```bash
+gcloud run deploy planly \
+  --source . \
+  --region asia-southeast1 \
+  --allow-unauthenticated \
+  --service-account planly-run@YOUR_PROJECT_ID.iam.gserviceaccount.com \
+  --set-secrets APP_KEY=planly-app-key:latest \
+  --set-env-vars "APP_ENV=production,APP_DEBUG=false,APP_URL=https://YOUR-SERVICE-URL,APP_TIMEZONE=Asia/Kuala_Lumpur,LOG_CHANNEL=stderr,SESSION_DRIVER=cookie,SESSION_SECURE_COOKIE=true,CACHE_STORE=file,FIREBASE_PROJECT_ID=YOUR_PROJECT_ID,VITE_FIREBASE_API_KEY=...,VITE_FIREBASE_AUTH_DOMAIN=YOUR_PROJECT_ID.firebaseapp.com,VITE_FIREBASE_PROJECT_ID=YOUR_PROJECT_ID,VITE_FIREBASE_STORAGE_BUCKET=...,VITE_FIREBASE_MESSAGING_SENDER_ID=...,VITE_FIREBASE_APP_ID=...,VITE_USE_FIREBASE_EMULATORS=false"
+```
+
+Notes:
+- **Sessions use the `cookie` driver.** Cloud Run runs several instances with
+  in-memory disks, so file sessions would be lost between instances. The cookie is
+  encrypted with `APP_KEY`.
+- **`CACHE_STORE=file` is per instance.** It only caches each user's approval
+  status for up to 60 seconds. A revoked user is still signed out immediately in the
+  browser, and every instance re-checks within a minute.
+- **Leave `FIREBASE_CREDENTIALS` unset.** The service account above supplies the
+  credentials.
+- **The app refuses to start** if `APP_ENV=production` and any emulator variable is set
+  (`FIREBASE_AUTH_EMULATOR_HOST`, `FIRESTORE_EMULATOR_HOST`, or
+  `VITE_USE_FIREBASE_EMULATORS=true`). The container logs say why.
+- After the first deploy, set `APP_URL` to the service URL (or your domain), and add that
+  domain under **Firebase → Authentication → Settings → Authorized domains**.
+- Deploy the rules and indexes to the same project:
+  `npx firebase deploy --only firestore:rules,firestore:indexes`.
+- Bootstrap the first admin from your machine against production. Temporarily set
+  `FIREBASE_CREDENTIALS` to a downloaded key and unset the emulator variables, then run
+  `php artisan app:make-admin you@example.com`. Delete the key afterwards.
+
+### 3. Custom domain
+
+The simplest option is a Cloud Run domain mapping (*Cloud Run → Manage custom
+domains*), or a load balancer. Add the domain to Firebase Auth's authorized
+domains and update `APP_URL`.
+
+### 4. Optional: Firebase Hosting in front of Cloud Run
+
+This gives you a `*.web.app` domain. Add this to `firebase.json` (with an empty
+`public-hosting/` folder), then run `npx firebase deploy --only hosting`:
+
+```json
+"hosting": {
+  "public": "public-hosting",
+  "rewrites": [
+    { "source": "**", "run": { "serviceId": "planly", "region": "asia-southeast1" } }
+  ]
+}
+```
+
+⚠️ **Caveat:** Firebase Hosting forwards only one cookie, named `__session`, to Cloud Run.
+Laravel's `cookie` session driver needs two cookies, so sign-in won't stick behind
+Hosting as configured. To use Hosting you'd need `SESSION_COOKIE=__session` **and** a
+shared session store (e.g. Redis via Memorystore, or a Firestore-backed session
+driver), which this project doesn't include. Use the custom-domain option above instead.
+
+---
+
 ## Project layout
 
 ```
@@ -208,4 +299,9 @@ resources/js/ui.js                          shared UI stores (toasts, open overl
 resources/js/dates.js                       YYYY-MM-DD helpers (app timezone, no off-by-one)
 firebase.json / .firebaserc                 emulator + deploy config
 firestore.rules / firestore.indexes.json    security rules + composite indexes
+tests/rules/                                security-rules tests (npm run test:rules)
+app/Support/ProductionGuard.php             refuses to boot production with emulator settings
+app/Http/Middleware/SecurityHeaders.php     nosniff, frame-deny, referrer, HSTS
+resources/views/errors/                     friendly 403/404/419/429/500/503 pages
+Dockerfile / docker/                        Cloud Run image (Apache + grpc) and start-up script
 ```

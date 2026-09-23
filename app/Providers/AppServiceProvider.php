@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Support\Firebase\EmulatorAdminAuth;
+use App\Support\ProductionGuard;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Kreait\Firebase\Factory;
 
@@ -37,6 +39,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        ProductionGuard::check(
+            $this->app->isProduction(),
+            fn (string $name) => getenv($name) ?: env($name),
+            (bool) config('firebase.web.useEmulators'),
+        );
+
+        if ($this->app->isProduction()) {
+            // Cloud Run terminates TLS in front of the container.
+            URL::forceScheme('https');
+        }
     }
 }

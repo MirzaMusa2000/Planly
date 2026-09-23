@@ -106,6 +106,13 @@
         </div>
     </nav>
 
+    {{-- Offline banner --}}
+    <div x-data="{ online: navigator.onLine }" @online.window="online = true" @offline.window="online = false"
+         x-show="!online" x-cloak role="status"
+         class="fixed inset-x-0 top-0 z-[80] bg-amber-500 px-4 py-1.5 text-center text-sm font-semibold text-white shadow">
+        You’re offline. Live updates are paused and some actions won’t work until you reconnect.
+    </div>
+
     {{-- Toasts --}}
     <div x-data class="pointer-events-none fixed inset-x-0 bottom-24 z-[70] flex flex-col items-center gap-2 px-4 lg:bottom-6" aria-live="polite">
         <template x-for="t in $store.toast.items" :key="t.id">

@@ -13,6 +13,30 @@ return [
 
     /*
      * ------------------------------------------------------------------------
+     * Browser (Firebase JS SDK) config — Planly addition
+     * ------------------------------------------------------------------------
+     *
+     * Rendered into every page at runtime (window.Planly.firebase), so one
+     * Docker image can serve any Firebase project. These values are public by
+     * design (security comes from Auth + firestore.rules). The same VITE_*
+     * variables are also inlined at build time as a fallback for local dev.
+     */
+
+    'web' => [
+        'apiKey' => env('VITE_FIREBASE_API_KEY'),
+        'authDomain' => env('VITE_FIREBASE_AUTH_DOMAIN'),
+        'projectId' => env('VITE_FIREBASE_PROJECT_ID'),
+        'storageBucket' => env('VITE_FIREBASE_STORAGE_BUCKET'),
+        'messagingSenderId' => env('VITE_FIREBASE_MESSAGING_SENDER_ID'),
+        'appId' => env('VITE_FIREBASE_APP_ID'),
+        'useEmulators' => filter_var(env('VITE_USE_FIREBASE_EMULATORS', false), FILTER_VALIDATE_BOOLEAN),
+        'authEmulatorUrl' => env('VITE_FIREBASE_AUTH_EMULATOR_URL', 'http://127.0.0.1:9099'),
+        'firestoreEmulatorHost' => env('VITE_FIRESTORE_EMULATOR_HOST', '127.0.0.1'),
+        'firestoreEmulatorPort' => (int) env('VITE_FIRESTORE_EMULATOR_PORT', 8080),
+    ],
+
+    /*
+     * ------------------------------------------------------------------------
      * Firebase project configurations
      * ------------------------------------------------------------------------
      */

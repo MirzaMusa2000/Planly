@@ -7,6 +7,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 /**
  * Requires a Laravel session for an approved member or admin.
@@ -26,7 +27,13 @@ class EnsureApproved
             return $this->deny($request);
         }
 
-        $access = $this->users->access($user['uid']);
+        try {
+            $access = $this->users->access($user['uid']);
+        } catch (Throwable $e) {
+            // Fail closed with a friendly page rather than a stack trace.
+            report($e);
+            abort(503, 'We can’t reach the planner database right now. Please try again in a minute.');
+        }
 
         if ($access === null || $access['status'] !== FirestoreUserService::APPROVED) {
             $request->session()->invalidate();

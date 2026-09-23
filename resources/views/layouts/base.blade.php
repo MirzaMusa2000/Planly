@@ -10,8 +10,16 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=plus-jakarta-sans:400,500,600,700,800" rel="stylesheet">
 
+    @php
+        // Blade's @json must stay on one line, so build the payload first.
+        $planlyBoot = [
+            'user' => $currentUser ?? null,
+            'timezone' => config('app.timezone'),
+            'firebase' => config('firebase.web'),
+        ];
+    @endphp
     <script>
-        window.Planly = @json(['user' => $currentUser ?? null, 'timezone' => config('app.timezone')]);
+        window.Planly = @json($planlyBoot);
     </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('head')

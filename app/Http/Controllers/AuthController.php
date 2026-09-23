@@ -9,6 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Throwable;
 
 class AuthController extends Controller
 {
@@ -46,12 +47,18 @@ class AuthController extends Controller
             return response()->json(['message' => 'An email address is required.'], 422);
         }
 
-        $user = $this->users->find($token['uid']) ?? $this->users->createPending(
-            $token['uid'],
-            $token['email'],
-            $this->displayName($token, $data['displayName'] ?? null),
-            $token['picture'],
-        );
+        try {
+            $user = $this->users->find($token['uid']) ?? $this->users->createPending(
+                $token['uid'],
+                $token['email'],
+                $this->displayName($token, $data['displayName'] ?? null),
+                $token['picture'],
+            );
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json(['message' => 'We can’t reach the planner database right now. Please try again in a minute.'], 503);
+        }
 
         $request->session()->regenerate();
         $request->session()->forget(['user', 'pending']);
