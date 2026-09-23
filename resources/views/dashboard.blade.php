@@ -180,6 +180,8 @@
         </div>
     </div>
 
+    {{-- Overlays: day panel (z-50) sits below the event sheet / propose form (z-60) it can open. --}}
+    @include('partials.day-panel')
     @include('partials.propose-modal')
     @include('partials.event-sheet')
 @endsection

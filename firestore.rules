@@ -133,22 +133,34 @@ service cloud.firestore {
         allow delete: if false;
       }
 
+      // Any approved member may plan a confirmed event's day. Items must sit on
+      // the event's finalDate; end time (if any) must be after the start.
       match /itinerary/{itemId} {
+        function validItem(d) {
+          let e = event();
+          return d.keys().hasOnly(['date', 'startTime', 'endTime', 'activity', 'location', 'notes', 'order', 'createdBy'])
+              && d.keys().hasAll(['date', 'startTime', 'activity', 'order', 'createdBy'])
+              && e.status == 'confirmed'
+              && isDate(d.date)
+              && d.date == e.finalDate
+              && isTime(d.startTime)
+              && (!('endTime' in d) || d.endTime == null || (isTime(d.endTime) && d.endTime > d.startTime))
+              && isStr(d.activity, 1, 200)
+              && (!('location' in d) || isStr(d.location, 0, 200))
+              && (!('notes' in d) || isStr(d.notes, 0, 1000))
+              && d.order is number;
+        }
+
         allow read, delete: if approved();
 
-        allow create, update: if approved()
-          && request.resource.data.keys().hasOnly(['date', 'startTime', 'endTime', 'activity',
-                                                   'location', 'notes', 'order', 'createdBy'])
-          && isDate(request.resource.data.date)
-          && isTime(request.resource.data.startTime)
-          && (request.resource.data.endTime == null || isTime(request.resource.data.endTime))
-          && isStr(request.resource.data.activity, 1, 200)
-          && isStr(request.resource.data.location, 0, 200)
-          && isStr(request.resource.data.notes, 0, 1000)
-          && request.resource.data.order is number
-          && (resource == null
-                ? request.resource.data.createdBy == request.auth.uid
-                : request.resource.data.createdBy == resource.data.createdBy);
+        allow create: if approved()
+          && validItem(request.resource.data)
+          && request.resource.data.createdBy == request.auth.uid;
+
+        allow update: if approved()
+          && validItem(request.resource.data)
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.date == resource.data.date;
       }
     }
 

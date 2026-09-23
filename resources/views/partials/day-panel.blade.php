@@ -1,0 +1,163 @@
+{{-- Day panel: events on a date + itineraries. Right drawer on desktop, bottom sheet on mobile. --}}
+<div x-data="dayPanel" x-effect="syncListeners()" x-show="open" x-cloak class="fixed inset-0 z-50"
+     @keydown.escape.window="onEscape()">
+    <div class="absolute inset-0 bg-ink-950/40 backdrop-blur-sm" x-show="open" x-transition.opacity @click="close()"></div>
+
+    <div x-show="open" x-trap.noscroll="open"
+         x-transition:enter="transition duration-200 ease-out" x-transition:enter-start="translate-y-8 opacity-0 sm:translate-x-8 sm:translate-y-0"
+         x-transition:leave="transition duration-150 ease-in" x-transition:leave-end="translate-y-8 opacity-0 sm:translate-x-8 sm:translate-y-0"
+         role="dialog" aria-modal="true" aria-labelledby="day-panel-title"
+         class="absolute inset-x-0 bottom-0 flex max-h-[92dvh] flex-col rounded-t-3xl bg-white shadow-2xl sm:inset-y-0 sm:right-0 sm:left-auto sm:max-h-none sm:w-full sm:max-w-md sm:rounded-none sm:rounded-l-3xl">
+
+        {{-- Header --}}
+        <div class="flex items-center gap-2 px-5 pt-4">
+            <button type="button" @click="close()" class="grid h-9 w-9 place-items-center rounded-xl text-slate-500 hover:bg-slate-100" aria-label="Close">
+                <x-icon name="x"/>
+            </button>
+            <h2 id="day-panel-title" class="min-w-0 flex-1 truncate text-lg font-bold text-slate-900" x-text="title"></h2>
+            <button type="button" @click="shiftDay(-1)" class="grid h-9 w-9 place-items-center rounded-xl text-slate-500 hover:bg-slate-100" aria-label="Previous day">
+                <x-icon name="chevron-left" class="h-4 w-4"/>
+            </button>
+            <button type="button" @click="shiftDay(1)" class="grid h-9 w-9 place-items-center rounded-xl text-slate-500 hover:bg-slate-100" aria-label="Next day">
+                <x-icon name="chevron-right" class="h-4 w-4"/>
+            </button>
+        </div>
+
+        {{-- Week strip --}}
+        <div class="mt-3 grid grid-cols-7 gap-1 border-b border-slate-100 px-4 pb-3">
+            <template x-for="d in week" :key="d">
+                <button type="button" @click="show(d)" :aria-pressed="d === date" :aria-label="$dates.long(d)"
+                        :class="d === date ? 'bg-brand-500 text-white shadow-lift' : 'text-slate-600 hover:bg-slate-100'"
+                        class="flex flex-col items-center gap-0.5 rounded-2xl py-2 transition">
+                    <span class="text-[11px] font-semibold" :class="d === date ? 'text-white/80' : 'text-slate-400'" x-text="weekday(d)"></span>
+                    <span class="text-base leading-none font-bold" x-text="dayNumber(d)"></span>
+                    <span class="mt-0.5 h-1.5 w-1.5 rounded-full" :class="d === date && dotClass(d) !== 'bg-transparent' ? 'bg-white' : dotClass(d)"></span>
+                </button>
+            </template>
+        </div>
+
+        <div class="flex-1 overflow-y-auto px-5 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+            {{-- Nothing planned --}}
+            <template x-if="isEmpty">
+                <div class="flex flex-col items-center py-10 text-center">
+                    <div class="grid h-16 w-16 place-items-center rounded-3xl bg-brand-50 text-3xl" aria-hidden="true">🗓️</div>
+                    <p class="mt-4 text-lg font-bold text-slate-900">Nothing planned</p>
+                    <p class="mt-1 text-sm text-slate-500" x-text="isPast ? 'Nothing happened on this day.' : 'Free day! Want to make plans?'"></p>
+                    <button type="button" x-show="!isPast" @click="proposeOnThisDay()" class="btn btn-primary mt-5">
+                        <x-icon name="plus" class="h-4 w-4"/> Propose an event on this date
+                    </button>
+                </div>
+            </template>
+
+            {{-- Proposals that include this date --}}
+            <template x-for="e in proposedEvents" :key="e.id">
+                <button type="button" @click="$store.planner.open(e.id)"
+                        class="mb-3 flex w-full items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-left transition hover:bg-amber-100/70">
+                    <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-700">
+                        <x-icon name="calendar" class="h-5 w-5"/>
+                    </span>
+                    <span class="min-w-0 flex-1">
+                        <span class="flex items-center gap-1.5">
+                            <span class="truncate font-semibold text-slate-900" x-text="e.title"></span>
+                            <span class="chip shrink-0 bg-amber-200/70 text-amber-800">Proposed</span>
+                        </span>
+                        <span class="block text-xs text-amber-800"
+                              x-text="($store.planner.everyoneFree(e, date) ? '⭐ Everyone free · ' : '')
+                                    + $store.planner.availableCount(e, date) + '/' + $store.planner.approvedCount + ' free · tap to vote'"></span>
+                    </span>
+                    <x-icon name="chevron-right" class="h-4 w-4 shrink-0 text-amber-600"/>
+                </button>
+            </template>
+
+            {{-- Confirmed events with their itinerary --}}
+            <template x-for="e in confirmedEvents" :key="e.id">
+                <section class="mb-6" :aria-label="e.title">
+                    <button type="button" @click="$store.planner.open(e.id)"
+                            class="flex w-full items-center gap-3 rounded-2xl bg-emerald-50 p-3 text-left transition hover:bg-emerald-100/70">
+                        <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-emerald-500 text-white">
+                            <x-icon name="check" class="h-5 w-5"/>
+                        </span>
+                        <span class="min-w-0 flex-1">
+                            <span class="block truncate font-semibold text-slate-900" x-text="e.title"></span>
+                            <span class="block truncate text-xs text-emerald-800"
+                                  x-text="(e.location ? e.location + ' · ' : '') + e.rsvpSummary.join + ' joining'"></span>
+                        </span>
+                        <x-icon name="chevron-right" class="h-4 w-4 shrink-0 text-emerald-600"/>
+                    </button>
+
+                    <h3 class="mt-4 mb-2 text-xs font-bold tracking-wide text-slate-400 uppercase">Itinerary</h3>
+
+                    <p x-show="isLoading(e.id)" class="py-4 text-center text-sm text-slate-400">Loading…</p>
+                    <p x-show="!isLoading(e.id) && itemsFor(e.id).length === 0 && !isEditing(e.id)"
+                       class="rounded-2xl border-2 border-dashed border-slate-200 px-4 py-5 text-center text-sm text-slate-400">
+                        No plans yet for this day. Add the first stop!
+                    </p>
+
+                    {{-- Timeline --}}
+                    <ol class="space-y-2">
+                        <template x-for="(item, index) in itemsFor(e.id)" :key="item.id">
+                            <li class="flex gap-3">
+                                <span class="w-12 shrink-0 pt-3 text-right text-xs font-semibold text-slate-500" x-text="item.startTime"></span>
+
+                                <div class="min-w-0 flex-1">
+                                    {{-- Read mode --}}
+                                    <div x-show="!isEditing(e.id, item.id)" class="rounded-2xl border-l-4 px-3.5 py-2.5" :class="colour(index)">
+                                        <div class="flex items-start gap-2">
+                                            <div class="min-w-0 flex-1">
+                                                <p class="font-semibold break-words" x-text="item.activity"></p>
+                                                <p class="text-xs opacity-80" x-text="timeRange(item)"></p>
+                                                <p x-show="item.location" class="mt-1 flex items-center gap-1 text-xs opacity-90">
+                                                    <x-icon name="map-pin" class="h-3.5 w-3.5 shrink-0"/>
+                                                    <span class="break-words" x-text="item.location"></span>
+                                                </p>
+                                                <p x-show="item.notes" class="mt-1 text-xs whitespace-pre-line break-words opacity-80" x-text="item.notes"></p>
+                                                <p x-show="addedBy(item)" class="mt-1 text-[11px] opacity-60" x-text="'Added by ' + addedBy(item)"></p>
+                                            </div>
+
+                                            <div class="-mr-1 flex shrink-0 flex-col items-center">
+                                                <button type="button" @click="move(e.id, index, -1)" :disabled="!canMove(e.id, index, -1)"
+                                                        class="grid h-7 w-7 place-items-center rounded-lg hover:bg-black/5 disabled:opacity-25"
+                                                        :title="canMove(e.id, index, -1) ? 'Move up' : 'Items are ordered by start time'" aria-label="Move up">
+                                                    <x-icon name="chevron-left" class="h-4 w-4 rotate-90"/>
+                                                </button>
+                                                <button type="button" @click="move(e.id, index, 1)" :disabled="!canMove(e.id, index, 1)"
+                                                        class="grid h-7 w-7 place-items-center rounded-lg hover:bg-black/5 disabled:opacity-25"
+                                                        :title="canMove(e.id, index, 1) ? 'Move down' : 'Items are ordered by start time'" aria-label="Move down">
+                                                    <x-icon name="chevron-right" class="h-4 w-4 rotate-90"/>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="mt-1.5 flex gap-3 text-xs font-semibold">
+                                            <button type="button" @click="startEdit(e.id, item)" class="opacity-80 hover:opacity-100">Edit</button>
+                                            <button type="button" @click="remove(e.id, item)" class="text-rose-600 opacity-80 hover:opacity-100">Delete</button>
+                                        </div>
+                                    </div>
+
+                                    {{-- Edit mode --}}
+                                    <template x-if="isEditing(e.id, item.id)">
+                                        @include('partials.itinerary-form')
+                                    </template>
+                                </div>
+                            </li>
+                        </template>
+                    </ol>
+
+                    {{-- Add --}}
+                    <div class="mt-2" :class="isEditing(e.id) ? '' : 'pl-15'">
+                        <template x-if="isEditing(e.id)">
+                            @include('partials.itinerary-form')
+                        </template>
+                        <button type="button" x-show="!isEditing(e.id)" @click="startAdd(e.id)"
+                                class="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 py-2.5 text-sm font-semibold text-slate-500 transition hover:border-brand-300 hover:text-brand-600">
+                            <x-icon name="plus" class="h-4 w-4"/> Add to itinerary
+                        </button>
+                    </div>
+                </section>
+            </template>
+
+            <p x-show="!isEmpty && confirmedEvents.length === 0" class="mt-2 text-center text-xs text-slate-400">
+                Itineraries open once an event is confirmed for this day.
+            </p>
+        </div>
+    </div>
+</div>

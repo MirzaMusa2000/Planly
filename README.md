@@ -202,6 +202,7 @@ resources/js/events.js                      realtime planner store (events + mem
 resources/js/calendar.js                    FullCalendar (lazy-loaded), colour coding, ⭐ everyone free
 resources/js/propose.js                     "Propose event" sheet + multi-date picker
 resources/js/voting.js                      availability / RSVP transactions, confirm + cancel calls
+resources/js/itinerary.js                   day panel: events on a date + live itinerary (add/edit/delete/reorder)
 resources/js/dates.js                       YYYY-MM-DD helpers (app timezone, no off-by-one)
 firebase.json / .firebaserc                 emulator + deploy config
 firestore.rules / firestore.indexes.json    security rules + composite indexes

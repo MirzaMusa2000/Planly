@@ -18,7 +18,9 @@ class DashboardTest extends TestCase
             ->assertSee('Open proposals')
             ->assertSee('x-data="proposeModal"', false)
             ->assertSee('Candidate dates')
-            ->assertSee('x-data x-show="$store.planner.selected"', false);
+            ->assertSee('x-data x-show="$store.planner.selected"', false)
+            ->assertSee('x-data="dayPanel"', false)
+            ->assertSee('Add to itinerary');
     }
 
     public function test_propose_button_opens_form_in_place_on_dashboard(): void

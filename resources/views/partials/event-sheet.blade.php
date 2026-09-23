@@ -1,6 +1,6 @@
-{{-- Event details: bottom sheet on mobile, right-hand drawer on desktop. Phase 3 adds voting/RSVP. --}}
-<div x-data x-show="$store.planner.selected" x-cloak class="fixed inset-0 z-50"
-     @keydown.escape.window="$store.planner.close()">
+{{-- Event details, voting and RSVP: bottom sheet on mobile, right-hand drawer on desktop. --}}
+<div x-data x-show="$store.planner.selected" x-cloak class="fixed inset-0 z-[60]"
+     @keydown.escape.window="$store.planner.selected && $store.planner.close()">
     <div class="absolute inset-0 bg-ink-950/50 backdrop-blur-sm" x-show="$store.planner.selected" x-transition.opacity
          @click="$store.planner.close()"></div>
 
@@ -103,6 +103,13 @@
                             </template>
                         </ul>
                     </section>
+
+                    {{-- Itinerary shortcut (confirmed) --}}
+                    <button type="button" x-show="e.status === 'confirmed'"
+                            @click="const d = e.finalDate; $store.planner.close(); $dispatch('open-day', { date: d })"
+                            class="btn mt-5 w-full bg-brand-500/15 py-3 text-brand-200 hover:bg-brand-500/25">
+                        <x-icon name="clock" class="h-4 w-4"/> Plan the day
+                    </button>
 
                     {{-- RSVP (confirmed) --}}
                     <section class="mt-6" x-show="e.status === 'confirmed'">

@@ -1,5 +1,5 @@
 {{-- Propose event: dark sheet (bottom sheet on mobile, dialog on desktop). --}}
-<div x-data="proposeModal" x-show="open" x-cloak class="fixed inset-0 z-50" @keydown.escape.window="open && close()">
+<div x-data="proposeModal" x-show="open" x-cloak class="fixed inset-0 z-[60]" @keydown.escape.window="open && close()">
     <div class="absolute inset-0 bg-ink-950/60 backdrop-blur-sm" x-show="open" x-transition.opacity @click="close()"></div>
 
     <div x-show="open" x-trap.noscroll.inert="open"

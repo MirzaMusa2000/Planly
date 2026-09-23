@@ -3,6 +3,10 @@ import Alpine from 'alpinejs';
 import { format, formatShort, monthGrid, today, toUtcDate } from './dates';
 import { LIMITS, proposeEvent } from './events';
 
+// Which stacked overlays are open, so lower layers (the day panel) can ignore
+// Escape while something sits on top of them.
+Alpine.store('overlays', { propose: false });
+
 Alpine.data('proposeModal', () => ({
     LIMITS,
     open: false,
@@ -15,10 +19,11 @@ Alpine.data('proposeModal', () => ({
     cursor: { year: 0, month: 0 },
 
     init() {
+        this.$watch('open', (value) => (Alpine.store('overlays').propose = value));
+
+        // Opened from the calendar, sidebar, mobile "+" and the day panel's
+        // "propose on this date" shortcut (which passes the date).
         window.addEventListener('propose-event', (e) => this.show(e.detail?.date));
-        // Phase 2: tapping a calendar day proposes on that day. (Phase 4 turns
-        // this into the day panel, which offers the same shortcut.)
-        window.addEventListener('date-selected', (e) => this.show(e.detail?.date));
 
         if (window.location.hash === '#propose') {
             history.replaceState(null, '', window.location.pathname + window.location.search);
