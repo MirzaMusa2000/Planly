@@ -1,0 +1,53 @@
+# Render Blueprint: free-tier deployment of Planly (Docker).
+# Render dashboard → New → Blueprint → pick this repo. Values marked
+# `sync: false` are asked for once in the dashboard and never stored in git.
+services:
+  - type: web
+    name: planly
+    runtime: docker
+    plan: free
+    region: singapore
+    branch: main
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /up
+    autoDeploy: true
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_TIMEZONE
+        value: Asia/Kuala_Lumpur
+      - key: LOG_CHANNEL
+        value: stderr
+      # One instance, but cookie sessions survive restarts/redeploys.
+      - key: SESSION_DRIVER
+        value: cookie
+      - key: SESSION_SECURE_COOKIE
+        value: "true"
+      - key: CACHE_STORE
+        value: file
+      - key: VITE_USE_FIREBASE_EMULATORS
+        value: "false"
+
+      # --- Filled in on the Render dashboard (secret or project-specific) ---
+      - key: APP_KEY                        # php artisan key:generate --show
+        sync: false
+      - key: APP_URL                        # https://<your-service>.onrender.com
+        sync: false
+      - key: FIREBASE_CREDENTIALS           # paste the service-account JSON *contents*
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: VITE_FIREBASE_API_KEY
+        sync: false
+      - key: VITE_FIREBASE_AUTH_DOMAIN
+        sync: false
+      - key: VITE_FIREBASE_PROJECT_ID
+        sync: false
+      - key: VITE_FIREBASE_STORAGE_BUCKET
+        sync: false
+      - key: VITE_FIREBASE_MESSAGING_SENDER_ID
+        sync: false
+      - key: VITE_FIREBASE_APP_ID
+        sync: false

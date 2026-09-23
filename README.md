@@ -190,12 +190,39 @@ project outside OneDrive). Syncing thousands of small files is slow.
 
 ---
 
-## Deploying to Google Cloud Run
+## Free hosting on Render (recommended, $0)
 
-The `Dockerfile` builds one project-agnostic image: PHP 8.3 + Apache, with the
-`grpc` and `protobuf` extensions, and assets built by Vite. **All configuration is
+Firebase stays on the free **Spark** plan (Auth + Firestore). Laravel runs on Render's
+free Docker web service, with no credit card: 512 MB RAM, 750 hours a month (enough for one
+always-on service), 500 build minutes and 5 GB bandwidth a month.
+**Trade-off:** after 15 minutes without visitors it sleeps, and the next visit takes about a
+minute to wake it.
+
+1. Sign up at <https://render.com> with GitHub and allow access to this repository.
+2. **New → Blueprint**, pick the repo. Render reads `render.yaml` (Docker, free plan,
+   Singapore, branch `main`).
+3. Fill in the values it asks for:
+   - `APP_KEY`: from `php artisan key:generate --show`
+   - `FIREBASE_CREDENTIALS`: paste the **contents** of your service-account JSON
+     (kreait accepts the JSON itself as well as a file path)
+   - `FIREBASE_PROJECT_ID` and the six `VITE_FIREBASE_*` values: same as your `.env`
+   - `APP_URL`: `https://<service-name>.onrender.com`. Set it after the first deploy
+     shows the URL, then redeploy.
+4. The first build takes about 5 minutes. When it's live, add the `…onrender.com` domain in
+   **Firebase → Authentication → Settings → Authorized domains**.
+
+Notes: the image skips the gRPC extension by default (Firestore falls back to REST,
+which covers everything the server does). Build with `--build-arg WITH_GRPC=true` for
+a busier host. Apache is capped at 6 workers to fit 512 MB.
+
+---
+
+## Deploying to Google Cloud Run (paid, needs Blaze billing)
+
+The `Dockerfile` builds one project-agnostic image: PHP 8.3 + Apache (add
+`--build-arg WITH_GRPC=true` for the gRPC extensions), and assets built by Vite. **All configuration is
 runtime environment variables**, including the browser's Firebase config, which the
-server renders into the page. The first build compiles gRPC, which takes about 10–15 minutes.
+server renders into the page. With gRPC on, the first build takes about 10–15 minutes.
 
 ### 1. One-time Google Cloud setup
 

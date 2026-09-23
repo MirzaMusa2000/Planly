@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "demo-planly"
-  }
+    "default": "demo-planly",
+    "prod": "planly-794a5"
+  },
+  "targets": {},
+  "etags": {}
 }

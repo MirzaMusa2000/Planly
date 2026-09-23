@@ -1,8 +1,9 @@
 # syntax=docker/dockerfile:1
 #
-# Planly: Laravel + Firestore (gRPC) for Google Cloud Run.
-# Build: docker build -t planly .    (or: gcloud run deploy --source .)
-# All configuration is runtime env vars; the image is project-agnostic.
+# Planly: Laravel + Firestore. Runs on any container host that sets $PORT
+# (Render free tier, Google Cloud Run, ...). All configuration is runtime env
+# vars; the image is project-agnostic.
+# Build: docker build -t planly .
 
 # ---------------------------------------------------------------------------
 # 1) Frontend assets (Vite)
@@ -33,14 +34,18 @@ COPY routes ./routes
 RUN composer dump-autoload --no-dev --optimize --no-scripts
 
 # ---------------------------------------------------------------------------
-# 3) Runtime: PHP 8.3 + Apache, with grpc + protobuf for Firestore
+# 3) Runtime: PHP 8.3 + Apache
 # ---------------------------------------------------------------------------
 FROM php:8.3-apache AS runtime
 
-# install-php-extensions handles build deps and cleanup. grpc compiles from
-# source and takes several minutes on the first build.
+# Firestore works without gRPC (the client falls back to REST, which covers
+# everything the server does). gRPC is faster but compiles from source for
+# 10+ minutes and needs more memory, so it's opt-in:
+#   docker build --build-arg WITH_GRPC=true .
+ARG WITH_GRPC=false
 COPY --from=mlocati/php-extension-installer:2 /usr/bin/install-php-extensions /usr/local/bin/
-RUN install-php-extensions grpc protobuf opcache
+RUN install-php-extensions opcache \
+ && if [ "$WITH_GRPC" = "true" ]; then install-php-extensions grpc protobuf; fi
 
 # Apache: serve /public, enable rewrites, listen on Cloud Run's $PORT.
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public \
