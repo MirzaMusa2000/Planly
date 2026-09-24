@@ -124,5 +124,6 @@ build/html-templates.js                     layouts, <include>, <x-icon>, clean 
 firestore.rules, firestore.indexes.json     security rules + composite indexes
 tests/rules/                                rules tests (npm run test:rules)
 scripts/make-admin.mjs                      bootstrap the first admin
+scripts/generate-icons.mjs                  app icons + favicon (npm run icons)
 firebase.json                               Hosting (dist/, clean URLs, headers) + emulators
 ```

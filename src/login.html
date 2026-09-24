@@ -66,6 +66,16 @@
                 </div>
             </div>
 
+            <label class="flex cursor-pointer items-start gap-3 select-none">
+                <input type="checkbox" x-model="remember"
+                       class="mt-0.5 h-[18px] w-[18px] shrink-0 cursor-pointer rounded accent-brand-600">
+                <span class="text-sm">
+                    <span class="font-semibold text-slate-700">Remember me</span>
+                    <span class="block text-xs text-slate-500"
+                          x-text="remember ? 'Stay signed in on this device.' : 'You’ll be signed out when you close the browser.'"></span>
+                </span>
+            </label>
+
             <p x-show="error" x-text="error" x-cloak role="alert"
                class="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700"></p>
             <p x-show="info" x-text="info" x-cloak role="status"

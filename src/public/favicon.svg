@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#818cf8"/>
+      <stop offset="0.55" stop-color="#6366f1"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="150" cy="96" r="300" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="116" fill="url(#glow)"/>
+  <g transform="">
+  <g transform="translate(-30 8)"><!-- optically centre calendar + star -->
+    <!-- calendar body with a tinted header band -->
+    <rect x="104" y="136" width="304" height="276" rx="56" fill="#fff"/>
+    <path d="M104 192a56 56 0 0 1 56-56h192a56 56 0 0 1 56 56v22H104z" fill="#e0e7ff"/>
+    <!-- binder rings -->
+    <rect x="168" y="96" width="36" height="88" rx="18" fill="#fff"/>
+    <rect x="308" y="96" width="36" height="88" rx="18" fill="#fff"/>
+    <rect x="176" y="104" width="20" height="72" rx="10" fill="#c7d2fe"/>
+    <rect x="316" y="104" width="20" height="72" rx="10" fill="#c7d2fe"/>
+    <!-- tick -->
+    <path d="M178 312l50 50 108-112" fill="none" stroke="#6366f1" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- "everyone free" star -->
+    <path d="M404 92l21.7 44 48.5 7-35.1 34.2 8.3 48.3L404 202.7l-43.4 22.8 8.3-48.3-35.1-34.2 48.5-7z"
+          fill="#fbbf24" stroke="#fff" stroke-width="14" stroke-linejoin="round"/>
+  </g>
+  </g>
+</svg>

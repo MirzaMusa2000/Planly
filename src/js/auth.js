@@ -1,8 +1,11 @@
 // Sign-in / sign-up (login page) and the waiting-for-approval page.
 import Alpine from 'alpinejs';
 import {
+    browserLocalPersistence,
+    browserSessionPersistence,
     createUserWithEmailAndPassword,
     sendPasswordResetEmail,
+    setPersistence,
     signInWithEmailAndPassword,
     signOut,
     updateProfile,
@@ -53,12 +56,45 @@ const NOTICES = {
     revoked: 'Your access has been revoked.',
 };
 
+// "Remember me": the choice and the last email are kept on this device only.
+// Storage can be unavailable (private mode, blocked site data), so every
+// access is guarded and the form still works without it.
+const PREFS = { remember: 'planly.rememberMe', email: 'planly.email' };
+
+function readPref(key) {
+    try {
+        return window.localStorage.getItem(key);
+    } catch {
+        return null;
+    }
+}
+
+function writePrefs(remember, email) {
+    try {
+        window.localStorage.setItem(PREFS.remember, remember ? '1' : '0');
+        if (remember && email) window.localStorage.setItem(PREFS.email, email);
+        else window.localStorage.removeItem(PREFS.email);
+    } catch {
+        // Not critical: the sign-in itself still honours the choice.
+    }
+}
+
+/**
+ * Remember me on: stay signed in on this device (localStorage, survives closing
+ * the browser). Off: signed out when the browser closes (sessionStorage).
+ * Must be applied before signing in.
+ */
+export function applyRememberMe(remember) {
+    return setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence);
+}
+
 // ---------------------------------------------------------------------------
 // /login
 // ---------------------------------------------------------------------------
 Alpine.data('loginForm', () => ({
     mode: 'signin', // 'signin' | 'signup'
-    email: '',
+    remember: readPref(PREFS.remember) !== '0', // on by default
+    email: readPref(PREFS.remember) !== '0' ? readPref(PREFS.email) ?? '' : '',
     password: '',
     displayName: '',
     busy: false,
@@ -84,6 +120,9 @@ Alpine.data('loginForm', () => ({
         this.notice = '';
 
         try {
+            await applyRememberMe(this.remember);
+            writePrefs(this.remember, this.email.trim());
+
             const provider = providers.emailPassword;
             const user = this.isSignup
                 ? await provider.signUp({
