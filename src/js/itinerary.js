@@ -18,6 +18,7 @@ import { db } from './firebase';
 import { addDays, daysInRange, format, today, toUtcDate } from './dates';
 import { errorMessage } from './voting';
 import { confirmDialog } from './ui';
+import { t } from './i18n';
 
 export const ITEM_LIMITS = { activity: 200, location: 200, notes: 1000 };
 
@@ -76,7 +77,7 @@ export function itineraryEditor() {
                     };
                 }, (error) => {
                     console.error(error);
-                    Alpine.store('toast').show('Couldn’t load the itinerary.', 'error');
+                    Alpine.store('toast').show(t('Couldn’t load the itinerary.'), 'error');
                 }));
             }
         },
@@ -149,9 +150,9 @@ export function itineraryEditor() {
 
         validate() {
             const f = this.form;
-            if (!/^\d{2}:\d{2}$/.test(f.startTime)) return 'Pick a start time.';
-            if (f.endTime && f.endTime <= f.startTime) return 'End time must be after the start time.';
-            if (!f.activity.trim()) return 'What’s the activity?';
+            if (!/^\d{2}:\d{2}$/.test(f.startTime)) return t('Pick a start time.');
+            if (f.endTime && f.endTime <= f.startTime) return t('End time must be after the start time.');
+            if (!f.activity.trim()) return t('What’s the activity?');
             return '';
         },
 
@@ -192,11 +193,11 @@ export function itineraryEditor() {
 
         remove(eventId, item) {
             return confirmDialog({
-                title: 'Remove from the plan?',
-                message: 'It’s removed from the itinerary for everyone.',
+                title: t('Remove from the plan?'),
+                message: t('It’s removed from the itinerary for everyone.'),
                 detail: item.activity,
                 detailSub: [this.timeRange(item), item.location].filter(Boolean).join(' · '),
-                confirmLabel: 'Remove',
+                confirmLabel: t('Remove'),
                 tone: 'danger',
                 icon: 'trash',
                 action: async () => {
@@ -291,7 +292,7 @@ Alpine.data('dayPanel', () => ({
     /** "Day 2 of 3" for a multi-day event, else ''. */
     dayOf(event, date) {
         const days = daysInRange(event.finalDate, event.finalEndDate);
-        return days.length > 1 ? `Day ${days.indexOf(date) + 1} of ${days.length}` : '';
+        return days.length > 1 ? t('Day {n} of {total}', { n: days.indexOf(date) + 1, total: days.length }) : '';
     },
 
     get confirmedEvents() {

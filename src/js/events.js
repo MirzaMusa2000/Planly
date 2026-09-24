@@ -8,6 +8,7 @@ import { db } from './firebase';
 import { dayCount, format, formatLong, formatRange, formatRangeLong, formatShort, today } from './dates';
 import { cancelEvent, confirmEvent, errorMessage, setAvailability, setRsvp } from './voting';
 import { confirmDialog } from './ui';
+import { t, tn } from './i18n';
 
 // $dates in templates: $dates.short(d), $dates.long(d), $dates.range(a, b), $dates.month(d), $dates.day(d)
 Alpine.magic('dates', () => ({
@@ -132,7 +133,7 @@ Alpine.store('planner', {
     freeLine(event, date) {
         const names = this.votesLoading ? null : this.freeNames(date);
         const count = names ? names.length : this.availableCount(event, date);
-        const base = `${count}/${this.approvedCount} free`;
+        const base = t('{count}/{total} free', { count, total: this.approvedCount });
         return names?.length ? `${base}: ${names.join(', ')}` : base;
     },
 
@@ -178,11 +179,11 @@ Alpine.store('planner', {
     confirmDate(event, date) {
         const days = this.optionDays(event, date);
         return confirmDialog({
-            title: days > 1 ? 'Confirm these dates?' : 'Confirm this date?',
-            message: 'Voting closes and everyone can RSVP.',
+            title: days > 1 ? t('Confirm these dates?') : t('Confirm this date?'),
+            message: t('Voting closes and everyone can RSVP.'),
             detail: event.title,
             detailSub: `${formatRangeLong(date, this.endOf(event, date))} · ${this.freeLine(event, date)}`,
-            confirmLabel: days > 1 ? `Confirm ${days} days` : 'Confirm date',
+            confirmLabel: days > 1 ? t('Confirm {n} days', { n: days }) : t('Confirm date'),
             tone: 'success',
             icon: 'calendar-check',
             action: () => this.run(`${event.id}:manage`, () => confirmEvent(event, date), (r) => r.message),
@@ -191,14 +192,14 @@ Alpine.store('planner', {
 
     cancel(event) {
         return confirmDialog({
-            title: 'Cancel this event?',
-            message: 'It disappears from everyone’s calendar. This can’t be undone.',
+            title: t('Cancel this event?'),
+            message: t('It disappears from everyone’s calendar. This can’t be undone.'),
             detail: event.title,
             detailSub: event.status === 'confirmed'
                 ? this.whenLong(event)
-                : `Proposed · ${event.candidateDates.length} date ${event.candidateDates.length === 1 ? 'option' : 'options'}`,
-            confirmLabel: 'Cancel event',
-            cancelLabel: 'Keep it',
+                : `${t('Proposed')} · ${tn(event.candidateDates.length, '{n} date option', '{n} date options')}`,
+            confirmLabel: t('Cancel event'),
+            cancelLabel: t('Keep it'),
             tone: 'danger',
             icon: 'calendar-x',
             action: () => this.run(`${event.id}:manage`, async () => {
@@ -321,7 +322,7 @@ function openLinkedEvent() {
     if (store.loading) return; // tried again once events arrive
     history.replaceState(null, '', window.location.pathname + window.location.search);
     if (store.events.some((e) => e.id === id)) store.open(id);
-    else toast('That event is no longer open.', 'error');
+    else toast(t('That event is no longer open.'), 'error');
 }
 window.addEventListener('hashchange', openLinkedEvent);
 
@@ -338,7 +339,7 @@ export async function startEventsFeed() {
 
     const onError = (error) => {
         console.error(error);
-        store.error = 'Couldn’t load events. Check your connection and refresh.';
+        store.error = t('Couldn’t load events. Check your connection and refresh.');
         store.loading = false;
     };
 
@@ -368,12 +369,12 @@ export async function proposeEvent({ title, description, location, options }) {
     const sorted = [...options].sort((a, b) => a.start.localeCompare(b.start));
     const dates = sorted.map((o) => o.start);
 
-    if (!title.trim()) throw new Error('Give your event a title.');
-    if (dates.length === 0) throw new Error('Pick at least one date.');
-    if (dates.length > LIMITS.dates) throw new Error(`Pick at most ${LIMITS.dates} date options.`);
+    if (!title.trim()) throw new Error(t('Give your event a title.'));
+    if (dates.length === 0) throw new Error(t('Pick at least one date.'));
+    if (dates.length > LIMITS.dates) throw new Error(t('Pick at most {n} date options.', { n: LIMITS.dates }));
     sorted.forEach((o, i) => {
-        if (o.end < o.start || dayCount(o.start, o.end) > LIMITS.rangeDays) throw new Error(`A date option can be at most ${LIMITS.rangeDays} days.`);
-        if (i > 0 && o.start <= sorted[i - 1].end) throw new Error('Date options can’t overlap.');
+        if (o.end < o.start || dayCount(o.start, o.end) > LIMITS.rangeDays) throw new Error(t('A date option can be at most {n} days.', { n: LIMITS.rangeDays }));
+        if (i > 0 && o.start <= sorted[i - 1].end) throw new Error(t('Date options can’t overlap.'));
     });
     const candidateEnds = Object.fromEntries(sorted.filter((o) => o.end !== o.start).map((o) => [o.start, o.end]));
 

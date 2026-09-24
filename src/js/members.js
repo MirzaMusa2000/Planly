@@ -6,9 +6,10 @@ import { collection, doc, onSnapshot, serverTimestamp, updateDoc } from 'firebas
 import { approvedUser } from './session';
 import { db } from './firebase';
 import { confirmDialog } from './ui';
+import { locale, t } from './i18n';
 
 const TIMEZONE = window.Planly?.timezone || 'Asia/Kuala_Lumpur';
-const joinedFormat = new Intl.DateTimeFormat('en-GB', { timeZone: TIMEZONE, day: 'numeric', month: 'short', year: 'numeric' });
+const joinedFormat = new Intl.DateTimeFormat(locale, { timeZone: TIMEZONE, day: 'numeric', month: 'short', year: 'numeric' });
 
 // Pastel avatars, picked per user so colours stay stable.
 const AVATARS = [
@@ -18,9 +19,9 @@ const AVATARS = [
 
 function relative(date) {
     const days = Math.round((Date.now() - date.getTime()) / 86_400_000);
-    if (days <= 0) return 'today';
-    if (days === 1) return 'yesterday';
-    if (days < 30) return `${days} days ago`;
+    if (days <= 0) return t('today');
+    if (days === 1) return t('yesterday');
+    if (days < 30) return t('{n} days ago', { n: days });
     return joinedFormat.format(date);
 }
 
@@ -55,7 +56,7 @@ Alpine.data('membersPage', () => ({
             this.loading = false;
         }, (e) => {
             console.error(e);
-            this.error = 'Couldn’t load members. Check your connection and refresh.';
+            this.error = t('Couldn’t load members. Check your connection and refresh.');
             this.loading = false;
         });
     },
@@ -63,9 +64,9 @@ Alpine.data('membersPage', () => ({
     get sections() {
         const by = (status) => this.users.filter((u) => u.status === status);
         return [
-            { key: 'pending', title: 'Waiting for approval', users: by('pending'), empty: 'No one is waiting.', chip: 'bg-amber-100 text-amber-700' },
-            { key: 'approved', title: 'Members', users: by('approved'), empty: 'No approved members yet.', chip: 'bg-emerald-100 text-emerald-700' },
-            { key: 'rejected', title: 'Rejected or revoked', users: by('rejected'), empty: 'Nobody here.', chip: 'bg-slate-200 text-slate-600' },
+            { key: 'pending', title: t('Waiting for approval'), users: by('pending'), empty: t('No one is waiting.'), chip: 'bg-amber-100 text-amber-700' },
+            { key: 'approved', title: t('Members'), users: by('approved'), empty: t('No approved members yet.'), chip: 'bg-emerald-100 text-emerald-700' },
+            { key: 'rejected', title: t('Rejected or revoked'), users: by('rejected'), empty: t('Nobody here.'), chip: 'bg-slate-200 text-slate-600' },
         ];
     },
 
@@ -81,8 +82,8 @@ Alpine.data('membersPage', () => ({
 
     joinedLine(user, section) {
         const parts = [];
-        if (user.createdAt) parts.push(`Joined ${joinedFormat.format(user.createdAt)}`);
-        if (section === 'approved' && user.approvedAt) parts.push(`Approved ${relative(user.approvedAt)}`);
+        if (user.createdAt) parts.push(t('Joined {date}', { date: joinedFormat.format(user.createdAt) }));
+        if (section === 'approved' && user.approvedAt) parts.push(t('Approved {when}', { when: relative(user.approvedAt) }));
         return parts.join(' · ');
     },
 
@@ -97,7 +98,7 @@ Alpine.data('membersPage', () => ({
             Alpine.store('toast').show(message);
         } catch (e) {
             console.error(e);
-            Alpine.store('toast').show(e?.code === 'permission-denied' ? 'Only admins can do that.' : 'That didn’t work. Please try again.', 'error');
+            Alpine.store('toast').show(e?.code === 'permission-denied' ? t('Only admins can do that.') : t('That didn’t work. Please try again.'), 'error');
         } finally {
             const { [user.uid]: _, ...rest } = this.busy;
             this.busy = rest;
@@ -109,23 +110,23 @@ Alpine.data('membersPage', () => ({
             status: 'approved',
             approvedAt: serverTimestamp(),
             approvedBy: this.me,
-        }, `Approved ${this.label(user)}.`);
+        }, t('Approved {name}.', { name: this.label(user) }));
     },
 
     reject(user) {
-        return this.setStatus(user, { status: 'rejected' }, `Rejected ${this.label(user)}.`);
+        return this.setStatus(user, { status: 'rejected' }, t('Rejected {name}.', { name: this.label(user) }));
     },
 
     revoke(user) {
         return confirmDialog({
-            title: 'Revoke access?',
-            message: 'They’ll be signed out of Planly right away. You can approve them again later.',
+            title: t('Revoke access?'),
+            message: t('They’ll be signed out of Planly right away. You can approve them again later.'),
             detail: this.label(user),
             detailSub: user.displayName && user.email ? user.email : '',
-            confirmLabel: 'Revoke access',
+            confirmLabel: t('Revoke access'),
             tone: 'danger',
             icon: 'user-x',
-            action: () => this.setStatus(user, { status: 'rejected' }, `Revoked access for ${this.label(user)}.`),
+            action: () => this.setStatus(user, { status: 'rejected' }, t('Revoked access for {name}.', { name: this.label(user) })),
         });
     },
 }));
@@ -134,13 +135,13 @@ Alpine.data('membersPage', () => ({
 Alpine.data('greeting', () => {
     const now = new Date();
     const hour = Number(new Intl.DateTimeFormat('en-GB', { timeZone: TIMEZONE, hour: 'numeric', hourCycle: 'h23' }).format(now));
-    const [salutation, emoji] = hour < 12 ? ['Good morning', '☀️'] : hour < 18 ? ['Good afternoon', '🌤️'] : ['Good evening', '🌙'];
+    const [salutation, emoji] = hour < 12 ? [t('Good morning'), '☀️'] : hour < 18 ? [t('Good afternoon'), '🌤️'] : [t('Good evening'), '🌙'];
     return {
         salutation,
         emoji,
-        today: new Intl.DateTimeFormat('en-GB', { timeZone: TIMEZONE, weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).format(now),
+        today: new Intl.DateTimeFormat(locale, { timeZone: TIMEZONE, weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).format(now),
         get firstName() {
-            return (window.Planly.user?.displayName || '').split(' ')[0] || 'there';
+            return (window.Planly.user?.displayName || '').split(' ')[0] || t('there');
         },
     };
 });

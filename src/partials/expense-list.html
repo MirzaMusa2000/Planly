@@ -5,23 +5,23 @@
         <span class="grid h-9 w-9 place-items-center rounded-xl bg-emerald-50 text-emerald-600">
             <x-icon name="receipt" class="h-[18px] w-[18px]"/>
         </span>
-        <h2 id="expenses-title" class="text-base font-bold text-slate-900">Expenses</h2>
+        <h2 id="expenses-title" class="text-base font-bold text-slate-900" data-t>Expenses</h2>
     </div>
 
-    <p x-show="loading" class="py-6 text-center text-sm text-slate-400">Loading…</p>
+    <p x-show="loading" class="py-6 text-center text-sm text-slate-400" data-t>Loading…</p>
     <p x-show="!loading && !expenses.length && !(formOpen && !form.id)"
-       class="mt-4 rounded-2xl border-2 border-dashed border-slate-200 px-4 py-5 text-center text-sm text-slate-400">
+       class="mt-4 rounded-2xl border-2 border-dashed border-slate-200 px-4 py-5 text-center text-sm text-slate-400" data-t>
         No expenses yet. Add what’s been paid, like the glamping or the groceries.
     </p>
 
     <!-- Column headings (wider screens) -->
     <div x-show="rows.length" aria-hidden="true"
          class="mt-4 hidden grid-cols-[1.75rem_minmax(0,1fr)_6.5rem_6rem_5.5rem] gap-3 border-b border-slate-100 pb-2 text-[11px] font-bold tracking-wide text-slate-400 uppercase sm:grid">
-        <span class="text-right">No</span>
-        <span>Item</span>
-        <span>Paid by</span>
-        <span class="text-right">Amount</span>
-        <span class="text-right">Each</span>
+        <span class="text-right" data-t>No</span>
+        <span data-t>Item</span>
+        <span data-t>Paid by</span>
+        <span class="text-right" data-t>Amount</span>
+        <span class="text-right" data-t>Each</span>
     </div>
 
     <ul class="divide-y divide-slate-100" :class="rows.length ? 'mt-3 sm:mt-0' : ''">
@@ -29,7 +29,7 @@
             <li>
                 <!-- Read mode -->
                 <button type="button" x-show="!isEditing(row.id)" @click="openEdit(row)" :disabled="!canEdit(row)"
-                        :aria-label="canEdit(row) ? 'Edit ' + row.item : row.item"
+                        :aria-label="canEdit(row) ? $t('Edit {item}', { item: row.item }) : row.item"
                         class="grid w-full grid-cols-[1.75rem_minmax(0,1fr)_auto] items-center gap-3 rounded-xl py-2.5 text-left transition enabled:hover:bg-slate-50 disabled:cursor-default sm:grid-cols-[1.75rem_minmax(0,1fr)_6.5rem_6rem_5.5rem]">
                     <span class="text-right text-xs font-semibold text-slate-400" x-text="row.no"></span>
 
@@ -37,9 +37,9 @@
                         <span class="block font-semibold break-words text-slate-900" x-text="row.item"></span>
                         <!-- Payer and share under the item on phones -->
                         <span class="block text-xs text-slate-500 sm:hidden"
-                              x-text="'Paid by ' + memberName(row.paidBy) + ' · ' + formatRM(row.eachCents) + ' each'"></span>
+                              x-text="$t('Paid by {name} · {amount} each', { name: memberName(row.paidBy), amount: formatRM(row.eachCents) })"></span>
                         <span class="block text-xs text-slate-400" x-show="row.splitWith.length !== participants.size"
-                              x-text="'Split: ' + splitLabel(row)"></span>
+                              x-text="$t('Split: {names}', { names: splitLabel(row) })"></span>
                         <span x-show="row.notes" class="block text-xs break-words text-slate-400" x-text="row.notes"></span>
                     </span>
 
@@ -64,11 +64,11 @@
     <div x-show="rows.length"
          class="mt-1 grid grid-cols-[1.75rem_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl bg-slate-50 py-3 pr-1 sm:grid-cols-[1.75rem_minmax(0,1fr)_6.5rem_6rem_5.5rem]">
         <span></span>
-        <span class="text-sm font-bold text-slate-900">Total overall</span>
+        <span class="text-sm font-bold text-slate-900" data-t>Total overall</span>
         <span class="hidden sm:block"></span>
         <span class="text-right font-bold text-slate-900" x-text="formatRM(totalCents)"></span>
         <span class="hidden text-right text-sm font-semibold text-slate-600 sm:block" x-text="formatRM(eachCents)"
-              :title="evenSplit ? 'Each person' : 'Average per person (some items are split differently)'"></span>
+              :title="evenSplit ? $t('Each person') : $t('Average per person (some items are split differently)')"></span>
     </div>
 
     <!-- Add -->
@@ -78,7 +78,7 @@
         </template>
         <button type="button" x-show="!(formOpen && !form.id)" @click="openAdd()"
                 class="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 py-2.5 text-sm font-semibold text-slate-500 transition hover:border-emerald-300 hover:text-emerald-600">
-            <x-icon name="plus" class="h-4 w-4"/> Add expense
+            <x-icon name="plus" class="h-4 w-4"/> <span data-t>Add expense</span>
         </button>
     </div>
 </section>

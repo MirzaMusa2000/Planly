@@ -2,6 +2,7 @@
 import Alpine from 'alpinejs';
 import { startEventsFeed } from './events';
 import { addDays } from './dates';
+import { lang, t } from './i18n';
 
 // FullCalendar is loaded on demand so pages without a calendar stay light.
 const loadFullCalendar = () =>
@@ -10,9 +11,11 @@ const loadFullCalendar = () =>
         import('@fullcalendar/daygrid'),
         import('@fullcalendar/list'),
         import('@fullcalendar/interaction'),
-    ]).then(([core, dayGrid, list, interaction]) => ({
+        lang === 'ms' ? import('@fullcalendar/core/locales/ms') : null,
+    ]).then(([core, dayGrid, list, interaction, ms]) => ({
         Calendar: core.Calendar,
         plugins: [dayGrid.default, list.default, interaction.default],
+        locale: ms?.default ?? 'en-gb',
     }));
 
 const COLOURS = {
@@ -72,7 +75,7 @@ function renderEventContent(arg) {
         const badge = document.createElement('span');
         badge.className = 'ev-star-badge';
         badge.textContent = '⭐';
-        badge.title = 'Everyone free';
+        badge.title = t('Everyone free');
         wrap.append(badge);
     }
 
@@ -84,7 +87,7 @@ function renderEventContent(arg) {
     if (kind === 'proposed') {
         const suffix = document.createElement('span');
         suffix.className = 'ev-suffix';
-        suffix.textContent = ' (proposed)';
+        suffix.textContent = ` (${t('proposed')})`;
         wrap.append(suffix);
     }
 
@@ -99,9 +102,9 @@ Alpine.data('calendarView', () => {
         title: '',
         view: 'dayGridMonth',
         views: [
-            { id: 'dayGridMonth', label: 'Month' },
-            { id: 'dayGridWeek', label: 'Week' },
-            { id: 'listMonth', label: 'List' },
+            { id: 'dayGridMonth', label: t('Month') },
+            { id: 'dayGridWeek', label: t('Week') },
+            { id: 'listMonth', label: t('List') },
         ],
 
         async init() {
@@ -109,10 +112,11 @@ Alpine.data('calendarView', () => {
             const compact = window.matchMedia('(max-width: 639px)').matches;
 
             startEventsFeed();
-            const { Calendar, plugins } = await loadFullCalendar();
+            const { Calendar, plugins, locale } = await loadFullCalendar();
 
             calendar = new Calendar(this.$refs.calendar, {
                 plugins,
+                locale,
                 initialView: this.view,
                 headerToolbar: false,
                 height: 'auto',
@@ -132,7 +136,7 @@ Alpine.data('calendarView', () => {
                     this.title = calendar.view.title;
                     this.view = calendar.view.type;
                 },
-                noEventsContent: 'Nothing planned in this period',
+                noEventsContent: t('Nothing planned in this period'),
             });
             calendar.render();
 

@@ -9,6 +9,9 @@ import { itineraryEditor } from './itinerary';
 import { daysInRange, format, today, toUtcDate } from './dates';
 import { errorMessage } from './voting';
 import { confirmDialog } from './ui';
+import { t } from './i18n';
+
+const tr = t; // countdown() has a local `t` (today)
 
 export const CHECKLIST_LIMITS = { item: 120, quantity: 40, notes: 500 };
 
@@ -87,17 +90,17 @@ Alpine.data('itineraryPage', () => {
 
         /** "Day 2 · Sat 3 Oct" */
         dayHeading(e, day) {
-            return `Day ${this.eventDays(e).indexOf(day) + 1} · ${format(day, { weekday: 'short', day: 'numeric', month: 'short' })}`;
+            return `${t('Day {n}', { n: this.eventDays(e).indexOf(day) + 1 })} · ${format(day, { weekday: 'short', day: 'numeric', month: 'short' })}`;
         },
 
         countdown(e) {
             const t = today();
             if (e.finalDate <= t && t <= e.finalEndDate) {
-                return this.isMultiDay(e) ? `Happening now · Day ${this.eventDays(e).indexOf(t) + 1}` : 'Today';
+                return this.isMultiDay(e) ? tr('Happening now · Day {n}', { n: this.eventDays(e).indexOf(t) + 1 }) : tr('Today');
             }
             const days = Math.round((toUtcDate(e.finalDate) - toUtcDate(t)) / 86_400_000);
-            if (days === 1) return 'Tomorrow';
-            return `In ${days} days`;
+            if (days === 1) return tr('Tomorrow');
+            return tr('In {n} days', { n: days });
         },
 
         /** "Oct" or "Sept–Oct" for the date badge. */
@@ -138,7 +141,7 @@ Alpine.data('itineraryPage', () => {
             }, (error) => {
                 console.error(error);
                 this.checklistLoading = false;
-                toast('Couldn’t load the checklist.', 'error');
+                toast(t('Couldn’t load the checklist.'), 'error');
             });
         },
 
@@ -165,7 +168,7 @@ Alpine.data('itineraryPage', () => {
         },
 
         get emptyFilterText() {
-            return this.filter === 'mine' ? 'Nothing assigned to you.' : 'Everything’s done! 🎉';
+            return this.filter === 'mine' ? t('Nothing assigned to you.') : t('Everything’s done! 🎉');
         },
 
         isEditingRow(id) {
@@ -201,7 +204,7 @@ Alpine.data('itineraryPage', () => {
             if (this.listBusy || !this.event) return;
             const f = this.listForm;
             if (!f.item.trim()) {
-                this.listError = 'What’s the item?';
+                this.listError = t('What’s the item?');
                 return;
             }
 
@@ -255,11 +258,11 @@ Alpine.data('itineraryPage', () => {
             if (!f.id || !this.event) return;
             const eventId = this.event.id;
             return confirmDialog({
-                title: 'Remove from the checklist?',
-                message: 'It’s removed for everyone.',
+                title: t('Remove from the checklist?'),
+                message: t('It’s removed for everyone.'),
                 detail: f.item,
-                detailSub: [f.quantity && `Qty ${f.quantity}`, this.memberName(f.picUid)].filter(Boolean).join(' · '),
-                confirmLabel: 'Remove',
+                detailSub: [f.quantity && t('Qty {qty}', { qty: f.quantity }), this.memberName(f.picUid)].filter(Boolean).join(' · '),
+                confirmLabel: t('Remove'),
                 tone: 'danger',
                 icon: 'trash',
                 action: async () => {

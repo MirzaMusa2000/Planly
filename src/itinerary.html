@@ -1,8 +1,8 @@
 <!-- layout: app | title: Itinerary | page: itinerary | access: approved -->
     <div x-data="itineraryPage" x-effect="sync()">
         <div class="mb-6">
-            <h1 class="text-2xl font-bold tracking-tight text-slate-900">Itinerary</h1>
-            <p class="mt-1 text-sm text-slate-500">The plan and the checklist for upcoming events.</p>
+            <h1 class="text-2xl font-bold tracking-tight text-slate-900" data-t>Itinerary</h1>
+            <p class="mt-1 text-sm text-slate-500" data-t>The plan and the checklist for upcoming events.</p>
         </div>
 
         <p x-show="store.error" x-text="store.error" x-cloak role="alert" class="mb-5 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700"></p>
@@ -16,10 +16,10 @@
         <!-- No upcoming event -->
         <div x-show="!store.loading && !event" x-cloak class="card flex flex-col items-center px-6 py-14 text-center">
             <div class="grid h-16 w-16 place-items-center rounded-3xl bg-brand-50 text-3xl" aria-hidden="true">🏕️</div>
-            <p class="mt-4 text-lg font-bold text-slate-900">No upcoming event</p>
-            <p class="mt-1 max-w-sm text-sm text-slate-500">Once an event is confirmed, its itinerary and checklist show up here.</p>
+            <p class="mt-4 text-lg font-bold text-slate-900" data-t>No upcoming event</p>
+            <p class="mt-1 max-w-sm text-sm text-slate-500" data-t>Once an event is confirmed, its itinerary and checklist show up here.</p>
             <a href="/" class="btn btn-primary mt-6">
-                <x-icon name="calendar" class="h-4 w-4"/> Go to calendar
+                <x-icon name="calendar" class="h-4 w-4"/> <span data-t>Go to calendar</span>
             </a>
         </div>
 
@@ -27,7 +27,7 @@
         <template x-for="e in (event ? [event] : [])" :key="e.id">
             <div>
                 <!-- Event switcher -->
-                <div x-show="events.length > 1" class="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden"
+                <div data-t-attr="aria-label" x-show="events.length > 1" class="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden"
                      role="tablist" aria-label="Upcoming events">
                     <template x-for="option in events" :key="option.id">
                         <button type="button" role="tab" @click="select(option.id)" :aria-selected="option.id === e.id"
@@ -40,7 +40,7 @@
                 </div>
 
                 <!-- Event header -->
-                <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 via-brand-600 to-violet-700 p-5 text-white shadow-lift sm:p-6">
+                <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 via-brand-600 to-violet-600 p-5 text-white shadow-lift sm:p-6">
                     <div class="flex items-start gap-4">
                         <span class="grid w-16 shrink-0 place-items-center rounded-2xl bg-white/15 py-2 backdrop-blur">
                             <span class="text-xs font-bold tracking-wide whitespace-nowrap uppercase" x-text="monthBadge(e)"></span>
@@ -57,11 +57,11 @@
                         </div>
                     </div>
                     <div class="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
-                        <span class="rounded-full bg-white/15 px-3 py-1" x-text="e.rsvpSummary.join + ' joining'"></span>
-                        <span x-show="isMultiDay(e)" class="rounded-full bg-white/15 px-3 py-1" x-text="eventDays(e).length + ' days'"></span>
+                        <span class="rounded-full bg-white/15 px-3 py-1" x-text="$t('{n} joining', { n: e.rsvpSummary.join })"></span>
+                        <span x-show="isMultiDay(e)" class="rounded-full bg-white/15 px-3 py-1" x-text="$t('{n} days', { n: eventDays(e).length })"></span>
                         <span class="rounded-full bg-white/15 px-3 py-1"
-                              x-text="itemCount(e.id) + (itemCount(e.id) === 1 ? ' activity' : ' activities')"></span>
-                        <span class="rounded-full bg-white/15 px-3 py-1" x-text="doneCount + '/' + checklist.length + ' packed'"></span>
+                              x-text="$tn(itemCount(e.id), '{n} activity', '{n} activities')"></span>
+                        <span class="rounded-full bg-white/15 px-3 py-1" x-text="$t('{done}/{total} packed', { done: doneCount, total: checklist.length })"></span>
                     </div>
                 </section>
 
@@ -72,7 +72,7 @@
                             <span class="grid h-9 w-9 place-items-center rounded-xl bg-brand-50 text-brand-600">
                                 <x-icon name="clock" class="h-[18px] w-[18px]"/>
                             </span>
-                            <h2 id="itinerary-title" class="text-base font-bold text-slate-900">Itinerary</h2>
+                            <h2 id="itinerary-title" class="text-base font-bold text-slate-900" data-t>Itinerary</h2>
                         </div>
                         <!-- One timeline per day -->
                         <div class="space-y-6">

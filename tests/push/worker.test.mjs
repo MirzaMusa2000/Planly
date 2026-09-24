@@ -115,7 +115,7 @@ beforeEach(async () => {
     const user = (displayName, role, status, createdAt = hourAgo()) => ({ email: `${displayName.toLowerCase()}@planly.test`, displayName, role, status, createdAt });
     await put('users/admin', user('Mirza', 'admin', 'approved'));
     await put('users/ali', user('Ali', 'member', 'approved'));
-    await put('users/mei', user('Mei', 'member', 'approved'));
+    await put('users/mei', { ...user('Mei', 'member', 'approved'), lang: 'ms' }); // reads Malay
     await put('users/gone', user('Gone', 'member', 'rejected'));
     await put('users/newbie', user('Newbie', 'member', 'pending', now()));
     await put('users/stale', user('Stale', 'member', 'pending', hourAgo()));
@@ -170,12 +170,15 @@ describe('push worker', () => {
         const box = await inbox();
         // Not Ali (the proposer), not rejected users; the shared tablet now belongs to Mei.
         assert.deepEqual(Object.keys(box).sort(), ['admin-gone', 'admin-phone', 'mei-phone', 'tablet']);
+        // Each in their own language: Mei reads Malay, the admin English.
         assert.deepEqual(box['mei-phone'][0], {
-            title: 'New proposal: Camping July',
-            body: 'Ali suggested 2 dates. Tap to vote.',
+            title: 'Cadangan baru: Camping July',
+            body: 'Ali mencadangkan 2 tarikh. Tekan untuk mengundi.',
             url: '/#event=e1',
             tag: 'planly-event-e1',
         });
+        assert.equal(box['admin-phone'][0].title, 'New proposal: Camping July');
+        assert.equal(box['admin-phone'][0].body, 'Ali suggested 2 dates. Tap to vote.');
         // Ali's older copy of the tablet subscription is cleaned up.
         assert.equal(await exists('users/ali/pushSubscriptions/ali-tablet'), false);
         assert.equal(await exists('users/mei/pushSubscriptions/mei-tablet'), true);
@@ -195,7 +198,9 @@ describe('push worker', () => {
         });
         assert.ok(response.ok);
         await call({ type: 'proposal', eventId: 'trip' }, { uid: 'ali' });
-        assert.equal((await inbox())['mei-phone'][0].body, 'Ali suggested 2 date options. Tap to vote.');
+        const box = await inbox();
+        assert.equal(box['mei-phone'][0].body, 'Ali mencadangkan 2 pilihan tarikh. Tekan untuk mengundi.');
+        assert.equal(box['admin-phone'][0].body, 'Ali suggested 2 date options. Tap to vote.');
     });
 
     test('you can only announce your own, new proposal', async () => {

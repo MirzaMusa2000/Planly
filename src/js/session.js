@@ -9,6 +9,7 @@ import { clearIndexedDbPersistence, doc, getDoc, getDocFromCache, onSnapshot, se
 import { auth, db } from './firebase';
 import { notify } from './push';
 import { startPeopleFeed } from './people';
+import { lang } from './i18n';
 
 export const TIMEZONE = 'Asia/Kuala_Lumpur';
 
@@ -165,6 +166,9 @@ export async function boot() {
     approvedUserPromise = Promise.resolve(user);
     Alpine.store('push').start(user.uid);
     startPeopleFeed();
+    // Notifications are sent in each person's language (workers/push).
+    window.Planly.saveLang = (next) => setDoc(userRef(user.uid), { lang: next }, { merge: true }).catch(() => {});
+    if (profile.lang !== lang) window.Planly.saveLang(lang);
 
     watchSession(user.uid, access);
     return true;

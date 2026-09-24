@@ -15,6 +15,7 @@
         "deploy:staging": "node scripts/deploy.mjs staging",
         "dev:emulators": "vite --mode emulators",
         "icons": "node scripts/generate-icons.mjs",
+        "test:i18n": "vite build && node scripts/i18n-check.mjs",
         "test:unit": "node --test tests/unit/*.test.mjs",
         "test:push": "firebase emulators:exec --only firestore --project demo-planly \"node --test --test-concurrency=1 tests/push/*.test.mjs\"",
         "push:deploy": "wrangler deploy --config workers/push/wrangler.toml",

@@ -125,6 +125,14 @@ describe('profile photo and name', () => {
         await assertFails(updateDoc(doc(as(env, 'admin'), 'users/mei'), { photoUrl: photo }));
     });
 
+    test('you can set your language (English or Malay only)', async () => {
+        const mei = as(env, 'mei');
+        await assertSucceeds(updateDoc(doc(mei, 'users/mei'), { lang: 'ms' }));
+        await assertSucceeds(updateDoc(doc(mei, 'users/mei'), { lang: 'en' }));
+        await assertFails(updateDoc(doc(mei, 'users/mei'), { lang: 'fr' }));
+        await assertFails(updateDoc(doc(as(env, 'ali'), 'users/mei'), { lang: 'ms' }));
+    });
+
     test('only small image data URLs', async () => {
         const mei = as(env, 'mei');
         await assertFails(updateDoc(doc(mei, 'users/mei'), { photoUrl: 'https://example.com/me.png' })); // no links

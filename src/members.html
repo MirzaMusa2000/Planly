@@ -1,12 +1,12 @@
 <!-- layout: app | title: Members | page: members | access: admin -->
     <div x-data="membersPage">
         <div class="mb-6">
-            <h1 class="text-2xl font-bold tracking-tight text-slate-900">Members</h1>
-            <p class="mt-1 text-sm text-slate-500">Approve new sign-ups and manage who can use Planly.</p>
+            <h1 class="text-2xl font-bold tracking-tight text-slate-900" data-t>Members</h1>
+            <p class="mt-1 text-sm text-slate-500" data-t>Approve new sign-ups and manage who can use Planly.</p>
         </div>
 
         <p x-show="error" x-text="error" x-cloak role="alert" class="mb-5 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700"></p>
-        <p x-show="loading" class="py-10 text-center text-sm text-slate-400">Loading members…</p>
+        <p x-show="loading" class="py-10 text-center text-sm text-slate-400" data-t>Loading members…</p>
 
         <div x-show="!loading" x-cloak class="space-y-8">
             <template x-for="section in sections" :key="section.key">
@@ -29,8 +29,8 @@
                                     <div class="min-w-0">
                                         <p class="flex items-center gap-2 font-semibold text-slate-900">
                                             <span class="truncate" x-text="user.displayName || '—'"></span>
-                                            <span x-show="user.role === 'admin'" class="chip bg-brand-100 text-brand-700">Admin</span>
-                                            <span x-show="user.uid === me" class="chip bg-slate-100 text-slate-500">You</span>
+                                            <span x-show="user.role === 'admin'" class="chip bg-brand-100 text-brand-700" data-t>Admin</span>
+                                            <span x-show="user.uid === me" class="chip bg-slate-100 text-slate-500" data-t>You</span>
                                         </p>
                                         <p class="truncate text-sm text-slate-500" x-text="user.email"></p>
                                         <p class="mt-0.5 text-xs text-slate-400" x-text="joinedLine(user, section.key)"></p>
@@ -40,12 +40,12 @@
                                 <div x-show="user.uid !== me" class="flex gap-2 sm:shrink-0">
                                     <button type="button" x-show="section.key !== 'approved'" @click="approve(user)" :disabled="!!busy[user.uid]"
                                             class="btn btn-primary flex-1 py-2 sm:flex-none">
-                                        <x-icon name="check" class="h-4 w-4"/> Approve
+                                        <x-icon name="check" class="h-4 w-4"/> <span data-t>Approve</span>
                                     </button>
                                     <button type="button" x-show="section.key === 'pending'" @click="reject(user)" :disabled="!!busy[user.uid]"
-                                            class="btn btn-secondary flex-1 py-2 sm:flex-none">Reject</button>
+                                            class="btn btn-secondary flex-1 py-2 sm:flex-none" data-t>Reject</button>
                                     <button type="button" x-show="section.key === 'approved'" @click="revoke(user)" :disabled="!!busy[user.uid]"
-                                            class="btn btn-danger flex-1 py-2 sm:flex-none">Revoke</button>
+                                            class="btn btn-danger flex-1 py-2 sm:flex-none" data-t>Revoke</button>
                                 </div>
                             </li>
                         </template>

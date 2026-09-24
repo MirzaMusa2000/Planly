@@ -3,6 +3,7 @@
 import Alpine from 'alpinejs';
 import { dayCount, daysInRange, format, formatRange, formatShort, monthGrid, today, toUtcDate } from './dates';
 import { LIMITS, proposeEvent } from './events';
+import { t } from './i18n';
 
 Alpine.data('proposeModal', () => ({
     LIMITS,
@@ -86,9 +87,9 @@ Alpine.data('proposeModal', () => ({
     },
 
     get hint() {
-        if (this.mode === 'day') return 'Tap every date that could work.';
-        if (!this.rangeStart) return 'Tap the first day, then the last day. Add as many options as you like.';
-        return `From ${formatShort(this.rangeStart)}: now tap the last day (or the same day again for one day).`;
+        if (this.mode === 'day') return t('Tap every date that could work.');
+        if (!this.rangeStart) return t('Tap the first day, then the last day. Add as many options as you like.');
+        return t('From {date}: now tap the last day (or the same day again for one day).', { date: formatShort(this.rangeStart) });
     },
 
     isPast(date) {
@@ -110,8 +111,8 @@ Alpine.data('proposeModal', () => ({
     },
 
     rangeProblem(start, end) {
-        if (dayCount(start, end) > LIMITS.rangeDays) return `An option can be at most ${LIMITS.rangeDays} days.`;
-        if (daysInRange(start, end).some((d) => this.optionAt(d))) return 'Options can’t overlap. Remove the other one first.';
+        if (dayCount(start, end) > LIMITS.rangeDays) return t('An option can be at most {n} days.', { n: LIMITS.rangeDays });
+        if (daysInRange(start, end).some((d) => this.optionAt(d))) return t('Options can’t overlap. Remove the other one first.');
         return '';
     },
 
@@ -157,7 +158,7 @@ Alpine.data('proposeModal', () => ({
 
         const problem = this.rangeProblem(this.rangeStart, date);
         if (problem) {
-            this.error = `${problem} Pick the first day again.`;
+            this.error = `${problem} ${t('Pick the first day again.')}`;
             this.rangeStart = null;
             return;
         }
@@ -168,7 +169,7 @@ Alpine.data('proposeModal', () => ({
 
     add(option) {
         if (this.options.length >= LIMITS.dates) {
-            this.error = `You can add up to ${LIMITS.dates} date options.`;
+            this.error = t('You can add up to {n} date options.', { n: LIMITS.dates });
             return;
         }
         this.options = [...this.options, option].sort((a, b) => a.start.localeCompare(b.start));
@@ -188,7 +189,7 @@ Alpine.data('proposeModal', () => ({
 
     cellLabel(date) {
         const option = this.optionAt(date);
-        return option ? `${formatShort(date)}, selected (${this.optionLabel(option)})` : formatShort(date);
+        return option ? t('{date}, selected ({option})', { date: formatShort(date), option: this.optionLabel(option) }) : formatShort(date);
     },
 
     dayNumber(date) {
@@ -196,8 +197,8 @@ Alpine.data('proposeModal', () => ({
     },
 
     get submitLabel() {
-        if (this.busy) return 'Saving…';
-        return this.options.length > 1 ? `Propose ${this.options.length} options` : 'Propose event';
+        if (this.busy) return t('Saving…');
+        return this.options.length > 1 ? t('Propose {n} options', { n: this.options.length }) : t('Propose event');
     },
 
     async submit() {
@@ -214,11 +215,11 @@ Alpine.data('proposeModal', () => ({
             });
             this.busy = false;
             this.open = false;
-            Alpine.store('toast').show('Event proposed! Friends can now vote on dates.');
+            Alpine.store('toast').show(t('Event proposed! Friends can now vote on dates.'));
         } catch (e) {
             this.error = e?.code === 'permission-denied'
-                ? 'You don’t have permission to propose events. Try signing out and in again.'
-                : e?.message || 'Couldn’t save the event. Please try again.';
+                ? t('You don’t have permission to propose events. Try signing out and in again.')
+                : e?.message || t('Couldn’t save the event. Please try again.');
             this.busy = false;
         }
     },

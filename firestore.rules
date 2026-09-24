@@ -39,11 +39,13 @@ service cloud.firestore {
                     && request.resource.data.get('approvedBy', null) == null
                     && request.resource.data.get('lastReadChatAt', null) == null;
 
-      // You may update only your own name, profile photo and chat read receipt.
+      // You may update only your own name, profile photo, language and chat read receipt.
       // The photo is a small image data URL (Storage needs a paid plan): at most
       // ~90 KB, WebP / JPEG / PNG only, or null to remove it.
       allow update: if signedIn() && request.auth.uid == uid
-                    && changed().hasOnly(['lastReadChatAt', 'displayName', 'photoUrl'])
+                    && changed().hasOnly(['lastReadChatAt', 'displayName', 'photoUrl', 'lang'])
+                    // Language for notifications: English or Bahasa Melayu.
+                    && (!('lang' in changed()) || request.resource.data.lang in ['en', 'ms'])
                     && (!('displayName' in changed()) || isStr(request.resource.data.displayName, 1, 60))
                     && (!('photoUrl' in changed()) || request.resource.data.photoUrl == null
                         || (isStr(request.resource.data.photoUrl, 30, 120000)

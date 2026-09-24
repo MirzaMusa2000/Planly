@@ -50,7 +50,7 @@
                     class="btn btn-secondary flex-1 py-3" x-text="$store.dialog.cancelLabel"></button>
             <button type="button" @click="$store.dialog.accept()" :disabled="$store.dialog.busy"
                     :class="{
-                        'bg-rose-600 text-white shadow-lg shadow-rose-600/25 hover:bg-rose-700': $store.dialog.tone === 'danger',
+                        'bg-rose-600 text-white shadow-lg shadow-rose-600/25 hover:bg-rose-500': $store.dialog.tone === 'danger',
                         'btn-success shadow-lg shadow-emerald-500/25': $store.dialog.tone === 'success',
                         'btn-primary': $store.dialog.tone === 'primary',
                     }"
@@ -59,7 +59,7 @@
                     <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"/>
                     <path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
                 </svg>
-                <span x-text="$store.dialog.busy ? 'Working…' : $store.dialog.confirmLabel"></span>
+                <span x-text="$store.dialog.busy ? $t('Working…') : $store.dialog.confirmLabel"></span>
             </button>
         </div>
     </div>

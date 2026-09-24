@@ -3,6 +3,7 @@
 // the amount the caller's own vote changed.
 import { doc, FieldPath, increment, runTransaction, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase';
+import { t } from './i18n';
 
 const RSVP_FIELD = { join: 'join', not_available: 'notAvailable' };
 
@@ -24,10 +25,10 @@ export async function setAvailability(eventId, date, free) {
         const voteSnap = await tx.get(voteRef);
 
         if (!eventSnap.exists() || eventSnap.data().status !== 'proposed') {
-            throw new Error('Voting has closed for this event.');
+            throw new Error(t('Voting has closed for this event.'));
         }
         if (!(eventSnap.data().candidateDates ?? []).includes(date)) {
-            throw new Error('That date is no longer an option.');
+            throw new Error(t('That date is no longer an option.'));
         }
 
         const old = voteSnap.exists() ? voteSnap.data() : { availableDates: [], rsvp: null };
@@ -57,7 +58,7 @@ export async function setRsvp(eventId, choice) {
         const voteSnap = await tx.get(voteRef);
 
         if (!eventSnap.exists() || eventSnap.data().status !== 'confirmed') {
-            throw new Error('This event isn’t confirmed any more.');
+            throw new Error(t('This event isn’t confirmed any more.'));
         }
 
         const old = voteSnap.exists() ? voteSnap.data() : { availableDates: [], rsvp: null };
@@ -89,26 +90,26 @@ export async function confirmEvent(event, date) {
     await runTransaction(db, async (tx) => {
         const snap = await tx.get(ref);
         const status = snap.data()?.status;
-        if (status !== 'proposed') throw new Error(status === 'confirmed' ? 'This event is already confirmed.' : 'This event was cancelled.');
-        if (!snap.data().candidateDates?.includes(date)) throw new Error('That date is not one of the candidate dates.');
+        if (status !== 'proposed') throw new Error(status === 'confirmed' ? t('This event is already confirmed.') : t('This event was cancelled.'));
+        if (!snap.data().candidateDates?.includes(date)) throw new Error(t('That date is not one of the candidate dates.'));
         tx.update(ref, { status: 'confirmed', finalDate: date, finalEndDate: snap.data().candidateEnds?.[date] ?? date });
     });
-    return { message: `Confirmed “${event.title}”.` };
+    return { message: t('Confirmed “{title}”.', { title: event.title }) };
 }
 
 export async function cancelEvent(event) {
     const ref = doc(db, 'events', event.id);
     await runTransaction(db, async (tx) => {
         const snap = await tx.get(ref);
-        if (!snap.exists() || snap.data().status === 'cancelled') throw new Error('This event is already cancelled.');
+        if (!snap.exists() || snap.data().status === 'cancelled') throw new Error(t('This event is already cancelled.'));
         tx.update(ref, { status: 'cancelled' });
     });
-    return { message: `Cancelled “${event.title}”.` };
+    return { message: t('Cancelled “{title}”.', { title: event.title }) };
 }
 
 /** Friendly message for a failed vote/confirm/cancel. */
 export function errorMessage(error) {
-    if (error?.code === 'permission-denied') return 'That change wasn’t allowed. Only the admin or the proposer can do that.';
-    if (error?.code === 'aborted' || error?.code === 'failed-precondition') return 'Someone voted at the same time. Try again.';
-    return error?.message || 'Something went wrong. Please try again.';
+    if (error?.code === 'permission-denied') return t('That change wasn’t allowed. Only the admin or the proposer can do that.');
+    if (error?.code === 'aborted' || error?.code === 'failed-precondition') return t('Someone voted at the same time. Try again.');
+    return error?.message || t('Something went wrong. Please try again.');
 }

@@ -16,15 +16,15 @@
         <span class="mx-auto -mt-2 mb-3 block h-1.5 w-10 rounded-full bg-slate-200 sm:hidden" aria-hidden="true"></span>
 
         <div class="flex items-center justify-between">
-            <h2 id="profile-dialog-title" class="text-lg font-bold text-slate-900">Your profile</h2>
-            <button type="button" @click="close()" class="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-slate-100" aria-label="Close">
+            <h2 id="profile-dialog-title" class="text-lg font-bold text-slate-900" data-t>Your profile</h2>
+            <button data-t-attr="aria-label" type="button" @click="close()" class="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-slate-100" aria-label="Close">
                 <x-icon name="x"/>
             </button>
         </div>
 
         <!-- Photo -->
         <div class="mt-4 flex flex-col items-center">
-            <button type="button" @click="pick()" :disabled="reading || busy"
+            <button data-t-attr="aria-label" type="button" @click="pick()" :disabled="reading || busy"
                     class="group relative h-28 w-28 overflow-hidden rounded-full bg-gradient-to-br from-brand-300 to-brand-600 text-4xl font-bold text-white shadow-lift ring-4 ring-white"
                     aria-label="Change profile photo">
                 <img x-show="photo" :src="photo || null" alt="" class="absolute inset-0 h-full w-full object-cover">
@@ -47,35 +47,37 @@
 
             <div class="mt-3 flex gap-2 text-sm font-semibold">
                 <button type="button" @click="pick()" :disabled="reading || busy" class="rounded-lg px-2 py-1 text-brand-600 hover:bg-brand-50"
-                        x-text="photo ? 'Change photo' : 'Upload photo'"></button>
-                <button type="button" x-show="photo" @click="removePhoto()" :disabled="busy" class="rounded-lg px-2 py-1 text-rose-600 hover:bg-rose-50">Remove</button>
+                        x-text="photo ? $t('Change photo') : $t('Upload photo')"></button>
+                <button type="button" x-show="photo" @click="removePhoto()" :disabled="busy" class="rounded-lg px-2 py-1 text-rose-600 hover:bg-rose-50" data-t>Remove</button>
             </div>
         </div>
 
         <!-- Name -->
         <label class="mt-4 block">
-            <span class="label">Name</span>
+            <span class="label" data-t>Name</span>
             <input type="text" x-model="name" :maxlength="NAME_MAX" required autocomplete="name" class="input">
-            <span class="mt-1 block text-xs text-slate-400">This is how you appear in chat, votes and expenses.</span>
+            <span class="mt-1 block text-xs text-slate-400" data-t>This is how you appear in chat, votes and expenses.</span>
         </label>
+
+        <div class="mt-4"><include src="partials/preferences.html"></include></div>
 
         <dl class="mt-4 space-y-1 rounded-2xl bg-slate-50 px-4 py-3 text-sm">
             <div class="flex justify-between gap-3">
-                <dt class="text-slate-500">Email</dt>
+                <dt class="text-slate-500" data-t>Email</dt>
                 <dd class="truncate font-medium text-slate-700" x-text="me?.email"></dd>
             </div>
             <div class="flex justify-between gap-3">
-                <dt class="text-slate-500">Role</dt>
-                <dd class="font-medium text-slate-700" x-text="me?.role === 'admin' ? 'Admin' : 'Member'"></dd>
+                <dt class="text-slate-500" data-t>Role</dt>
+                <dd class="font-medium text-slate-700" x-text="me?.role === 'admin' ? $t('Admin') : $t('Member')"></dd>
             </div>
         </dl>
 
         <p x-show="error" x-text="error" role="alert" class="mt-4 rounded-xl bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700"></p>
 
         <div class="mt-6 flex flex-col-reverse gap-2 sm:flex-row">
-            <button type="button" @click="close()" :disabled="busy" class="btn btn-secondary flex-1 py-3">Cancel</button>
+            <button type="button" @click="close()" :disabled="busy" class="btn btn-secondary flex-1 py-3" data-t>Cancel</button>
             <button type="submit" :disabled="busy || reading" class="btn btn-primary flex-1 py-3">
-                <span x-text="busy ? 'Saving…' : 'Save'"></span>
+                <span x-text="busy ? $t('Saving…') : $t('Save')"></span>
             </button>
         </div>
     </form>

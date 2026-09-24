@@ -9,7 +9,15 @@
     <main class="flex min-h-full items-center justify-center px-4 py-8">
         <div class="w-full max-w-md">
             <!-- content -->
-            <p class="mt-6 text-center text-xs text-slate-400">Plan it together, one date at a time.</p>
+            <div x-data class="mt-4 flex items-center justify-center gap-1 text-xs font-semibold text-slate-400" role="group" data-t-attr="aria-label" aria-label="Language">
+                <x-icon name="globe" class="h-3.5 w-3.5"/>
+                <template x-for="option in $store.i18n.languages" :key="option.id">
+                    <button type="button" @click="$store.i18n.set(option.id)" :aria-pressed="$store.i18n.lang === option.id"
+                            :class="$store.i18n.lang === option.id ? 'text-brand-600' : 'hover:text-slate-600'"
+                            class="rounded-lg px-2 py-1 transition" x-text="option.label"></button>
+                </template>
+            </div>
+            <p class="mt-6 text-center text-xs text-slate-400" data-t>Plan it together, one date at a time.</p>
         </div>
     </main>
 

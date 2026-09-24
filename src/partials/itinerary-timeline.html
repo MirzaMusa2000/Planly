@@ -1,9 +1,9 @@
 <!-- Itinerary of one day (`day`) of a confirmed event (`e`): timeline + add/edit. Needs a
      component that mixes in itineraryEditor() (js/itinerary.js). Param: empty (text when there are no items). -->
 <div>
-    <p x-show="isLoading(e.id, day)" class="py-4 text-center text-sm text-slate-400">Loading…</p>
+    <p x-show="isLoading(e.id, day)" class="py-4 text-center text-sm text-slate-400" data-t>Loading…</p>
     <p x-show="!isLoading(e.id, day) && itemsFor(e.id, day).length === 0 && !isEditing(e.id, day)"
-       class="rounded-2xl border-2 border-dashed border-slate-200 px-4 py-5 text-center text-sm text-slate-400">
+       class="rounded-2xl border-2 border-dashed border-slate-200 px-4 py-5 text-center text-sm text-slate-400" data-t>
         {{ empty }}
     </p>
 
@@ -25,25 +25,25 @@
                                     <span class="break-words" x-text="item.location"></span>
                                 </p>
                                 <p x-show="item.notes" class="mt-1 text-xs whitespace-pre-line break-words opacity-80" x-text="item.notes"></p>
-                                <p x-show="addedBy(item)" class="mt-1 text-[11px] opacity-60" x-text="'Added by ' + addedBy(item)"></p>
+                                <p x-show="addedBy(item)" class="mt-1 text-[11px] opacity-60" x-text="$t('Added by {name}', { name: addedBy(item) })"></p>
                             </div>
 
                             <div class="-mr-1 flex shrink-0 flex-col items-center">
-                                <button type="button" @click="move(e.id, day, index, -1)" :disabled="!canMove(e.id, day, index, -1)"
+                                <button data-t-attr="aria-label" type="button" @click="move(e.id, day, index, -1)" :disabled="!canMove(e.id, day, index, -1)"
                                         class="grid h-7 w-7 place-items-center rounded-lg hover:bg-black/5 disabled:opacity-25"
-                                        :title="canMove(e.id, day, index, -1) ? 'Move up' : 'Items are ordered by start time'" aria-label="Move up">
+                                        :title="canMove(e.id, day, index, -1) ? $t('Move up') : $t('Items are ordered by start time')" aria-label="Move up">
                                     <x-icon name="chevron-left" class="h-4 w-4 rotate-90"/>
                                 </button>
-                                <button type="button" @click="move(e.id, day, index, 1)" :disabled="!canMove(e.id, day, index, 1)"
+                                <button data-t-attr="aria-label" type="button" @click="move(e.id, day, index, 1)" :disabled="!canMove(e.id, day, index, 1)"
                                         class="grid h-7 w-7 place-items-center rounded-lg hover:bg-black/5 disabled:opacity-25"
-                                        :title="canMove(e.id, day, index, 1) ? 'Move down' : 'Items are ordered by start time'" aria-label="Move down">
+                                        :title="canMove(e.id, day, index, 1) ? $t('Move down') : $t('Items are ordered by start time')" aria-label="Move down">
                                     <x-icon name="chevron-right" class="h-4 w-4 rotate-90"/>
                                 </button>
                             </div>
                         </div>
                         <div class="mt-1.5 flex gap-3 text-xs font-semibold">
-                            <button type="button" @click="startEdit(e.id, item)" class="opacity-80 hover:opacity-100">Edit</button>
-                            <button type="button" @click="remove(e.id, item)" class="text-rose-600 opacity-80 hover:opacity-100">Delete</button>
+                            <button type="button" @click="startEdit(e.id, item)" class="opacity-80 hover:opacity-100" data-t>Edit</button>
+                            <button type="button" @click="remove(e.id, item)" class="text-rose-600 opacity-80 hover:opacity-100" data-t>Delete</button>
                         </div>
                     </div>
 
@@ -63,7 +63,7 @@
         </template>
         <button type="button" x-show="!isEditing(e.id, day)" @click="startAdd(e, day)"
                 class="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 py-2.5 text-sm font-semibold text-slate-500 transition hover:border-brand-300 hover:text-brand-600">
-            <x-icon name="plus" class="h-4 w-4"/> Add to itinerary
+            <x-icon name="plus" class="h-4 w-4"/> <span data-t>Add to itinerary</span>
         </button>
     </div>
 </div>

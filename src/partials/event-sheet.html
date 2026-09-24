@@ -8,12 +8,12 @@
          x-transition:enter="transition duration-200 ease-out" x-transition:enter-start="translate-y-8 opacity-0 sm:translate-x-8 sm:translate-y-0"
          x-transition:leave="transition duration-150 ease-in" x-transition:leave-end="translate-y-8 opacity-0 sm:translate-x-8 sm:translate-y-0"
          role="dialog" aria-modal="true" aria-labelledby="event-sheet-title"
-         class="absolute inset-x-0 bottom-0 flex max-h-[92dvh] flex-col rounded-t-3xl bg-ink-900 text-white shadow-2xl sm:inset-y-0 sm:right-0 sm:left-auto sm:max-h-none sm:w-full sm:max-w-md sm:rounded-none sm:rounded-l-3xl">
+         class="on-ink absolute inset-x-0 bottom-0 flex max-h-[92dvh] flex-col rounded-t-3xl bg-ink-900 text-white shadow-2xl sm:inset-y-0 sm:right-0 sm:left-auto sm:max-h-none sm:w-full sm:max-w-md sm:rounded-none sm:rounded-l-3xl">
 
         <template x-if="$store.planner.selected">
             <div x-data="{ get e() { return $store.planner.selected } }" class="flex min-h-0 flex-1 flex-col">
                 <div class="flex items-center justify-between px-5 pt-4">
-                    <button type="button" @click="$store.planner.close()" class="grid h-9 w-9 place-items-center rounded-xl text-slate-300 hover:bg-white/10" aria-label="Close">
+                    <button data-t-attr="aria-label" type="button" @click="$store.planner.close()" class="grid h-9 w-9 place-items-center rounded-xl text-slate-300 hover:bg-white/10" aria-label="Close">
                         <x-icon name="x"/>
                     </button>
                 </div>
@@ -29,45 +29,45 @@
                         <div class="min-w-0">
                             <h2 id="event-sheet-title" class="text-xl leading-tight font-bold break-words" x-text="e.title"></h2>
                             <span class="chip mt-2" :class="e.status === 'confirmed' ? 'bg-emerald-400/15 text-emerald-300' : 'bg-amber-300/15 text-amber-200'"
-                                  x-text="e.status === 'confirmed' ? 'Confirmed' : 'Proposed'"></span>
+                                  x-text="e.status === 'confirmed' ? $t('Confirmed') : $t('Proposed')"></span>
                         </div>
                     </div>
 
                     <!-- Facts  -->
                     <dl class="mt-6 space-y-3 rounded-2xl bg-ink-800/70 p-4 text-sm">
                         <div class="flex items-center gap-3" x-show="e.status === 'confirmed'">
-                            <dt><x-icon name="calendar" class="h-[18px] w-[18px] text-slate-400"/><span class="sr-only">Date</span></dt>
+                            <dt><x-icon name="calendar" class="h-[18px] w-[18px] text-slate-400"/><span class="sr-only" data-t>Date</span></dt>
                             <dd class="font-semibold">
                                 <span x-text="$store.planner.whenLong(e)"></span>
                                 <span x-show="e.finalEndDate !== e.finalDate" class="chip ml-1 bg-white/10 text-slate-200"
-                                      x-text="$store.planner.optionDays(e, e.finalDate) + ' days'"></span>
+                                      x-text="$t('{n} days', { n: $store.planner.optionDays(e, e.finalDate) })"></span>
                             </dd>
                         </div>
                         <div class="flex items-center gap-3" x-show="e.status !== 'confirmed'">
-                            <dt><x-icon name="calendar" class="h-[18px] w-[18px] text-slate-400"/><span class="sr-only">Dates</span></dt>
-                            <dd x-text="e.candidateDates.length + (e.candidateDates.length === 1 ? ' date option' : ' date options')"></dd>
+                            <dt><x-icon name="calendar" class="h-[18px] w-[18px] text-slate-400"/><span class="sr-only" data-t>Dates</span></dt>
+                            <dd x-text="$tn(e.candidateDates.length, '{n} date option', '{n} date options')"></dd>
                         </div>
                         <div class="flex items-center gap-3" x-show="e.location">
-                            <dt><x-icon name="map-pin" class="h-[18px] w-[18px] text-slate-400"/><span class="sr-only">Location</span></dt>
+                            <dt><x-icon name="map-pin" class="h-[18px] w-[18px] text-slate-400"/><span class="sr-only" data-t>Location</span></dt>
                             <dd class="break-words" x-text="e.location"></dd>
                         </div>
                         <div class="flex items-center gap-3">
-                            <dt><x-icon name="user" class="h-[18px] w-[18px] text-slate-400"/><span class="sr-only">Proposed by</span></dt>
-                            <dd>Proposed by <span class="font-semibold" x-text="$store.people.name(e.proposedBy) || e.proposedByName || 'someone'"></span></dd>
+                            <dt><x-icon name="user" class="h-[18px] w-[18px] text-slate-400"/><span class="sr-only" data-t>Proposed by</span></dt>
+                            <dd><span data-t>Proposed by</span> <span class="font-semibold" x-text="$store.people.name(e.proposedBy) || e.proposedByName || $t('someone')"></span></dd>
                         </div>
                     </dl>
 
                     <!-- Description  -->
                     <section class="mt-5" x-show="e.description">
-                        <h3 class="text-sm font-semibold text-slate-300">Description</h3>
+                        <h3 class="text-sm font-semibold text-slate-300" data-t>Description</h3>
                         <p class="mt-1.5 text-sm whitespace-pre-line text-slate-200 break-words" x-text="e.description"></p>
                     </section>
 
                     <!-- Availability voting (proposed)  -->
                     <section class="mt-6" x-show="e.status === 'proposed'">
                         <div class="flex items-baseline justify-between">
-                            <h3 class="text-sm font-semibold text-slate-300">When are you free?</h3>
-                            <p class="text-xs text-slate-500">Tap every option that works</p>
+                            <h3 class="text-sm font-semibold text-slate-300" data-t>When are you free?</h3>
+                            <p class="text-xs text-slate-500" data-t>Tap every option that works</p>
                         </div>
                         <ul class="mt-2 space-y-2">
                             <template x-for="date in e.candidateDates" :key="date">
@@ -78,15 +78,15 @@
                                             <p class="flex flex-wrap items-center gap-x-2 gap-y-1 font-semibold">
                                                 <span x-text="$store.planner.optionLabel(e, date)"></span>
                                                 <span x-show="$store.planner.optionDays(e, date) > 1" class="chip bg-white/10 text-slate-300"
-                                                      x-text="$store.planner.optionDays(e, date) + ' days'"></span>
-                                                <span x-show="$store.planner.everyoneFreeLive(e, date)" class="chip bg-amber-300/20 text-amber-200">Everyone free ⭐</span>
+                                                      x-text="$t('{n} days', { n: $store.planner.optionDays(e, date) })"></span>
+                                                <span x-show="$store.planner.everyoneFreeLive(e, date)" class="chip bg-amber-300/20 text-amber-200" data-t>Everyone free ⭐</span>
                                             </p>
                                             <p class="mt-0.5 text-xs break-words text-slate-400" x-text="$store.planner.freeLine(e, date)"></p>
                                         </div>
 
                                         <button type="button" role="checkbox"
                                                 :aria-checked="$store.planner.iAmFree(e.id, date)"
-                                                :aria-label="'I’m free on ' + $store.planner.optionLabel(e, date)"
+                                                :aria-label="$t('I’m free on {date}', { date: $store.planner.optionLabel(e, date) })"
                                                 :disabled="$store.planner.isPending(e.id + ':' + date)"
                                                 @click="$store.planner.toggleFree(e, date)"
                                                 :class="$store.planner.iAmFree(e.id, date)
@@ -94,7 +94,7 @@
                                                     : 'border-ink-600 text-slate-300 hover:border-slate-400'"
                                                 class="inline-flex shrink-0 items-center gap-1.5 rounded-full border-2 px-3 py-1.5 text-xs font-bold transition disabled:opacity-60">
                                             <x-icon name="check" class="h-3.5 w-3.5" x-show="$store.planner.iAmFree(e.id, date)"/>
-                                            I'm free
+                                            <span data-t>I'm free</span>
                                         </button>
                                     </div>
 
@@ -102,7 +102,7 @@
                                         <button type="button" @click="$store.planner.confirmDate(e, date)"
                                                 :disabled="$store.planner.isPending(e.id + ':manage')"
                                                 class="rounded-full px-3 py-1 text-xs font-semibold text-brand-200 hover:bg-brand-500/20 disabled:opacity-50">
-                                            <span x-text="$store.planner.optionDays(e, date) > 1 ? 'Confirm these dates →' : 'Confirm this date →'"></span>
+                                            <span x-text="$store.planner.optionDays(e, date) > 1 ? $t('Confirm these dates →') : $t('Confirm this date →')"></span>
                                         </button>
                                     </div>
                                 </li>
@@ -114,44 +114,44 @@
                     <button type="button" x-show="e.status === 'confirmed'"
                             @click="const d = e.finalDate; $store.planner.close(); $dispatch('open-day', { date: d })"
                             class="btn mt-5 w-full bg-brand-500/15 py-3 text-brand-200 hover:bg-brand-500/25">
-                        <x-icon name="clock" class="h-4 w-4"/> <span x-text="e.finalEndDate !== e.finalDate ? 'Plan the days' : 'Plan the day'"></span>
+                        <x-icon name="clock" class="h-4 w-4"/> <span x-text="e.finalEndDate !== e.finalDate ? $t('Plan the days') : $t('Plan the day')"></span>
                     </button>
                     <a x-show="e.status === 'confirmed'" :href="'/expenses?event=' + e.id"
                        class="btn mt-2 w-full bg-emerald-400/10 py-3 text-emerald-200 hover:bg-emerald-400/20">
-                        <x-icon name="wallet" class="h-4 w-4"/> Expenses
+                        <x-icon name="wallet" class="h-4 w-4"/> <span data-t>Expenses</span>
                     </a>
 
                     <!-- RSVP (confirmed)  -->
                     <section class="mt-6" x-show="e.status === 'confirmed'">
-                        <h3 class="text-sm font-semibold text-slate-300">Are you coming?</h3>
+                        <h3 class="text-sm font-semibold text-slate-300" data-t>Are you coming?</h3>
                         <div class="mt-2 grid grid-cols-2 gap-2">
                             <button type="button" @click="$store.planner.rsvp(e, 'join')"
                                     :disabled="$store.planner.isPending(e.id + ':rsvp')"
                                     :aria-pressed="$store.planner.myVote(e.id).rsvp === 'join'"
                                     :class="$store.planner.myVote(e.id).rsvp === 'join' ? 'bg-emerald-400 text-ink-950' : 'bg-ink-800 text-slate-200 hover:bg-ink-700'"
                                     class="btn py-3 disabled:opacity-60">
-                                <x-icon name="check" class="h-4 w-4"/> Join
+                                <x-icon name="check" class="h-4 w-4"/> <span data-t>Join</span>
                             </button>
                             <button type="button" @click="$store.planner.rsvp(e, 'not_available')"
                                     :disabled="$store.planner.isPending(e.id + ':rsvp')"
                                     :aria-pressed="$store.planner.myVote(e.id).rsvp === 'not_available'"
                                     :class="$store.planner.myVote(e.id).rsvp === 'not_available' ? 'bg-rose-300 text-ink-950' : 'bg-ink-800 text-slate-200 hover:bg-ink-700'"
                                     class="btn py-3 disabled:opacity-60">
-                                <x-icon name="x" class="h-4 w-4"/> Not available
+                                <x-icon name="x" class="h-4 w-4"/> <span data-t>Not available</span>
                             </button>
                         </div>
 
                         <dl class="mt-4 space-y-3 text-sm">
                             <div class="rounded-2xl bg-emerald-400/10 px-4 py-3">
-                                <dt class="font-semibold text-emerald-300">Joining (<span x-text="e.rsvpSummary.join"></span>)</dt>
+                                <dt class="font-semibold text-emerald-300"><span data-t>Joining</span> (<span x-text="e.rsvpSummary.join"></span>)</dt>
                                 <dd class="mt-0.5 text-slate-300" x-text="$store.planner.rsvpNames('join').join(', ') || '—'"></dd>
                             </div>
                             <div class="rounded-2xl bg-ink-800 px-4 py-3">
-                                <dt class="font-semibold text-slate-200">Not available (<span x-text="e.rsvpSummary.notAvailable"></span>)</dt>
+                                <dt class="font-semibold text-slate-200"><span data-t>Not available</span> (<span x-text="e.rsvpSummary.notAvailable"></span>)</dt>
                                 <dd class="mt-0.5 text-slate-400" x-text="$store.planner.rsvpNames('not_available').join(', ') || '—'"></dd>
                             </div>
                             <div class="px-1" x-show="!$store.planner.votesLoading && $store.planner.noResponseNames().length">
-                                <dt class="text-xs font-semibold text-slate-500">No reply yet</dt>
+                                <dt class="text-xs font-semibold text-slate-500" data-t>No reply yet</dt>
                                 <dd class="text-xs text-slate-500" x-text="$store.planner.noResponseNames().join(', ')"></dd>
                             </div>
                         </dl>
@@ -160,10 +160,10 @@
                     <!-- Manage  -->
                     <section class="mt-8 border-t border-white/10 pt-5" x-show="$store.planner.canManage(e)">
                         <button type="button" @click="$store.planner.cancel(e)" :disabled="$store.planner.isPending(e.id + ':manage')"
-                                class="btn w-full border border-rose-400/30 py-2.5 text-rose-300 hover:bg-rose-400/10">
+                                class="btn w-full border border-rose-400/30 py-2.5 text-rose-300 hover:bg-rose-400/10" data-t>
                             Cancel event
                         </button>
-                        <p class="mt-2 text-center text-xs text-slate-500">Only the admin and the person who proposed it can do this.</p>
+                        <p class="mt-2 text-center text-xs text-slate-500" data-t>Only the admin and the person who proposed it can do this.</p>
                     </section>
                 </div>
             </div>

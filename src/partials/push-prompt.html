@@ -7,19 +7,16 @@
             <x-icon name="bell" class="h-5 w-5"/>
         </span>
         <div class="min-w-0">
-            <p class="font-semibold text-slate-900">Get notified about new plans and messages</p>
-            <p x-show="!$store.push.needsInstall" class="text-sm text-slate-500">
-                New proposals, chat messages<span x-show="$store.session.isAdmin"> and members waiting for approval</span>, even when Planly is closed.
-            </p>
-            <p x-show="$store.push.needsInstall" class="text-sm text-slate-500">
-                On iPhone, first add Planly to your Home Screen: tap <span class="font-semibold">Share</span>, then
-                <span class="font-semibold">Add to Home Screen</span>. Open it from there and turn notifications on.
-            </p>
+            <p class="font-semibold text-slate-900" data-t>Get notified about new plans and messages</p>
+            <p x-show="!$store.push.needsInstall" class="text-sm text-slate-500"
+               x-text="$store.session.isAdmin ? $t('New proposals, chat messages and members waiting for approval, even when Planly is closed.') : $t('New proposals and chat messages, even when Planly is closed.')"></p>
+            <p x-show="$store.push.needsInstall" class="text-sm text-slate-500"
+               x-text="$t('On iPhone, first add Planly to your Home Screen: tap Share, then Add to Home Screen. Open it from there and turn notifications on.')"></p>
         </div>
     </div>
     <div class="flex shrink-0 gap-2 sm:ml-auto">
         <button type="button" x-show="!$store.push.needsInstall" @click="$store.push.enable()" :disabled="$store.push.busy"
-                class="btn btn-primary flex-1 py-2 sm:flex-none">Turn on</button>
-        <button type="button" @click="$store.push.dismissPrompt()" class="btn btn-secondary flex-1 py-2 sm:flex-none">Not now</button>
+                class="btn btn-primary flex-1 py-2 sm:flex-none" data-t>Turn on</button>
+        <button type="button" @click="$store.push.dismissPrompt()" class="btn btn-secondary flex-1 py-2 sm:flex-none" data-t>Not now</button>
     </div>
 </div>

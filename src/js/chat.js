@@ -19,6 +19,7 @@ import { approvedUser } from './session';
 import { notify } from './push';
 import { db } from './firebase';
 import { addDays, formatShort } from './dates';
+import { locale, t } from './i18n';
 
 export const PAGE_SIZE = 50;
 export const MAX_LENGTH = 1000;
@@ -26,7 +27,7 @@ export const MAX_LENGTH = 1000;
 const TIMEZONE = window.Planly?.timezone || 'Asia/Kuala_Lumpur';
 const messagesRef = () => collection(db, 'chats', 'main', 'messages');
 const dayKeyFormat = new Intl.DateTimeFormat('en-CA', { timeZone: TIMEZONE });
-const timeFormat = new Intl.DateTimeFormat('en-GB', { timeZone: TIMEZONE, hour: '2-digit', minute: '2-digit' });
+const timeFormat = new Intl.DateTimeFormat(locale, { timeZone: TIMEZONE, hour: '2-digit', minute: '2-digit' });
 
 function toMessage(snap) {
     const d = snap.data({ serverTimestamps: 'estimate' });
@@ -99,7 +100,7 @@ Alpine.data('chat', () => {
                 (snapshot) => this.applyLive(snapshot),
                 (error) => {
                     console.error(error);
-                    this.error = 'Chat is unavailable right now.';
+                    this.error = t('Chat is unavailable right now.');
                 },
             );
         },
@@ -160,7 +161,7 @@ Alpine.data('chat', () => {
                 });
             } catch (e) {
                 console.error(e);
-                Alpine.store('toast').show('Couldn’t load older messages.', 'error');
+                Alpine.store('toast').show(t('Couldn’t load older messages.'), 'error');
             } finally {
                 this.loadingOlder = false;
             }
@@ -208,8 +209,8 @@ Alpine.data('chat', () => {
                 console.error(e);
                 this.draft = draft;
                 this.error = e?.code === 'permission-denied'
-                    ? 'Message not sent: you may need to sign in again.'
-                    : 'Message not sent. Check your connection and try again.';
+                    ? t('Message not sent: you may need to sign in again.')
+                    : t('Message not sent. Check your connection and try again.');
             }
         },
 
@@ -253,8 +254,8 @@ Alpine.data('chat', () => {
         dayLabel(date) {
             const key = this.dayKey(date);
             const today = this.dayKey(new Date(this.now));
-            if (key === today) return 'Today';
-            if (key === addDays(today, -1)) return 'Yesterday';
+            if (key === today) return t('Today');
+            if (key === addDays(today, -1)) return t('Yesterday');
             return formatShort(key);
         },
 
@@ -273,11 +274,11 @@ Alpine.data('chat', () => {
 
         relativeTime(date) {
             const seconds = (this.now - date.getTime()) / 1000;
-            if (seconds < 60) return 'just now';
-            if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+            if (seconds < 60) return t('just now');
+            if (seconds < 3600) return t('{n}m ago', { n: Math.floor(seconds / 60) });
             const time = timeFormat.format(date);
             const label = this.dayLabel(date);
-            return label === 'Today' ? time : `${label}, ${time}`;
+            return label === t('Today') ? time : `${label}, ${time}`;
         },
 
         // --- Scrolling / sizing -------------------------------------------------

@@ -1,5 +1,6 @@
 // Small shared UI stores.
 import Alpine from 'alpinejs';
+import { t } from './i18n';
 
 // Toast notifications: Alpine.store('toast').show('Saved!')
 Alpine.store('toast', {
@@ -52,6 +53,46 @@ Alpine.store('sidebar', {
     },
 });
 
+// Light / dark / follow the device. Applied before first paint by the inline
+// script in partials/head.html; this keeps it in sync afterwards.
+const THEME_KEY = 'planly.theme';
+const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
+
+function readTheme() {
+    try {
+        return window.localStorage.getItem(THEME_KEY) || 'system';
+    } catch {
+        return 'system';
+    }
+}
+
+Alpine.store('theme', {
+    choice: readTheme(), // 'system' | 'light' | 'dark'
+
+    init() {
+        this.apply();
+        systemDark.addEventListener('change', () => this.apply());
+    },
+
+    get dark() {
+        return this.choice === 'dark' || (this.choice === 'system' && systemDark.matches);
+    },
+
+    set(choice) {
+        this.choice = choice;
+        try {
+            window.localStorage.setItem(THEME_KEY, choice);
+        } catch {
+            // Only a convenience.
+        }
+        this.apply();
+    },
+
+    apply() {
+        document.documentElement.classList.toggle('dark', this.dark);
+    },
+});
+
 // Which top-level overlays are open. Escape handlers use it so a single press
 // closes only the top layer (dialog > chat > propose form / event sheet > day panel).
 Alpine.store('overlays', { propose: false, chat: false, dialog: false, profile: false });
@@ -67,8 +108,8 @@ const DIALOG_DEFAULTS = {
     message: '',
     detail: '', // highlighted line, e.g. the event name
     detailSub: '', // smaller line under it, e.g. its dates
-    confirmLabel: 'Confirm',
-    cancelLabel: 'Cancel',
+    confirmLabel: t('Confirm'),
+    cancelLabel: t('Cancel'),
     tone: 'primary',
     icon: 'alert',
 };

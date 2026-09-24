@@ -5,6 +5,7 @@ import Alpine from 'alpinejs';
 import { updateProfile } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
+import { t } from './i18n';
 
 export const PHOTO_SIZE = 256; // px, square
 export const PHOTO_MAX_LENGTH = 120_000; // characters of data URL (~90 KB)
@@ -20,7 +21,7 @@ function loadImage(file) {
         };
         img.onerror = () => {
             URL.revokeObjectURL(url);
-            reject(new Error('That file isn’t an image we can read. Try a JPG or PNG.'));
+            reject(new Error(t('That file isn’t an image we can read. Try a JPG or PNG.')));
         };
         img.src = url;
     });
@@ -31,8 +32,8 @@ function loadImage(file) {
  * browser can, else JPEG), stepping quality down until it fits.
  */
 export async function photoFromFile(file) {
-    if (!file.type.startsWith('image/')) throw new Error('Pick an image file.');
-    if (file.size > 20 * 1024 * 1024) throw new Error('That image is too large (max 20 MB).');
+    if (!file.type.startsWith('image/')) throw new Error(t('Pick an image file.'));
+    if (file.size > 20 * 1024 * 1024) throw new Error(t('That image is too large (max 20 MB).'));
 
     const img = await loadImage(file);
     const side = Math.min(img.naturalWidth, img.naturalHeight);
@@ -50,7 +51,7 @@ export async function photoFromFile(file) {
         if (!url.startsWith('data:image/webp')) url = canvas.toDataURL('image/jpeg', quality); // Safari
         if (url.length <= PHOTO_MAX_LENGTH) return url;
     }
-    throw new Error('Couldn’t make that photo small enough. Try another one.');
+    throw new Error(t('Couldn’t make that photo small enough. Try another one.'));
 }
 
 Alpine.data('profileDialog', () => ({
@@ -118,7 +119,7 @@ Alpine.data('profileDialog', () => ({
         if (this.busy) return;
         const name = this.name.trim();
         if (!name) {
-            this.error = 'Your name can’t be empty.';
+            this.error = t('Your name can’t be empty.');
             return;
         }
         if (!this.changed) {
@@ -137,12 +138,12 @@ Alpine.data('profileDialog', () => ({
                 updateProfile(auth.currentUser, { displayName: updates.displayName }).catch(() => {});
             }
             this.open = false;
-            Alpine.store('toast').show('Profile updated.');
+            Alpine.store('toast').show(t('Profile updated.'));
         } catch (e) {
             console.error(e);
             this.error = e?.code === 'permission-denied'
-                ? 'That change wasn’t allowed. Try a smaller photo.'
-                : 'Couldn’t save. Check your connection and try again.';
+                ? t('That change wasn’t allowed. Try a smaller photo.')
+                : t('Couldn’t save. Check your connection and try again.');
         } finally {
             this.busy = false;
         }

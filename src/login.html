@@ -8,8 +8,8 @@
                     <span class="text-lg font-bold tracking-tight">Planly</span>
                 </div>
                 <div>
-                    <p class="text-sm font-medium text-white/80">Plans with friends, sorted</p>
-                    <h1 class="text-2xl font-bold tracking-tight">Find the day<br>everyone&#8217;s free</h1>
+                    <p class="text-sm font-medium text-white/80" data-t>Plans with friends, sorted</p>
+                    <h1 class="text-2xl font-bold tracking-tight"><span data-t>Find the day</span><br><span data-t>everyone’s free</span></h1>
                 </div>
             </div>
         </div>
@@ -22,29 +22,29 @@
         <div class="grid grid-cols-2 rounded-2xl bg-slate-100 p-1 text-sm font-semibold" role="tablist">
             <button type="button" role="tab" :aria-selected="!isSignup" @click="isSignup && toggleMode()"
                     :class="!isSignup ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'"
-                    class="rounded-xl py-2 transition">Sign in</button>
+                    class="rounded-xl py-2 transition" data-t>Sign in</button>
             <button type="button" role="tab" :aria-selected="isSignup" @click="!isSignup && toggleMode()"
                     :class="isSignup ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'"
-                    class="rounded-xl py-2 text-slate-500 transition">Create account</button>
+                    class="rounded-xl py-2 text-slate-500 transition" data-t>Create account</button>
         </div>
 
         <p class="mt-4 text-sm text-slate-500"
-           x-text="isSignup ? 'An admin approves new accounts before you can join in.' : 'Welcome back! Sign in to see what’s planned.'">
+           x-text="isSignup ? $t('An admin approves new accounts before you can join in.') : $t('Welcome back! Sign in to see what’s planned.')">
             Welcome back! Sign in to see what’s planned.
         </p>
 
         <form class="mt-5 space-y-4" @submit.prevent="submit" novalidate>
             <div x-show="isSignup" x-cloak>
-                <label for="displayName" class="label">Your name</label>
+                <label for="displayName" class="label" data-t>Your name</label>
                 <div class="relative">
                     <x-icon name="user" class="pointer-events-none absolute top-1/2 left-4 h-[18px] w-[18px] -translate-y-1/2 text-slate-400"/>
-                    <input id="displayName" type="text" x-model="displayName" maxlength="60" autocomplete="name"
+                    <input data-t-attr="placeholder" id="displayName" type="text" x-model="displayName" maxlength="60" autocomplete="name"
                            placeholder="What should friends call you?" :required="isSignup" class="input pl-11">
                 </div>
             </div>
 
             <div>
-                <label for="email" class="label">Email</label>
+                <label for="email" class="label" data-t>Email</label>
                 <div class="relative">
                     <x-icon name="mail" class="pointer-events-none absolute top-1/2 left-4 h-[18px] w-[18px] -translate-y-1/2 text-slate-400"/>
                     <input id="email" type="email" x-model="email" required autocomplete="email" inputmode="email"
@@ -54,15 +54,15 @@
 
             <div>
                 <div class="flex items-center justify-between">
-                    <label for="password" class="label">Password</label>
+                    <label for="password" class="label" data-t>Password</label>
                     <button type="button" x-show="!isSignup" @click="resetPassword"
-                            class="mb-1.5 text-xs font-semibold text-brand-600 hover:text-brand-500">Forgot password?</button>
+                            class="mb-1.5 text-xs font-semibold text-brand-600 hover:text-brand-500" data-t>Forgot password?</button>
                 </div>
                 <div class="relative">
                     <x-icon name="lock" class="pointer-events-none absolute top-1/2 left-4 h-[18px] w-[18px] -translate-y-1/2 text-slate-400"/>
                     <input id="password" type="password" x-model="password" required minlength="6"
                            :autocomplete="isSignup ? 'new-password' : 'current-password'"
-                           :placeholder="isSignup ? 'At least 6 characters' : '••••••••'" class="input pl-11">
+                           :placeholder="isSignup ? $t('At least 6 characters') : '••••••••'" class="input pl-11">
                 </div>
             </div>
 
@@ -70,9 +70,9 @@
                 <input type="checkbox" x-model="remember"
                        class="mt-0.5 h-[18px] w-[18px] shrink-0 cursor-pointer rounded accent-brand-600">
                 <span class="text-sm">
-                    <span class="font-semibold text-slate-700">Remember me</span>
+                    <span class="font-semibold text-slate-700" data-t>Remember me</span>
                     <span class="block text-xs text-slate-500"
-                          x-text="remember ? 'Stay signed in on this device.' : 'You’ll be signed out when you close the browser.'"></span>
+                          x-text="remember ? $t('Stay signed in on this device.') : $t('You’ll be signed out when you close the browser.')"></span>
                 </span>
             </label>
 
@@ -86,7 +86,7 @@
                     <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"/>
                     <path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
                 </svg>
-                <span x-text="isSignup ? 'Create account' : 'Sign in'">Sign in</span>
+                <span x-text="isSignup ? $t('Create account') : $t('Sign in')">Sign in</span>
             </button>
         </form>
     </div>

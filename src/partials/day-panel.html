@@ -11,14 +11,14 @@
 
         <!-- Header  -->
         <div class="flex items-center gap-2 px-5 pt-4">
-            <button type="button" @click="close()" class="grid h-9 w-9 place-items-center rounded-xl text-slate-500 hover:bg-slate-100" aria-label="Close">
+            <button data-t-attr="aria-label" type="button" @click="close()" class="grid h-9 w-9 place-items-center rounded-xl text-slate-500 hover:bg-slate-100" aria-label="Close">
                 <x-icon name="x"/>
             </button>
             <h2 id="day-panel-title" class="min-w-0 flex-1 truncate text-lg font-bold text-slate-900" x-text="title"></h2>
-            <button type="button" @click="shiftDay(-1)" class="grid h-9 w-9 place-items-center rounded-xl text-slate-500 hover:bg-slate-100" aria-label="Previous day">
+            <button data-t-attr="aria-label" type="button" @click="shiftDay(-1)" class="grid h-9 w-9 place-items-center rounded-xl text-slate-500 hover:bg-slate-100" aria-label="Previous day">
                 <x-icon name="chevron-left" class="h-4 w-4"/>
             </button>
-            <button type="button" @click="shiftDay(1)" class="grid h-9 w-9 place-items-center rounded-xl text-slate-500 hover:bg-slate-100" aria-label="Next day">
+            <button data-t-attr="aria-label" type="button" @click="shiftDay(1)" class="grid h-9 w-9 place-items-center rounded-xl text-slate-500 hover:bg-slate-100" aria-label="Next day">
                 <x-icon name="chevron-right" class="h-4 w-4"/>
             </button>
         </div>
@@ -41,10 +41,10 @@
             <template x-if="isEmpty">
                 <div class="flex flex-col items-center py-10 text-center">
                     <div class="grid h-16 w-16 place-items-center rounded-3xl bg-brand-50 text-3xl" aria-hidden="true">🗓️</div>
-                    <p class="mt-4 text-lg font-bold text-slate-900">Nothing planned</p>
-                    <p class="mt-1 text-sm text-slate-500" x-text="isPast ? 'Nothing happened on this day.' : 'Free day! Want to make plans?'"></p>
+                    <p class="mt-4 text-lg font-bold text-slate-900" data-t>Nothing planned</p>
+                    <p class="mt-1 text-sm text-slate-500" x-text="isPast ? $t('Nothing happened on this day.') : $t('Free day! Want to make plans?')"></p>
                     <button type="button" x-show="!isPast" @click="proposeOnThisDay()" class="btn btn-primary mt-5">
-                        <x-icon name="plus" class="h-4 w-4"/> Propose an event on this date
+                        <x-icon name="plus" class="h-4 w-4"/> <span data-t>Propose an event on this date</span>
                     </button>
                 </div>
             </template>
@@ -59,12 +59,12 @@
                     <span class="min-w-0 flex-1">
                         <span class="flex items-center gap-1.5">
                             <span class="truncate font-semibold text-slate-900" x-text="e.title"></span>
-                            <span class="chip shrink-0 bg-amber-200/70 text-amber-800">Proposed</span>
+                            <span class="chip shrink-0 bg-amber-200/70 text-amber-800" data-t>Proposed</span>
                         </span>
                         <span class="block text-xs text-amber-800"
-                              x-text="($store.planner.everyoneFree(e, $store.planner.optionAt(e, date)) ? '⭐ Everyone free · ' : '')
+                              x-text="($store.planner.everyoneFree(e, $store.planner.optionAt(e, date)) ? $t('⭐ Everyone free') + ' · ' : '')
                                     + ($store.planner.optionDays(e, $store.planner.optionAt(e, date)) > 1 ? $store.planner.optionLabel(e, $store.planner.optionAt(e, date)) + ' · ' : '')
-                                    + $store.planner.availableCount(e, $store.planner.optionAt(e, date)) + '/' + $store.planner.approvedCount + ' free · tap to vote'"></span>
+                                    + $store.planner.availableCount(e, $store.planner.optionAt(e, date)) + '/' + $store.planner.approvedCount + ' ' + $t('free · tap to vote')"></span>
                     </span>
                     <x-icon name="chevron-right" class="h-4 w-4 shrink-0 text-amber-600"/>
                 </button>
@@ -81,13 +81,13 @@
                         <span class="min-w-0 flex-1">
                             <span class="block truncate font-semibold text-slate-900" x-text="e.title"></span>
                             <span class="block truncate text-xs text-emerald-800"
-                                  x-text="(e.location ? e.location + ' · ' : '') + e.rsvpSummary.join + ' joining'"></span>
+                                  x-text="(e.location ? e.location + ' · ' : '') + $t('{n} joining', { n: e.rsvpSummary.join })"></span>
                         </span>
                         <x-icon name="chevron-right" class="h-4 w-4 shrink-0 text-emerald-600"/>
                     </button>
 
                     <h3 class="mt-4 mb-2 text-xs font-bold tracking-wide text-slate-400 uppercase">
-                        Itinerary<span x-show="dayOf(e, date)" x-text="' · ' + dayOf(e, date)"></span>
+                        <span data-t>Itinerary</span><span x-show="dayOf(e, date)" x-text="' · ' + dayOf(e, date)"></span>
                     </h3>
                     <template x-for="day in [date]" :key="day">
                         <include src="partials/itinerary-timeline.html" empty="No plans yet for this day. Add the first stop!"></include>
@@ -95,7 +95,7 @@
                 </section>
             </template>
 
-            <p x-show="!isEmpty && confirmedEvents.length === 0" class="mt-2 text-center text-xs text-slate-400">
+            <p x-show="!isEmpty && confirmedEvents.length === 0" class="mt-2 text-center text-xs text-slate-400" data-t>
                 Itineraries open once an event is confirmed for this day.
             </p>
         </div>

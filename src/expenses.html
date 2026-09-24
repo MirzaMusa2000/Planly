@@ -1,8 +1,8 @@
 <!-- layout: app | title: Expenses | page: expenses | access: approved -->
     <div x-data="expensesPage" x-effect="sync()">
         <div class="mb-6">
-            <h1 class="text-2xl font-bold tracking-tight text-slate-900">Expenses</h1>
-            <p class="mt-1 text-sm text-slate-500">Who paid what, everyone’s share, and who owes whom.</p>
+            <h1 class="text-2xl font-bold tracking-tight text-slate-900" data-t>Expenses</h1>
+            <p class="mt-1 text-sm text-slate-500" data-t>Who paid what, everyone’s share, and who owes whom.</p>
         </div>
 
         <p x-show="store.error" x-text="store.error" x-cloak role="alert" class="mb-5 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700"></p>
@@ -16,30 +16,30 @@
         <!-- No confirmed events -->
         <div x-show="!store.loading && !event" x-cloak class="card flex flex-col items-center px-6 py-14 text-center">
             <div class="grid h-16 w-16 place-items-center rounded-3xl bg-emerald-50 text-3xl" aria-hidden="true">🧾</div>
-            <p class="mt-4 text-lg font-bold text-slate-900">No events to split yet</p>
-            <p class="mt-1 max-w-sm text-sm text-slate-500">Once an event is confirmed, track its costs here and see who owes whom.</p>
+            <p class="mt-4 text-lg font-bold text-slate-900" data-t>No events to split yet</p>
+            <p class="mt-1 max-w-sm text-sm text-slate-500" data-t>Once an event is confirmed, track its costs here and see who owes whom.</p>
             <a href="/" class="btn btn-primary mt-6">
-                <x-icon name="calendar" class="h-4 w-4"/> Go to calendar
+                <x-icon name="calendar" class="h-4 w-4"/> <span data-t>Go to calendar</span>
             </a>
         </div>
 
         <template x-for="e in (event ? [event] : [])" :key="e.id">
             <div>
                 <!-- Event switcher -->
-                <div x-show="events.length > 1" class="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden"
+                <div data-t-attr="aria-label" x-show="events.length > 1" class="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden"
                      role="tablist" aria-label="Events">
                     <template x-for="option in events" :key="option.id">
                         <button type="button" role="tab" @click="select(option.id)" :aria-selected="option.id === e.id"
                                 :class="option.id === e.id ? 'bg-ink-950 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'"
                                 class="flex shrink-0 items-center gap-2 rounded-2xl px-3.5 py-2 text-sm font-semibold shadow-soft transition">
                             <span x-text="option.title" class="max-w-40 truncate"></span>
-                            <span class="text-xs font-medium opacity-70" x-text="(isPast(option) ? 'Past · ' : '') + when(option)"></span>
+                            <span class="text-xs font-medium opacity-70" x-text="(isPast(option) ? $t('Past') + ' · ' : '') + when(option)"></span>
                         </button>
                     </template>
                 </div>
 
                 <!-- Summary -->
-                <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 via-teal-600 to-cyan-700 p-5 text-white shadow-lift sm:p-6">
+                <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 via-teal-600 to-cyan-600 p-5 text-white shadow-lift sm:p-6">
                     <div class="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full bg-white/10" aria-hidden="true"></div>
                     <div class="relative flex flex-wrap items-start gap-4">
                         <div class="min-w-0 flex-1">
@@ -47,20 +47,20 @@
                                 <span x-text="e.title"></span> · <span x-text="when(e)"></span>
                             </p>
                             <p class="mt-2 text-4xl font-bold tracking-tight" x-text="formatRM(totalCents)"></p>
-                            <p class="text-sm text-white/80">Total spent</p>
+                            <p class="text-sm text-white/80" data-t>Total spent</p>
                         </div>
                         <button type="button" @click="copySummary()" x-show="expenses.length"
                                 class="btn bg-white/15 py-2 text-white backdrop-blur hover:bg-white/25">
-                            <x-icon name="copy" class="h-4 w-4"/> Copy summary
+                            <x-icon name="copy" class="h-4 w-4"/> <span data-t>Copy summary</span>
                         </button>
                     </div>
                     <div class="relative mt-4 flex flex-wrap gap-2 text-xs font-semibold">
                         <span class="rounded-full bg-white/15 px-3 py-1"
-                              x-text="eachLabel + ' · ' + participants.size + (participants.size === 1 ? ' person' : ' people')"></span>
-                        <span class="rounded-full bg-white/15 px-3 py-1" x-text="expenses.length + (expenses.length === 1 ? ' item' : ' items')"></span>
+                              x-text="eachLabel + ' · ' + $tn(participants.size, '{n} person', '{n} people')"></span>
+                        <span class="rounded-full bg-white/15 px-3 py-1" x-text="$tn(expenses.length, '{n} item', '{n} items')"></span>
                         <span class="rounded-full px-3 py-1"
                               :class="myNet > 0 ? 'bg-white text-emerald-700' : myNet < 0 ? 'bg-amber-300 text-amber-900' : 'bg-white/15'"
-                              x-text="myNet > 0 ? 'You’re owed ' + formatRM(myNet) : myNet < 0 ? 'You owe ' + formatRM(-myNet) : 'You’re all square'"></span>
+                              x-text="myNet > 0 ? $t('You’re owed {amount}', { amount: formatRM(myNet) }) : myNet < 0 ? $t('You owe {amount}', { amount: formatRM(-myNet) }) : $t('You’re all square')"></span>
                     </div>
                 </section>
 
@@ -74,9 +74,9 @@
                                 <span class="grid h-9 w-9 place-items-center rounded-xl bg-brand-50 text-brand-600">
                                     <x-icon name="users" class="h-[18px] w-[18px]"/>
                                 </span>
-                                <h2 id="balances-title" class="text-base font-bold text-slate-900">Balances</h2>
+                                <h2 id="balances-title" class="text-base font-bold text-slate-900" data-t>Balances</h2>
                             </div>
-                            <p x-show="!balanceRows.length" class="mt-4 rounded-2xl bg-slate-50 px-4 py-5 text-center text-sm text-slate-500">Add an expense to see balances.</p>
+                            <p x-show="!balanceRows.length" class="mt-4 rounded-2xl bg-slate-50 px-4 py-5 text-center text-sm text-slate-500" data-t>Add an expense to see balances.</p>
                             <ul class="mt-4 space-y-3">
                                 <template x-for="r in balanceRows" :key="r.uid">
                                     <li class="flex items-center gap-3">
@@ -88,7 +88,7 @@
                                                 <p class="truncate text-sm font-semibold text-slate-900" x-text="memberName(r.uid)"></p>
                                                 <p class="shrink-0 text-sm font-bold"
                                                    :class="r.net > 0 ? 'text-emerald-600' : r.net < 0 ? 'text-amber-600' : 'text-slate-400'"
-                                                   x-text="r.net > 0 ? '+' + formatRM(r.net) : r.net < 0 ? formatRM(r.net) : 'Settled'"></p>
+                                                   x-text="r.net > 0 ? '+' + formatRM(r.net) : r.net < 0 ? formatRM(r.net) : $t('Settled')"></p>
                                             </div>
                                             <p class="text-xs text-slate-500" x-text="balanceLine(r)"></p>
                                             <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100">
@@ -107,12 +107,12 @@
                                 <span class="grid h-9 w-9 place-items-center rounded-xl bg-amber-50 text-amber-600">
                                     <x-icon name="wallet" class="h-[18px] w-[18px]"/>
                                 </span>
-                                <h2 id="settle-title" class="text-base font-bold text-slate-900">Settle up</h2>
+                                <h2 id="settle-title" class="text-base font-bold text-slate-900" data-t>Settle up</h2>
                             </div>
 
                             <p x-show="expenses.length && !transfers.length"
-                               class="mt-4 rounded-2xl bg-emerald-50 px-4 py-5 text-center text-sm font-semibold text-emerald-700">All settled up 🎉</p>
-                            <p x-show="!expenses.length" class="mt-4 rounded-2xl bg-slate-50 px-4 py-5 text-center text-sm text-slate-500">Nothing to settle yet.</p>
+                               class="mt-4 rounded-2xl bg-emerald-50 px-4 py-5 text-center text-sm font-semibold text-emerald-700" data-t>All settled up 🎉</p>
+                            <p x-show="!expenses.length" class="mt-4 rounded-2xl bg-slate-50 px-4 py-5 text-center text-sm text-slate-500" data-t>Nothing to settle yet.</p>
 
                             <ul class="mt-4 space-y-2" x-show="transfers.length">
                                 <template x-for="t in transfers" :key="t.from + '>' + t.to">
@@ -125,10 +125,10 @@
                                         </div>
                                         <div x-show="t.from === me.uid || t.to === me.uid || canRecord(t)" class="mt-2 flex items-center justify-between gap-2">
                                             <p class="text-xs text-slate-500"
-                                               x-text="t.from === me.uid ? 'You pay ' + memberName(t.to) : t.to === me.uid ? memberName(t.from) + ' pays you' : ''"></p>
+                                               x-text="t.from === me.uid ? $t('You pay {name}', { name: memberName(t.to) }) : t.to === me.uid ? $t('{name} pays you', { name: memberName(t.from) }) : ''"></p>
                                             <button type="button" x-show="canRecord(t)" @click="markPaid(t)"
                                                     class="btn btn-success shrink-0 px-3 py-1.5 text-xs">
-                                                <x-icon name="check" class="h-3.5 w-3.5"/> Mark paid
+                                                <x-icon name="check" class="h-3.5 w-3.5"/> <span data-t>Mark paid</span>
                                             </button>
                                         </div>
                                     </li>
@@ -137,19 +137,19 @@
 
                             <!-- Recorded payments -->
                             <div x-show="settlements.length" class="mt-5 border-t border-slate-100 pt-4">
-                                <h3 class="mb-2 text-xs font-bold tracking-wide text-slate-400 uppercase">Payments made</h3>
+                                <h3 class="mb-2 text-xs font-bold tracking-wide text-slate-400 uppercase" data-t>Payments made</h3>
                                 <ul class="space-y-1.5">
                                     <template x-for="s in settlements" :key="s.id">
                                         <li class="flex items-center gap-2 text-sm text-slate-600">
                                             <x-icon name="check" class="h-4 w-4 shrink-0 text-emerald-500"/>
                                             <span class="min-w-0 flex-1 truncate">
-                                                <span class="font-semibold" x-text="memberName(s.from)"></span> paid
+                                                <span class="font-semibold" x-text="memberName(s.from)"></span> <span data-t>paid</span>
                                                 <span class="font-semibold" x-text="memberName(s.to)"></span>
                                                 <span class="text-slate-400" x-text="paidOn(s) && '· ' + paidOn(s)"></span>
                                             </span>
                                             <span class="font-semibold text-slate-900" x-text="formatRM(s.amountCents)"></span>
                                             <button type="button" x-show="canUndo(s)" @click="undoPayment(s)"
-                                                    class="rounded-lg px-2 py-1 text-xs font-semibold text-slate-400 hover:bg-slate-100 hover:text-rose-600">Undo</button>
+                                                    class="rounded-lg px-2 py-1 text-xs font-semibold text-slate-400 hover:bg-slate-100 hover:text-rose-600" data-t>Undo</button>
                                         </li>
                                     </template>
                                 </ul>

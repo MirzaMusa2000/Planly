@@ -9,11 +9,13 @@ import { formatRange, today } from './dates';
 import { balances, formatRM, parseRM, settleUp, splitCents } from './money';
 import { errorMessage } from './voting';
 import { confirmDialog } from './ui';
+import { locale, t } from './i18n';
+
 
 export const EXPENSE_LIMITS = { item: 120, notes: 300 };
 
 const eventRef = (eventId) => doc(db, 'events', eventId);
-const paidDate = new Intl.DateTimeFormat('en-GB', { timeZone: window.Planly?.timezone || 'Asia/Kuala_Lumpur', day: 'numeric', month: 'short' });
+const paidDate = new Intl.DateTimeFormat(locale, { timeZone: window.Planly?.timezone || 'Asia/Kuala_Lumpur', day: 'numeric', month: 'short' });
 const toast = (message, type) => Alpine.store('toast').show(message, type);
 
 const emptyForm = () => ({ id: null, item: '', amount: '', paidBy: '', splitWith: [], notes: '' });
@@ -106,7 +108,7 @@ Alpine.data('expensesPage', () => {
             const onError = (error) => {
                 console.error(error);
                 this.loading = false;
-                toast('Couldn’t load expenses.', 'error');
+                toast(t('Couldn’t load expenses.'), 'error');
             };
             const rows = (snapshot) => snapshot.docs.map((d) => ({ id: d.id, ...d.data({ serverTimestamps: 'estimate' }) }));
 
@@ -130,8 +132,8 @@ Alpine.data('expensesPage', () => {
         },
 
         memberName(uid) {
-            if (uid === this.me.uid) return 'You';
-            return this.store.members.find((m) => m.uid === uid)?.displayName ?? 'Former member';
+            if (uid === this.me.uid) return t('You');
+            return this.store.members.find((m) => m.uid === uid)?.displayName ?? t('Former member');
         },
 
         /** Who shares a new expense by default: everyone joining, else every member. */
@@ -171,12 +173,12 @@ Alpine.data('expensesPage', () => {
 
         /** "RM158.50 each" or "RM180.00 avg" */
         get eachLabel() {
-            return `${formatRM(this.eachCents)} ${this.evenSplit ? 'each' : 'avg'}`;
+            return this.evenSplit ? t('{amount} each', { amount: formatRM(this.eachCents) }) : t('{amount} avg', { amount: formatRM(this.eachCents) });
         },
 
         splitLabel(e) {
             const n = e.splitWith.length;
-            if (n === this.participants.size) return `${n} ${n === 1 ? 'person' : 'people'}`;
+            if (n === this.participants.size) return n === 1 ? t('{n} person', { n }) : t('{n} people', { n });
             return e.splitWith.map((uid) => this.memberName(uid)).join(', ');
         },
 
@@ -194,9 +196,9 @@ Alpine.data('expensesPage', () => {
 
         /** "Paid RM150.00 · Share RM187.16 · Sent RM37.16" */
         balanceLine(r) {
-            const parts = [`Paid ${formatRM(r.paid)}`, `Share ${formatRM(r.share)}`];
-            if (r.sent) parts.push(`Sent ${formatRM(r.sent)}`);
-            if (r.received) parts.push(`Received ${formatRM(r.received)}`);
+            const parts = [t('Paid {amount}', { amount: formatRM(r.paid) }), t('Share {amount}', { amount: formatRM(r.share) })];
+            if (r.sent) parts.push(t('Sent {amount}', { amount: formatRM(r.sent) }));
+            if (r.received) parts.push(t('Received {amount}', { amount: formatRM(r.received) }));
             return parts.join(' · ');
         },
 
@@ -222,26 +224,26 @@ Alpine.data('expensesPage', () => {
             return date ? paidDate.format(date) : '';
         },
 
-        markPaid(t) {
+        markPaid(transfer) {
             const eventId = this.event.id;
             return confirmDialog({
-                title: 'Record this payment?',
-                message: 'It counts towards settling up for everyone.',
-                detail: `${this.memberName(t.from)} paid ${this.memberName(t.to)}`,
-                detailSub: formatRM(t.amountCents),
-                confirmLabel: 'Mark as paid',
+                title: t('Record this payment?'),
+                message: t('It counts towards settling up for everyone.'),
+                detail: t('{from} paid {to}', { from: this.memberName(transfer.from), to: this.memberName(transfer.to) }),
+                detailSub: formatRM(transfer.amountCents),
+                confirmLabel: t('Mark as paid'),
                 tone: 'success',
                 icon: 'wallet',
                 action: async () => {
                     try {
                         await addDoc(collection(eventRef(eventId), 'settlements'), {
-                            from: t.from,
-                            to: t.to,
-                            amountCents: t.amountCents,
+                            from: transfer.from,
+                            to: transfer.to,
+                            amountCents: transfer.amountCents,
                             createdBy: this.me.uid,
                             createdAt: serverTimestamp(),
                         });
-                        toast(`Recorded ${formatRM(t.amountCents)} from ${this.memberName(t.from)} to ${this.memberName(t.to)}.`);
+                        toast(t('Recorded {amount} from {from} to {to}.', { amount: formatRM(transfer.amountCents), from: this.memberName(transfer.from), to: this.memberName(transfer.to) }));
                     } catch (e) {
                         toast(errorMessage(e), 'error');
                     }
@@ -252,11 +254,11 @@ Alpine.data('expensesPage', () => {
         undoPayment(s) {
             const eventId = this.event.id;
             return confirmDialog({
-                title: 'Undo this payment?',
-                message: 'The amount goes back to being owed.',
-                detail: `${this.memberName(s.from)} paid ${this.memberName(s.to)}`,
+                title: t('Undo this payment?'),
+                message: t('The amount goes back to being owed.'),
+                detail: t('{from} paid {to}', { from: this.memberName(s.from), to: this.memberName(s.to) }),
                 detailSub: formatRM(s.amountCents),
-                confirmLabel: 'Undo payment',
+                confirmLabel: t('Undo payment'),
                 tone: 'danger',
                 icon: 'alert',
                 action: async () => {
@@ -328,18 +330,18 @@ Alpine.data('expensesPage', () => {
             const shares = [...splitCents(cents, this.form.splitWith).values()];
             const low = Math.min(...shares);
             const high = Math.max(...shares);
-            return `${low === high ? formatRM(low) : `${formatRM(low)}–${formatRM(high)}`} each · ${people} ${people === 1 ? 'person' : 'people'}`;
+            return t('{amount} each · {people}', { amount: low === high ? formatRM(low) : `${formatRM(low)}–${formatRM(high)}`, people: people === 1 ? t('{n} person', { n: people }) : t('{n} people', { n: people }) });
         },
 
         async save() {
             if (this.formBusy || !this.event) return;
             const f = this.form;
             const amountCents = parseRM(f.amount);
-            if (!f.item.trim()) return (this.formError = 'What was it for?');
-            if (!amountCents) return (this.formError = 'Enter an amount, like 12.50.');
-            if (amountCents > 100000000) return (this.formError = 'That amount is too large.');
-            if (!f.paidBy) return (this.formError = 'Who paid?');
-            if (f.splitWith.length === 0) return (this.formError = 'Pick at least one person to split with.');
+            if (!f.item.trim()) return (this.formError = t('What was it for?'));
+            if (!amountCents) return (this.formError = t('Enter an amount, like 12.50.'));
+            if (amountCents > 100000000) return (this.formError = t('That amount is too large.'));
+            if (!f.paidBy) return (this.formError = t('Who paid?'));
+            if (f.splitWith.length === 0) return (this.formError = t('Pick at least one person to split with.'));
 
             const data = {
                 item: f.item.trim().slice(0, EXPENSE_LIMITS.item),
@@ -377,11 +379,11 @@ Alpine.data('expensesPage', () => {
             if (!f.id || !this.event) return;
             const eventId = this.event.id;
             return confirmDialog({
-                title: 'Remove this expense?',
-                message: 'Everyone’s shares are recalculated.',
+                title: t('Remove this expense?'),
+                message: t('Everyone’s shares are recalculated.'),
                 detail: f.item,
-                detailSub: `${formatRM(parseRM(f.amount) ?? 0)} · paid by ${this.memberName(f.paidBy)}`,
-                confirmLabel: 'Remove',
+                detailSub: t('{amount} · paid by {name}', { amount: formatRM(parseRM(f.amount) ?? 0), name: this.memberName(f.paidBy) }),
+                confirmLabel: t('Remove'),
                 tone: 'danger',
                 icon: 'trash',
                 action: async () => {
@@ -401,14 +403,14 @@ Alpine.data('expensesPage', () => {
         get summaryText() {
             const e = this.event;
             const name = (uid) => (uid === this.me.uid ? this.me.displayName : this.memberName(uid));
-            const lines = [`${e.title} (${this.when(e)}): expenses`, ''];
+            const lines = [`${e.title} (${this.when(e)}): ${t('expenses')}`, ''];
             this.rows.forEach((r) => lines.push(`${r.no}. ${r.item}: ${formatRM(r.amountCents)} (${name(r.paidBy)})`));
-            lines.push('', `Total: ${formatRM(this.totalCents)} · ${this.eachLabel} (${this.participants.size} people)`);
+            lines.push('', `${t('Total')}: ${formatRM(this.totalCents)} · ${this.eachLabel} (${t('{n} people', { n: this.participants.size })})`);
             if (this.transfers.length) {
-                lines.push('', 'To settle up:');
+                lines.push('', t('To settle up:'));
                 this.transfers.forEach((t) => lines.push(`${name(t.from)} → ${name(t.to)}: ${formatRM(t.amountCents)}`));
             } else if (this.expenses.length) {
-                lines.push('', 'All settled up ✅');
+                lines.push('', t('All settled up ✅'));
             }
             return lines.join('\n');
         },
@@ -416,9 +418,9 @@ Alpine.data('expensesPage', () => {
         async copySummary() {
             try {
                 await navigator.clipboard.writeText(this.summaryText);
-                toast('Summary copied. Paste it in the chat or WhatsApp.');
+                toast(t('Summary copied. Paste it in the chat or WhatsApp.'));
             } catch {
-                toast('Couldn’t copy. Your browser blocked it.', 'error');
+                toast(t('Couldn’t copy. Your browser blocked it.'), 'error');
             }
         },
     };

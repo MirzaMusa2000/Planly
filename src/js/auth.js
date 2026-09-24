@@ -13,6 +13,7 @@ import {
 import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { ensureUserDoc, homeFor } from './session';
+import { N_, t } from './i18n';
 
 // ---------------------------------------------------------------------------
 // Sign-in methods. Each resolves to a Firebase User. To add Email Link
@@ -36,24 +37,24 @@ export const providers = {
 };
 
 const FRIENDLY_ERRORS = {
-    'auth/invalid-credential': 'Wrong email or password.',
-    'auth/invalid-login-credentials': 'Wrong email or password.',
-    'auth/wrong-password': 'Wrong email or password.',
-    'auth/user-not-found': 'Wrong email or password.',
-    'auth/email-already-in-use': 'That email already has an account. Try signing in.',
-    'auth/invalid-email': 'That email address looks wrong.',
-    'auth/weak-password': 'Use at least 6 characters for your password.',
-    'auth/too-many-requests': 'Too many attempts. Wait a moment and try again.',
-    'auth/network-request-failed': 'Network problem. Check your connection.',
-    'auth/user-disabled': 'This account has been disabled.',
-    'permission-denied': 'Your account couldn’t be set up. Please try again.',
-    unavailable: 'We can’t reach Planly right now. Check your connection and try again.',
+    'auth/invalid-credential': N_('Wrong email or password.'),
+    'auth/invalid-login-credentials': N_('Wrong email or password.'),
+    'auth/wrong-password': N_('Wrong email or password.'),
+    'auth/user-not-found': N_('Wrong email or password.'),
+    'auth/email-already-in-use': N_('That email already has an account. Try signing in.'),
+    'auth/invalid-email': N_('That email address looks wrong.'),
+    'auth/weak-password': N_('Use at least 6 characters for your password.'),
+    'auth/too-many-requests': N_('Too many attempts. Wait a moment and try again.'),
+    'auth/network-request-failed': N_('Network problem. Check your connection.'),
+    'auth/user-disabled': N_('This account has been disabled.'),
+    'permission-denied': N_('Your account couldn’t be set up. Please try again.'),
+    unavailable: N_('We can’t reach Planly right now. Check your connection and try again.'),
 };
 
-const errorMessage = (error) => FRIENDLY_ERRORS[error?.code] ?? 'Something went wrong. Please try again.';
+const errorMessage = (error) => t(FRIENDLY_ERRORS[error?.code] ?? 'Something went wrong. Please try again.');
 
 const NOTICES = {
-    revoked: 'Your access has been revoked.',
+    revoked: N_('Your access has been revoked.'),
 };
 
 // "Remember me": the choice and the last email are kept on this device only.
@@ -100,7 +101,7 @@ Alpine.data('loginForm', () => ({
     busy: false,
     error: '',
     info: '',
-    notice: NOTICES[new URLSearchParams(window.location.search).get('reason')] ?? '',
+    notice: t(NOTICES[new URLSearchParams(window.location.search).get('reason')] ?? ''),
 
     get isSignup() {
         return this.mode === 'signup';
@@ -147,12 +148,12 @@ Alpine.data('loginForm', () => ({
         this.error = '';
         this.info = '';
         if (!this.email.trim()) {
-            this.error = 'Enter your email first, then tap "Forgot password?".';
+            this.error = t('Enter your email first, then tap "Forgot password?".');
             return;
         }
         try {
             await sendPasswordResetEmail(auth, this.email.trim());
-            this.info = 'If that email has an account, a reset link is on its way.';
+            this.info = t('If that email has an account, a reset link is on its way.');
         } catch (e) {
             this.error = errorMessage(e);
         }
@@ -199,7 +200,7 @@ Alpine.data('pendingPage', () => ({
                 window.location.replace('/');
                 return;
             }
-            this.message = profile.status === 'pending' ? 'Still waiting. We’ll keep checking.' : '';
+            this.message = profile.status === 'pending' ? t('Still waiting. We’ll keep checking.') : '';
         } catch (e) {
             this.message = errorMessage(e);
         }

@@ -2,6 +2,8 @@
 // (Asia/Kuala_Lumpur). To avoid off-by-one-day bugs, date strings are only
 // ever turned into Date objects at UTC midnight and formatted in UTC.
 
+import { locale } from './i18n';
+
 const TIMEZONE = window.Planly?.timezone || 'Asia/Kuala_Lumpur';
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -35,7 +37,7 @@ export function addDays(dateString, days) {
 export function format(dateString, options) {
     // Templates often format optional fields (e.g. finalDate is null while proposed).
     if (!isDateString(dateString)) return '';
-    return new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', ...options }).format(toUtcDate(dateString));
+    return new Intl.DateTimeFormat(locale, { timeZone: 'UTC', ...options }).format(toUtcDate(dateString));
 }
 
 export const formatShort = (d) => format(d, { weekday: 'short', day: 'numeric', month: 'short' });
@@ -63,9 +65,10 @@ export function formatRange(start, end) {
 /** "Friday, 2 October 2026" · "Friday 2 – Sunday 4 October 2026" · across months/years. */
 export function formatRangeLong(start, end) {
     if (!end || end === start) return formatLong(start);
-    const dayName = (d) => format(d, { weekday: 'long', day: 'numeric' });
+    // Weekday then day, the same way round in both languages.
+    const dayName = (d) => `${format(d, { weekday: 'long' })} ${format(d, { day: 'numeric' })}`;
     if (start.slice(0, 7) === end.slice(0, 7)) return `${dayName(start)} – ${dayName(end)} ${format(end, { month: 'long', year: 'numeric' })}`;
-    const withMonth = (d) => format(d, { weekday: 'long', day: 'numeric', month: 'long' });
+    const withMonth = (d) => `${dayName(d)} ${format(d, { month: 'long' })}`;
     if (start.slice(0, 4) === end.slice(0, 4)) return `${withMonth(start)} – ${withMonth(end)} ${end.slice(0, 4)}`;
     return `${formatLong(start)} – ${formatLong(end)}`;
 }

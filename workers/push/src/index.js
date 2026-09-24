@@ -55,6 +55,23 @@ async function verifyIdToken(request, env) {
 }
 
 const isFresh = (date) => date instanceof Date && Date.now() - date.getTime() < FRESH_MS;
+
+/** Each recipient gets the notification in their own language (users/{uid}.lang). */
+const TEXT = {
+    en: {
+        signupTitle: () => 'New member waiting for approval',
+        signupBody: ({ name, email }) => `${name} (${email}) wants to join Planly.`,
+        proposalTitle: ({ title }) => `New proposal: ${title}`,
+        proposalBody: ({ who, n, ranges }) => `${who} suggested ${n} ${ranges ? 'date option' : 'date'}${n === 1 ? '' : 's'}. Tap to vote.`,
+    },
+    ms: {
+        signupTitle: () => 'Ahli baru menunggu kelulusan',
+        signupBody: ({ name, email }) => `${name} (${email}) ingin menyertai Planly.`,
+        proposalTitle: ({ title }) => `Cadangan baru: ${title}`,
+        proposalBody: ({ who, n, ranges }) => `${who} mencadangkan ${n} ${ranges ? 'pilihan tarikh' : 'tarikh'}. Tekan untuk mengundi.`,
+    },
+};
+const text = (lang) => TEXT[lang] ?? TEXT.en;
 const truncate = (text, n) => (text.length > n ? `${text.slice(0, n - 1)}…` : text);
 
 /** What to send, and to whom, for a request from `uid`. */
@@ -67,15 +84,16 @@ async function plan(db, body, uid) {
         case 'signup': {
             if (caller.status !== 'pending' || !isFresh(caller.createdAt)) throw new HttpError(409, 'Nothing new.');
             const admins = (await approved()).filter((u) => u.role === 'admin');
+            const params = { name: caller.displayName || caller.email, email: caller.email };
             return {
                 lock: `signup-${uid}`,
-                recipients: admins.map((u) => u.id),
-                message: {
-                    title: 'New member waiting for approval',
-                    body: `${caller.displayName || caller.email} (${caller.email}) wants to join Planly.`,
+                recipients: admins,
+                message: (lang) => ({
+                    title: text(lang).signupTitle(params),
+                    body: text(lang).signupBody(params),
                     url: '/members',
                     tag: 'planly-signup',
-                },
+                }),
             };
         }
 
@@ -86,18 +104,22 @@ async function plan(db, body, uid) {
             if (!event || event.proposedBy !== uid || event.status !== 'proposed' || !isFresh(event.createdAt)) {
                 throw new HttpError(409, 'Nothing new.');
             }
-            const dates = event.candidateDates?.length ?? 0;
             // Multi-day options ("Fri–Sun") read better as "date options".
-            const noun = Object.keys(event.candidateEnds ?? {}).length ? 'date option' : 'date';
+            const params = {
+                title: truncate(event.title, 80),
+                who: event.proposedByName || caller.displayName,
+                n: event.candidateDates?.length ?? 0,
+                ranges: Object.keys(event.candidateEnds ?? {}).length > 0,
+            };
             return {
                 lock: `proposal-${body.eventId}`,
-                recipients: (await approved()).map((u) => u.id).filter((id) => id !== uid),
-                message: {
-                    title: `New proposal: ${truncate(event.title, 80)}`,
-                    body: `${event.proposedByName || caller.displayName} suggested ${dates} ${noun}${dates === 1 ? '' : 's'}. Tap to vote.`,
+                recipients: (await approved()).filter((u) => u.id !== uid),
+                message: (lang) => ({
+                    title: text(lang).proposalTitle(params),
+                    body: text(lang).proposalBody(params),
                     url: `/#event=${body.eventId}`,
                     tag: `planly-event-${body.eventId}`,
-                },
+                }),
             };
         }
 
@@ -108,13 +130,13 @@ async function plan(db, body, uid) {
             if (!message || message.senderId !== uid || !isFresh(message.createdAt)) throw new HttpError(409, 'Nothing new.');
             return {
                 lock: `chat-${body.messageId}`,
-                recipients: (await approved()).map((u) => u.id).filter((id) => id !== uid),
-                message: {
-                    title: message.senderName || 'New message',
+                recipients: (await approved()).filter((u) => u.id !== uid),
+                message: () => ({
+                    title: message.senderName || 'Planly',
                     body: truncate(message.text, 140),
                     url: '/#chat',
                     tag: 'planly-chat', // newer chat notifications replace older ones
-                },
+                }),
             };
         }
 
@@ -124,7 +146,8 @@ async function plan(db, body, uid) {
 }
 
 async function deliver(db, env, recipients, message) {
-    const wanted = new Set(recipients);
+    const langOf = new Map(recipients.map((u) => [u.id, u.lang === 'ms' ? 'ms' : 'en']));
+    const wanted = new Set(langOf.keys());
     if (wanted.size === 0) return { devices: 0, sent: 0, removed: 0 };
 
     // users/{uid}/pushSubscriptions/{id}. A device used by several accounts
@@ -151,7 +174,7 @@ async function deliver(db, env, recipients, message) {
     };
 
     const results = await Promise.allSettled(targets.map(async (s) => {
-        const result = await sendPush(s, message, vapid);
+        const result = await sendPush(s, message(langOf.get(s.uid)), vapid);
         if (result.gone) await db.delete(s.path);
         else if (!result.ok) console.warn(`Push to ${new URL(s.endpoint).host} failed: ${result.status}`);
         return result;

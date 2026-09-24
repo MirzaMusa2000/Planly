@@ -2,7 +2,7 @@
 
 A private group planner for friends: propose events with candidate dates, vote on
 availability, confirm and RSVP, plan a day-by-day itinerary (events can span several days), share a "who brings what"
-checklist (Itinerary page), split costs and settle up (Expenses page), and chat. New members wait for admin approval.
+checklist (Itinerary page), split costs and settle up (Expenses page), and chat. In English or Bahasa Melayu, light or dark. New members wait for admin approval.
 
 **Runs entirely on Firebase's free Spark plan.** It's a static site (HTML + JavaScript,
 built with Vite) on **Firebase Hosting**, using **Firebase Auth** and **Cloud Firestore**
@@ -68,8 +68,9 @@ FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:909
 ### Tests
 
 ```bash
-npm run test:rules       # 78 security-rules tests against a throwaway emulator
+npm run test:rules       # 79 security-rules tests against a throwaway emulator
 npm run test:unit        # expense maths (splits, balances, settle up)
+npm run test:i18n        # builds, then checks every string has a Malay translation
 npm run test:push        # push worker: encryption, VAPID, who gets notified (emulator)
 npm run build            # static site into dist/
 ```
@@ -118,6 +119,19 @@ Spark limits that matter: Hosting 10 GB storage / 360 MB per day transfer; Fires
 50k reads / 20k writes per day. A friends group is far below these.
 
 ---
+
+## Languages and dark mode
+
+- **English / Bahasa Melayu** (`src/js/i18n.js`): the English text is the key.
+  Mark text with `data-t` (element text), `data-t-attr="placeholder"` (attributes),
+  `$t('…')` in Alpine expressions or `t('…')` / `N_('…')` in JS; add the Malay in
+  `src/js/i18n-ms.js`. `npm run test:i18n` fails on anything missing. The choice is
+  kept per device and on the profile (`users/{uid}.lang`), so push notifications
+  arrive in each person's language. Switching reloads the page.
+- **Dark mode** (`<html class="dark">`, chosen in the profile: system / light /
+  dark): `src/css/app.css` remaps the palette (neutrals flip, tints darken, white
+  surfaces become cards) instead of `dark:` variants everywhere. Always-dark areas
+  carry `.on-ink`. Applied before first paint by an inline script in `head.html`.
 
 ## Push notifications (Cloudflare Workers, free)
 
@@ -170,6 +184,7 @@ firestore.rules, firestore.indexes.json     security rules + composite indexes
 tests/rules/                                rules tests (npm run test:rules)
 scripts/make-admin.mjs                      bootstrap the first admin
 scripts/generate-icons.mjs                  app icons + favicon (npm run icons)
+src/js/i18n.js, src/js/i18n-ms.js        English / Malay (scripts/i18n-check.mjs)
 src/js/people.js, src/js/profile.js         names + profile photos (small data URLs; Storage needs Blaze)
 src/js/push.js, src/public/sw.js            notifications: device opt-in, service worker
 workers/push/                               push worker (Cloudflare), tests in tests/push/

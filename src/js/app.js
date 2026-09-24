@@ -2,11 +2,13 @@ import Alpine from 'alpinejs';
 import focus from '@alpinejs/focus';
 
 // Feature modules register their Alpine components/stores on import.
+import './i18n';
 import './ui';
 import './push';
 import './people';
 import './profile';
 import { boot } from './session';
+import { t } from './i18n';
 import './auth';
 import './events';
 import './calendar';
@@ -36,7 +38,7 @@ if ('serviceWorker' in navigator) {
         allowed = await boot();
     } catch (e) {
         console.error(e);
-        document.querySelector('#boot-splash p').textContent = 'Couldn’t reach Planly. Check your connection and refresh.';
+        document.querySelector('#boot-splash p').textContent = t('Couldn’t reach Planly. Check your connection and refresh.');
         return;
     }
     if (!allowed) return;

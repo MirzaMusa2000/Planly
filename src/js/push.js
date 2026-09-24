@@ -8,6 +8,7 @@
 import Alpine from 'alpinejs';
 import { deleteDoc, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
+import { t } from './i18n';
 
 const PUSH_URL = (import.meta.env.VITE_PUSH_URL || '').replace(/\/$/, '');
 const VAPID_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
@@ -95,9 +96,9 @@ Alpine.store('push', {
     },
 
     get hint() {
-        if (this.needsInstall) return 'Add Planly to your Home Screen first';
-        if (this.permission === 'denied') return 'Blocked in your browser settings';
-        return this.enabled ? 'On for this device' : 'New plans, chat and approvals';
+        if (this.needsInstall) return t('Add Planly to your Home Screen first');
+        if (this.permission === 'denied') return t('Blocked in your browser settings');
+        return this.enabled ? t('On for this device') : t('New plans, chat and approvals');
     },
 
     /** Once the approved user is known: is this device already subscribed? */
@@ -126,8 +127,8 @@ Alpine.store('push', {
             this.permission = await Notification.requestPermission();
             if (this.permission !== 'granted') {
                 toast(this.permission === 'denied'
-                    ? 'Notifications are blocked. Allow them for this site in your browser settings.'
-                    : 'Notifications weren’t turned on.', 'error');
+                    ? t('Notifications are blocked. Allow them for this site in your browser settings.')
+                    : t('Notifications weren’t turned on.'), 'error');
                 return;
             }
             const reg = await serviceWorker();
@@ -137,10 +138,10 @@ Alpine.store('push', {
             await saveSubscription(subscription, window.Planly.user.uid);
             this.enabled = true;
             this.dismissPrompt();
-            toast('Notifications are on for this device.');
+            toast(t('Notifications are on for this device.'));
         } catch (e) {
             console.error(e);
-            toast('Couldn’t turn on notifications. Please try again.', 'error');
+            toast(t('Couldn’t turn on notifications. Please try again.'), 'error');
         } finally {
             this.busy = false;
         }
@@ -163,10 +164,10 @@ Alpine.store('push', {
             }
             storage.set(OWNER_KEY, null);
             this.enabled = false;
-            if (!quiet) toast('Notifications are off for this device.');
+            if (!quiet) toast(t('Notifications are off for this device.'));
         } catch (e) {
             console.error(e);
-            if (!quiet) toast('Couldn’t turn off notifications. Please try again.', 'error');
+            if (!quiet) toast(t('Couldn’t turn off notifications. Please try again.'), 'error');
         } finally {
             this.busy = false;
         }
