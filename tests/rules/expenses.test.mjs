@@ -81,11 +81,12 @@ describe('events/{id}/settlements', () => {
     test('the payer or the receiver records a payment', async () => {
         await assertSucceeds(pay(as(env, 'boss'), { from: 'boss', to: 'ali', amountCents: 9000, createdBy: 'boss' }));
         await assertSucceeds(pay(as(env, 'ali'), { from: 'mei', to: 'ali', amountCents: 1000, createdBy: 'ali' }));
-        await assertSucceeds(pay(asAdmin(env), { from: 'mei', to: 'boss', amountCents: 1000, createdBy: 'admin' }));
+        await assertSucceeds(pay(asAdmin(env), { from: 'admin', to: 'ali', amountCents: 1000, createdBy: 'admin' })); // the admin's own
     });
 
-    test('others cannot record payments for people', async () => {
+    test('nobody records payments between other people, not even the admin', async () => {
         await assertFails(pay(as(env, 'boss'), { from: 'mei', to: 'ali', amountCents: 1000, createdBy: 'boss' }));
+        await assertFails(pay(asAdmin(env), { from: 'mei', to: 'boss', amountCents: 1000, createdBy: 'admin' }));
     });
 
     test('payments are validated', async () => {
@@ -99,11 +100,10 @@ describe('events/{id}/settlements', () => {
         await assertFails(addDoc(collection(boss, 'events/p/settlements'), { from: 'boss', to: 'ali', amountCents: 1000, createdBy: 'boss', createdAt: serverTimestamp() }));
     });
 
-    test('never edited; undone by whoever recorded it or the admin', async () => {
+    test('never edited; undone only by whoever recorded it', async () => {
         await assertFails(updateDoc(doc(as(env, 'mei'), 'events/c/settlements/s1'), { amountCents: 1 }));
-        await assertFails(deleteDoc(doc(as(env, 'ali'), 'events/c/settlements/s1')));
+        await assertFails(deleteDoc(doc(as(env, 'ali'), 'events/c/settlements/s1'))); // the receiver, but not the recorder
+        await assertFails(deleteDoc(doc(asAdmin(env), 'events/c/settlements/s1')));
         await assertSucceeds(deleteDoc(doc(as(env, 'mei'), 'events/c/settlements/s1')));
-        await seed(env, (db) => setDoc(doc(db, 'events/c/settlements/s2'), { from: 'mei', to: 'ali', amountCents: 5000, createdBy: 'mei', createdAt: new Date() }));
-        await assertSucceeds(deleteDoc(doc(asAdmin(env), 'events/c/settlements/s2')));
     });
 });

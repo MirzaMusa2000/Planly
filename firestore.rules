@@ -284,8 +284,8 @@ service cloud.firestore {
       }
 
       // Payments recorded between members ("Zikri paid Mirza RM85"). Only the
-      // payer, the receiver or the admin records one; it can be undone by
-      // whoever recorded it (or the admin), never edited.
+      // payer or the receiver records one (not even the admin can for others);
+      // only whoever recorded it can undo it; never edited.
       match /settlements/{settlementId} {
         allow read: if approved();
 
@@ -295,7 +295,7 @@ service cloud.firestore {
           && event().status == 'confirmed'
           && request.resource.data.from is string && request.resource.data.to is string
           && request.resource.data.from != request.resource.data.to
-          && (request.auth.uid in [request.resource.data.from, request.resource.data.to] || isAdmin())
+          && request.auth.uid in [request.resource.data.from, request.resource.data.to]
           && request.resource.data.amountCents is int
           && request.resource.data.amountCents > 0 && request.resource.data.amountCents <= 100000000
           && request.resource.data.createdBy == request.auth.uid
@@ -304,7 +304,7 @@ service cloud.firestore {
           && get(/databases/$(db)/documents/users/$(request.resource.data.to)).data.status == 'approved';
 
         allow update: if false;
-        allow delete: if approved() && (resource.data.createdBy == request.auth.uid || isAdmin());
+        allow delete: if approved() && resource.data.createdBy == request.auth.uid;
       }
 
       // Shared "who brings what" checklist of a confirmed event. Any approved

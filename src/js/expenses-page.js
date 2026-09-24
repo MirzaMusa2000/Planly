@@ -56,19 +56,25 @@ Alpine.data('expensesPage', () => {
 
         // --- Which event --------------------------------------------------------
 
-        /** Confirmed events, most recent first. */
+        /**
+         * Confirmed events: ongoing and upcoming ones first, nearest to today
+         * first; then past ones, most recent first.
+         */
         get events() {
-            return this.store.events
-                .filter((e) => e.status === 'confirmed' && e.finalDate)
-                .sort((a, b) => b.finalDate.localeCompare(a.finalDate));
+            const t = today();
+            const confirmed = this.store.events.filter((e) => e.status === 'confirmed' && e.finalDate);
+            const upcoming = confirmed.filter((e) => e.finalEndDate >= t).sort((a, b) => a.finalDate.localeCompare(b.finalDate));
+            const past = confirmed.filter((e) => e.finalEndDate < t).sort((a, b) => b.finalDate.localeCompare(a.finalDate));
+            return [...upcoming, ...past];
         },
 
-        /** The chosen one, else the latest event that has started, else the next one. */
+        /** The chosen one, else the nearest upcoming (or the latest past) event. */
         get event() {
-            const chosen = this.events.find((e) => e.id === this.selectedId);
-            if (chosen) return chosen;
-            const t = today();
-            return this.events.find((e) => e.finalDate <= t) ?? this.events.at(-1) ?? null;
+            return this.events.find((e) => e.id === this.selectedId) ?? this.events[0] ?? null;
+        },
+
+        isPast(e) {
+            return e.finalEndDate < today();
         },
 
         select(id) {
@@ -206,12 +212,13 @@ Alpine.data('expensesPage', () => {
             return settleUp(this.balanceRows);
         },
 
+        /** Only the two people involved can say a payment happened. */
         canRecord(t) {
-            return t.from === this.me.uid || t.to === this.me.uid || this.me.role === 'admin';
+            return t.from === this.me.uid || t.to === this.me.uid;
         },
 
         canUndo(s) {
-            return s.createdBy === this.me.uid || this.me.role === 'admin';
+            return s.createdBy === this.me.uid;
         },
 
         paidOn(s) {

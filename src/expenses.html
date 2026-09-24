@@ -33,7 +33,7 @@
                                 :class="option.id === e.id ? 'bg-ink-950 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'"
                                 class="flex shrink-0 items-center gap-2 rounded-2xl px-3.5 py-2 text-sm font-semibold shadow-soft transition">
                             <span x-text="option.title" class="max-w-40 truncate"></span>
-                            <span class="text-xs font-medium opacity-70" x-text="when(option)"></span>
+                            <span class="text-xs font-medium opacity-70" x-text="(isPast(option) ? 'Past · ' : '') + when(option)"></span>
                         </button>
                     </template>
                 </div>
