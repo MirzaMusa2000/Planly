@@ -4,6 +4,7 @@ name = "planly-push"
 main = "src/index.js"
 compatibility_date = "2026-09-01"
 workers_dev = true
+preview_urls = false
 
 [vars]
 PROJECT_ID = "planly-794a5"
