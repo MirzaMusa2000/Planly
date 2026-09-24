@@ -11,6 +11,7 @@ import './calendar';
 import './propose';
 import './itinerary';
 import './itinerary-page';
+import './expenses-page';
 import './chat';
 import './members';
 

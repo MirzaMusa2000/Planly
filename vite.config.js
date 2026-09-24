@@ -6,14 +6,14 @@ import htmlTemplates from './build/html-templates.js';
 const src = resolve(import.meta.dirname, 'src');
 
 // One HTML entry per page; Firebase Hosting serves them with clean URLs.
-const pages = ['index', 'login', 'pending', 'itinerary', 'members', '404'];
+const pages = ['index', 'login', 'pending', 'itinerary', 'expenses', 'members', '404'];
 
 export default defineConfig({
     root: src,
     envDir: import.meta.dirname, // .env stays in the project root
     publicDir: resolve(src, 'public'),
     plugins: [
-        htmlTemplates({ srcDir: src, cleanUrls: ['/login', '/pending', '/itinerary', '/members'] }),
+        htmlTemplates({ srcDir: src, cleanUrls: ['/login', '/pending', '/itinerary', '/expenses', '/members'] }),
         tailwindcss(),
     ],
     build: {

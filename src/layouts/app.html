@@ -36,6 +36,10 @@
                :aria-current="$store.session.page === 'itinerary' ? 'page' : null" :title="$store.sidebar.collapsed ? 'Itinerary' : null">
                 <x-icon name="clipboard" class="h-5 w-5 shrink-0"/> <span class="whitespace-nowrap collapsed:sr-only">Itinerary</span>
             </a>
+            <a href="/expenses" class="nav-link" :class="{ 'nav-link-active': $store.session.page === 'expenses' }"
+               :aria-current="$store.session.page === 'expenses' ? 'page' : null" :title="$store.sidebar.collapsed ? 'Expenses' : null">
+                <x-icon name="wallet" class="h-5 w-5 shrink-0"/> <span class="whitespace-nowrap collapsed:sr-only">Expenses</span>
+            </a>
             <a href="/members" x-show="$store.session.isAdmin" x-cloak class="nav-link"
                :class="{ 'nav-link-active': $store.session.page === 'members' }"
                :aria-current="$store.session.page === 'members' ? 'page' : null" :title="$store.sidebar.collapsed ? 'Members' : null">
@@ -129,14 +133,13 @@
     <!-- Mobile bottom tab bar (Sign out lives in the profile menu, top right) -->
     <nav x-data class="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/70 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden" aria-label="Main">
         <div class="mx-auto flex h-16 max-w-md items-stretch px-2">
-            <!-- Admins: Home, Itinerary | + | Members. Members: Home | + | Itinerary. -->
+            <!-- Home, Itinerary | + | Expenses, Members (admins) -->
             <div class="flex flex-1 items-stretch justify-around">
                 <a href="/" class="flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold"
                    :class="$store.session.page === 'home' ? 'text-brand-600' : 'text-slate-400'">
                     <x-icon name="home" class="h-[22px] w-[22px]"/> Home
                 </a>
-                <a href="/itinerary" x-show="$store.session.isAdmin" x-cloak
-                   class="flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold"
+                <a href="/itinerary" class="flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold"
                    :class="$store.session.page === 'itinerary' ? 'text-brand-600' : 'text-slate-400'">
                     <x-icon name="clipboard" class="h-[22px] w-[22px]"/> Itinerary
                 </a>
@@ -152,13 +155,11 @@
             </div>
 
             <div class="flex flex-1 items-stretch justify-around">
-                <a href="/itinerary" x-show="!$store.session.isAdmin"
-                   class="flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold"
-                   :class="$store.session.page === 'itinerary' ? 'text-brand-600' : 'text-slate-400'">
-                    <x-icon name="clipboard" class="h-[22px] w-[22px]"/> Itinerary
+                <a href="/expenses" class="flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold"
+                   :class="$store.session.page === 'expenses' ? 'text-brand-600' : 'text-slate-400'">
+                    <x-icon name="wallet" class="h-[22px] w-[22px]"/> Expenses
                 </a>
-                <a href="/members" x-show="$store.session.isAdmin" x-cloak
-                   class="flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold"
+                <a href="/members" x-show="$store.session.isAdmin" x-cloak class="flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold"
                    :class="$store.session.page === 'members' ? 'text-brand-600' : 'text-slate-400'">
                     <x-icon name="users" class="h-[22px] w-[22px]"/> Members
                 </a>

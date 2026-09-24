@@ -2,7 +2,7 @@
 
 A private group planner for friends: propose events with candidate dates, vote on
 availability, confirm and RSVP, plan a day-by-day itinerary (events can span several days), share a "who brings what"
-checklist (Itinerary page), and chat. New members wait for admin approval.
+checklist (Itinerary page), split costs and settle up (Expenses page), and chat. New members wait for admin approval.
 
 **Runs entirely on Firebase's free Spark plan.** It's a static site (HTML + JavaScript,
 built with Vite) on **Firebase Hosting**, using **Firebase Auth** and **Cloud Firestore**
@@ -68,7 +68,8 @@ FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:909
 ### Tests
 
 ```bash
-npm run test:rules       # 66 security-rules tests against a throwaway emulator
+npm run test:rules       # 75 security-rules tests against a throwaway emulator
+npm run test:unit        # expense maths (splits, balances, settle up)
 npm run test:push        # push worker: encryption, VAPID, who gets notified (emulator)
 npm run build            # static site into dist/
 ```
@@ -150,7 +151,8 @@ feature is hidden. `npm run push:logs` streams the worker's logs. Free plan limi
 
 ```
 src/index.html, login.html, pending.html,
-    itinerary.html, members.html, 404.html  pages (layout directive on line 1)
+    itinerary.html, expenses.html,
+    members.html, 404.html                  pages (layout directive on line 1)
 src/layouts/, src/partials/                 page shells and shared markup
 src/js/session.js                           sign-in state, page access, live revocation
 src/js/auth.js                              sign-in / sign-up, waiting page
@@ -159,6 +161,7 @@ src/js/calendar.js                          FullCalendar (lazy-loaded), colour c
 src/js/voting.js                            votes / RSVP transactions, confirm, cancel
 src/js/itinerary.js                         day panel + itinerary editing (shared)
 src/js/itinerary-page.js                    Itinerary page: upcoming events, checklist
+src/js/expenses-page.js, src/js/money.js    Expenses page; sen-exact splits and settle-up maths
 src/js/chat.js                              group chat, unread badge
 src/js/members.js                           admin Members page, Home greeting
 src/js/dates.js                             YYYY-MM-DD helpers (Asia/Kuala_Lumpur)
