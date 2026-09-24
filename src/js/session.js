@@ -8,6 +8,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { notify } from './push';
+import { startPeopleFeed } from './people';
 
 export const TIMEZONE = 'Asia/Kuala_Lumpur';
 
@@ -142,6 +143,7 @@ export async function boot() {
     Alpine.store('session').user = me;
     approvedUserPromise = Promise.resolve(user);
     Alpine.store('push').start(user.uid);
+    startPeopleFeed();
 
     watchSession(user.uid, access);
     return true;

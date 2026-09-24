@@ -1,0 +1,6 @@
+<!-- A member's round avatar: their profile photo, else their initial. Params: uid (an
+     Alpine expression), classes (size, text size and the background for the initial). -->
+<span class="relative grid shrink-0 place-items-center overflow-hidden rounded-full font-bold {{ classes }}" aria-hidden="true">
+    <img x-show="$store.people.photo({{ uid }})" :src="$store.people.photo({{ uid }}) || null" alt="" class="absolute inset-0 h-full w-full object-cover">
+    <span x-show="!$store.people.photo({{ uid }})" x-text="$store.people.initial({{ uid }})"></span>
+</span>

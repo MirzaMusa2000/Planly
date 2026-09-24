@@ -39,10 +39,15 @@ service cloud.firestore {
                     && request.resource.data.get('approvedBy', null) == null
                     && request.resource.data.get('lastReadChatAt', null) == null;
 
-      // You may update only your own name and chat read receipt.
+      // You may update only your own name, profile photo and chat read receipt.
+      // The photo is a small image data URL (Storage needs a paid plan): at most
+      // ~90 KB, WebP / JPEG / PNG only, or null to remove it.
       allow update: if signedIn() && request.auth.uid == uid
-                    && changed().hasOnly(['lastReadChatAt', 'displayName'])
+                    && changed().hasOnly(['lastReadChatAt', 'displayName', 'photoUrl'])
                     && (!('displayName' in changed()) || isStr(request.resource.data.displayName, 1, 60))
+                    && (!('photoUrl' in changed()) || request.resource.data.photoUrl == null
+                        || (isStr(request.resource.data.photoUrl, 30, 120000)
+                            && request.resource.data.photoUrl.matches('^data:image/(webp|jpeg|png);base64,[A-Za-z0-9+/]+={0,2}$')))
                     // Read receipts use the server clock (serverTimestamp()).
                     && (!('lastReadChatAt' in changed()) || request.resource.data.lastReadChatAt == request.time);
 

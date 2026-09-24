@@ -53,7 +53,7 @@
                         </div>
                         <div class="flex items-center gap-3">
                             <dt><x-icon name="user" class="h-[18px] w-[18px] text-slate-400"/><span class="sr-only">Proposed by</span></dt>
-                            <dd>Proposed by <span class="font-semibold" x-text="e.proposedByName || 'someone'"></span></dd>
+                            <dd>Proposed by <span class="font-semibold" x-text="$store.people.name(e.proposedBy) || e.proposedByName || 'someone'"></span></dd>
                         </div>
                     </dl>
 

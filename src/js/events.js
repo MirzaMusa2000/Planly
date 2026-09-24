@@ -49,7 +49,10 @@ const toast = (message, type) => Alpine.store('toast').show(message, type);
 
 Alpine.store('planner', {
     events: [],
-    members: [], // approved users: { uid, displayName }
+    /** Approved users: { uid, displayName, photoUrl } (js/people.js). */
+    get members() {
+        return Alpine.store('people').list;
+    },
     loading: true,
     error: null,
     selectedId: null,
@@ -350,17 +353,6 @@ export async function startEventsFeed() {
 
             // The open event was cancelled (or deleted) by someone else.
             if (store.selectedId && !store.selected) store.close();
-        },
-        onError,
-    );
-
-    onSnapshot(
-        query(collection(db, 'users'), where('status', '==', 'approved')),
-        (snapshot) => {
-            store.members = snapshot.docs.map((doc) => ({
-                uid: doc.id,
-                displayName: doc.data().displayName || doc.data().email || 'Someone',
-            }));
         },
         onError,
     );

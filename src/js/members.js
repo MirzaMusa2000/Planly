@@ -44,6 +44,7 @@ Alpine.data('membersPage', () => ({
                         uid: d.id,
                         email: data.email ?? '',
                         displayName: data.displayName ?? '',
+                        photoUrl: data.photoUrl || '',
                         role: data.role ?? 'member',
                         status: data.status ?? 'pending',
                         createdAt: data.createdAt?.toDate?.() ?? null,

@@ -68,7 +68,7 @@ FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:909
 ### Tests
 
 ```bash
-npm run test:rules       # 75 security-rules tests against a throwaway emulator
+npm run test:rules       # 78 security-rules tests against a throwaway emulator
 npm run test:unit        # expense maths (splits, balances, settle up)
 npm run test:push        # push worker: encryption, VAPID, who gets notified (emulator)
 npm run build            # static site into dist/
@@ -170,6 +170,7 @@ firestore.rules, firestore.indexes.json     security rules + composite indexes
 tests/rules/                                rules tests (npm run test:rules)
 scripts/make-admin.mjs                      bootstrap the first admin
 scripts/generate-icons.mjs                  app icons + favicon (npm run icons)
+src/js/people.js, src/js/profile.js         names + profile photos (small data URLs; Storage needs Blaze)
 src/js/push.js, src/public/sw.js            notifications: device opt-in, service worker
 workers/push/                               push worker (Cloudflare), tests in tests/push/
 firebase.json                               Hosting (dist/, clean URLs, headers) + emulators

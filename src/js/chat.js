@@ -280,10 +280,6 @@ Alpine.data('chat', () => {
             return label === 'Today' ? time : `${label}, ${time}`;
         },
 
-        initial(name) {
-            return (name || '?').trim().charAt(0).toUpperCase();
-        },
-
         // --- Scrolling / sizing -------------------------------------------------
 
         isNearBottom() {

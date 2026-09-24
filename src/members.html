@@ -22,8 +22,10 @@
                         <template x-for="user in section.users" :key="user.uid">
                             <li class="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
                                 <div class="flex min-w-0 flex-1 items-center gap-3">
-                                    <span class="grid h-11 w-11 shrink-0 place-items-center rounded-2xl font-bold" :class="avatarColour(user.uid)"
-                                          aria-hidden="true" x-text="initial(user)"></span>
+                                    <span class="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-2xl font-bold" :class="avatarColour(user.uid)" aria-hidden="true">
+                                        <img x-show="user.photoUrl" :src="user.photoUrl || null" alt="" class="absolute inset-0 h-full w-full object-cover">
+                                        <span x-show="!user.photoUrl" x-text="initial(user)"></span>
+                                    </span>
                                     <div class="min-w-0">
                                         <p class="flex items-center gap-2 font-semibold text-slate-900">
                                             <span class="truncate" x-text="user.displayName || '—'"></span>

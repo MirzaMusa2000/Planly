@@ -108,3 +108,31 @@ describe('users/{uid}: admin moderation', () => {
         await assertFails(updateDoc(doc(as(env, 'ali'), 'users/pending'), { status: 'approved' }));
     });
 });
+
+describe('profile photo and name', () => {
+    const photo = `data:image/webp;base64,${'A'.repeat(4000)}`;
+
+    test('you can set, change and remove your own photo, and rename yourself', async () => {
+        const mei = as(env, 'mei');
+        await assertSucceeds(updateDoc(doc(mei, 'users/mei'), { photoUrl: photo }));
+        await assertSucceeds(updateDoc(doc(mei, 'users/mei'), { photoUrl: `data:image/jpeg;base64,${'B'.repeat(100)}==` }));
+        await assertSucceeds(updateDoc(doc(mei, 'users/mei'), { photoUrl: null }));
+        await assertSucceeds(updateDoc(doc(mei, 'users/mei'), { displayName: 'Mei Ling', photoUrl: photo }));
+    });
+
+    test("nobody else can change your photo, not even the admin", async () => {
+        await assertFails(updateDoc(doc(as(env, 'ali'), 'users/mei'), { photoUrl: photo }));
+        await assertFails(updateDoc(doc(as(env, 'admin'), 'users/mei'), { photoUrl: photo }));
+    });
+
+    test('only small image data URLs', async () => {
+        const mei = as(env, 'mei');
+        await assertFails(updateDoc(doc(mei, 'users/mei'), { photoUrl: 'https://example.com/me.png' })); // no links
+        await assertFails(updateDoc(doc(mei, 'users/mei'), { photoUrl: `data:image/svg+xml;base64,${'A'.repeat(100)}` })); // no SVG
+        await assertFails(updateDoc(doc(mei, 'users/mei'), { photoUrl: `data:text/html;base64,${'A'.repeat(100)}` }));
+        await assertFails(updateDoc(doc(mei, 'users/mei'), { photoUrl: `data:image/png;base64,${'A'.repeat(100)}<script>` }));
+        await assertFails(updateDoc(doc(mei, 'users/mei'), { photoUrl: `data:image/webp;base64,${'A'.repeat(120001)}` })); // too big
+        await assertFails(updateDoc(doc(mei, 'users/mei'), { displayName: '' }));
+    });
+});
+

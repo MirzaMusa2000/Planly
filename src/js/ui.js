@@ -54,7 +54,7 @@ Alpine.store('sidebar', {
 
 // Which top-level overlays are open. Escape handlers use it so a single press
 // closes only the top layer (dialog > chat > propose form / event sheet > day panel).
-Alpine.store('overlays', { propose: false, chat: false, dialog: false });
+Alpine.store('overlays', { propose: false, chat: false, dialog: false, profile: false });
 
 // Confirmation dialog (partials/confirm-dialog.html), instead of window.confirm():
 //

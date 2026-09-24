@@ -4,6 +4,8 @@ import focus from '@alpinejs/focus';
 // Feature modules register their Alpine components/stores on import.
 import './ui';
 import './push';
+import './people';
+import './profile';
 import { boot } from './session';
 import './auth';
 import './events';

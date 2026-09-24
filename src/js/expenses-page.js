@@ -134,10 +134,6 @@ Alpine.data('expensesPage', () => {
             return this.store.members.find((m) => m.uid === uid)?.displayName ?? 'Former member';
         },
 
-        initial(uid) {
-            return (this.store.members.find((m) => m.uid === uid)?.displayName || '?').charAt(0).toUpperCase();
-        },
-
         /** Who shares a new expense by default: everyone joining, else every member. */
         get defaultSplit() {
             const approved = new Set(this.store.members.map((m) => m.uid));

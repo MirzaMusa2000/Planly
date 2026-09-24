@@ -176,7 +176,7 @@
                                 <span class="min-w-0 flex-1">
                                     <span class="block truncate font-semibold text-slate-900" x-text="e.title"></span>
                                     <span class="block truncate text-xs text-slate-500"
-                                          x-text="e.candidateDates.length + (Object.keys(e.candidateEnds).length ? (e.candidateDates.length === 1 ? ' date option' : ' date options') : (e.candidateDates.length === 1 ? ' date' : ' dates')) + ' · by ' + (e.proposedByName || 'someone')"></span>
+                                          x-text="e.candidateDates.length + (Object.keys(e.candidateEnds).length ? (e.candidateDates.length === 1 ? ' date option' : ' date options') : (e.candidateDates.length === 1 ? ' date' : ' dates')) + ' · by ' + ($store.people.name(e.proposedBy) || e.proposedByName || 'someone')"></span>
                                     <span class="mt-1 flex flex-wrap gap-1">
                                         <span x-show="$store.planner.hasVoted(e.id)" class="chip bg-emerald-100 text-emerald-700">✓ You voted</span>
                                         <span x-show="!$store.planner.hasVoted(e.id)" class="chip bg-brand-100 text-brand-700">Vote now</span>

@@ -64,11 +64,12 @@
 
                         <div class="flex items-end gap-2" :class="[isMine(m) ? 'justify-end' : 'justify-start', startsGroup(i) ? 'mt-3' : '']">
                             <!-- Avatar on the first bubble of someone else's group  -->
-                            <span x-show="!isMine(m)" class="grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold"
-                                  :class="startsGroup(i) ? 'bg-brand-100 text-brand-700' : 'invisible'" x-text="initial(m.senderName)" aria-hidden="true"></span>
+                            <span x-show="!isMine(m)" class="h-7 w-7 shrink-0" :class="startsGroup(i) ? '' : 'invisible'">
+                                <include src="partials/avatar.html" uid="m.senderId" classes="h-7 w-7 text-xs bg-brand-100 text-brand-700"></include>
+                            </span>
 
                             <div class="max-w-[78%]" :class="isMine(m) ? 'items-end' : 'items-start'">
-                                <p x-show="startsGroup(i) && !isMine(m)" class="mb-0.5 ml-1 text-xs font-semibold text-slate-500" x-text="m.senderName"></p>
+                                <p x-show="startsGroup(i) && !isMine(m)" class="mb-0.5 ml-1 text-xs font-semibold text-slate-500" x-text="$store.people.name(m.senderId) || m.senderName"></p>
                                 <div class="rounded-2xl px-3.5 py-2 text-sm whitespace-pre-wrap break-words shadow-sm"
                                      :class="isMine(m) ? 'rounded-br-md bg-brand-500 text-white' : 'rounded-bl-md bg-white text-slate-800'"
                                      x-text="m.text"></div>

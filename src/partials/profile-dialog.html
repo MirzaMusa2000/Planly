@@ -1,0 +1,82 @@
+<!-- Edit profile: photo + display name (js/profile.js). Opened with the `open-profile`
+     window event. Below the confirm dialog and toasts, above sheets. -->
+<div x-data="profileDialog" x-show="open" x-cloak class="fixed inset-0 z-[75] flex items-end justify-center sm:items-center sm:p-4"
+     @keydown.escape.window="open && !$store.overlays.dialog && close()">
+    <div class="absolute inset-0 bg-ink-950/55 backdrop-blur-sm" x-show="open" x-transition.opacity.duration.200ms @click="close()"></div>
+
+    <form x-show="open" x-trap.noscroll="open" @submit.prevent="save()"
+          x-transition:enter="transition duration-200 ease-out"
+          x-transition:enter-start="translate-y-6 opacity-0 sm:translate-y-0 sm:scale-95"
+          x-transition:enter-end="translate-y-0 opacity-100 sm:scale-100"
+          x-transition:leave="transition duration-150 ease-in"
+          x-transition:leave-end="translate-y-6 opacity-0 sm:translate-y-0 sm:scale-95"
+          role="dialog" aria-modal="true" aria-labelledby="profile-dialog-title"
+          class="relative w-full rounded-t-3xl bg-white px-6 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl sm:max-w-sm sm:rounded-3xl sm:pb-6" novalidate>
+
+        <span class="mx-auto -mt-2 mb-3 block h-1.5 w-10 rounded-full bg-slate-200 sm:hidden" aria-hidden="true"></span>
+
+        <div class="flex items-center justify-between">
+            <h2 id="profile-dialog-title" class="text-lg font-bold text-slate-900">Your profile</h2>
+            <button type="button" @click="close()" class="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-slate-100" aria-label="Close">
+                <x-icon name="x"/>
+            </button>
+        </div>
+
+        <!-- Photo -->
+        <div class="mt-4 flex flex-col items-center">
+            <button type="button" @click="pick()" :disabled="reading || busy"
+                    class="group relative h-28 w-28 overflow-hidden rounded-full bg-gradient-to-br from-brand-300 to-brand-600 text-4xl font-bold text-white shadow-lift ring-4 ring-white"
+                    aria-label="Change profile photo">
+                <img x-show="photo" :src="photo || null" alt="" class="absolute inset-0 h-full w-full object-cover">
+                <span x-show="!photo" class="absolute inset-0 grid place-items-center" x-text="initial"></span>
+                <!-- Hover / loading overlay -->
+                <span class="absolute inset-0 grid place-items-center bg-ink-950/45 opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100"
+                      :class="reading && 'opacity-100'">
+                    <svg x-show="reading" class="h-7 w-7 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"/>
+                        <path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+                    </svg>
+                    <x-icon name="camera" x-show="!reading" class="h-7 w-7"/>
+                </span>
+                <!-- Camera badge (touch screens have no hover) -->
+                <span class="absolute right-1 bottom-1 grid h-8 w-8 place-items-center rounded-full bg-white text-brand-600 shadow ring-2 ring-white">
+                    <x-icon name="camera" class="h-4 w-4"/>
+                </span>
+            </button>
+            <input type="file" x-ref="file" accept="image/*" class="hidden" @change="onFile($event)">
+
+            <div class="mt-3 flex gap-2 text-sm font-semibold">
+                <button type="button" @click="pick()" :disabled="reading || busy" class="rounded-lg px-2 py-1 text-brand-600 hover:bg-brand-50"
+                        x-text="photo ? 'Change photo' : 'Upload photo'"></button>
+                <button type="button" x-show="photo" @click="removePhoto()" :disabled="busy" class="rounded-lg px-2 py-1 text-rose-600 hover:bg-rose-50">Remove</button>
+            </div>
+        </div>
+
+        <!-- Name -->
+        <label class="mt-4 block">
+            <span class="label">Name</span>
+            <input type="text" x-model="name" :maxlength="NAME_MAX" required autocomplete="name" class="input">
+            <span class="mt-1 block text-xs text-slate-400">This is how you appear in chat, votes and expenses.</span>
+        </label>
+
+        <dl class="mt-4 space-y-1 rounded-2xl bg-slate-50 px-4 py-3 text-sm">
+            <div class="flex justify-between gap-3">
+                <dt class="text-slate-500">Email</dt>
+                <dd class="truncate font-medium text-slate-700" x-text="me?.email"></dd>
+            </div>
+            <div class="flex justify-between gap-3">
+                <dt class="text-slate-500">Role</dt>
+                <dd class="font-medium text-slate-700" x-text="me?.role === 'admin' ? 'Admin' : 'Member'"></dd>
+            </div>
+        </dl>
+
+        <p x-show="error" x-text="error" role="alert" class="mt-4 rounded-xl bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700"></p>
+
+        <div class="mt-6 flex flex-col-reverse gap-2 sm:flex-row">
+            <button type="button" @click="close()" :disabled="busy" class="btn btn-secondary flex-1 py-3">Cancel</button>
+            <button type="submit" :disabled="busy || reading" class="btn btn-primary flex-1 py-3">
+                <span x-text="busy ? 'Saving…' : 'Save'"></span>
+            </button>
+        </div>
+    </form>
+</div>

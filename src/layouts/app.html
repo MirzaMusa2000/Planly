@@ -48,12 +48,14 @@
         </nav>
 
         <div class="mt-auto flex items-center gap-3 rounded-2xl bg-ink-900 p-3 collapsed:flex-col collapsed:gap-2 collapsed:p-2">
-            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-300 to-brand-600 text-sm font-bold text-white"
-                  aria-hidden="true" x-text="$store.session.initial" :title="$store.sidebar.collapsed ? $store.session.user?.displayName : null"></span>
-            <div class="min-w-0 flex-1 collapsed:hidden">
-                <p class="truncate text-sm font-semibold text-white" x-text="$store.session.user?.displayName"></p>
-                <p class="truncate text-xs text-slate-400" x-text="$store.session.isAdmin ? 'Admin' : 'Member'"></p>
-            </div>
+            <button type="button" @click="$dispatch('open-profile')" title="Edit profile"
+                    class="flex min-w-0 flex-1 items-center gap-3 rounded-xl text-left transition hover:opacity-90 collapsed:flex-none">
+                <include src="partials/avatar.html" uid="$store.session.user?.uid" classes="h-10 w-10 text-sm text-white bg-gradient-to-br from-brand-300 to-brand-600"></include>
+                <span class="min-w-0 flex-1 collapsed:hidden">
+                    <span class="block truncate text-sm font-semibold text-white" x-text="$store.session.user?.displayName"></span>
+                    <span class="block truncate text-xs text-slate-400" x-text="$store.session.isAdmin ? 'Admin · Edit profile' : 'Member · Edit profile'"></span>
+                </span>
+            </button>
             <button type="button" x-show="$store.push.supported" x-cloak @click="$store.push.toggle()" :disabled="$store.push.busy"
                     :aria-pressed="$store.push.enabled" :title="'Notifications: ' + $store.push.hint + ($store.push.enabled ? ' (click to turn off)' : '')"
                     :class="$store.push.enabled ? 'text-brand-300' : 'text-slate-400'"
@@ -80,9 +82,9 @@
             <!-- Profile menu -->
             <div class="relative ml-auto" @click.outside="menu = false">
                 <button type="button" @click="menu = !menu" :aria-expanded="menu" aria-haspopup="true" aria-controls="profile-menu"
-                        class="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-brand-300 to-brand-600 text-sm font-bold text-white ring-offset-2 ring-offset-canvas transition"
+                        class="rounded-full ring-offset-2 ring-offset-canvas transition"
                         :class="menu ? 'ring-2 ring-brand-400' : ''">
-                    <span aria-hidden="true" x-text="$store.session.initial"></span>
+                    <include src="partials/avatar.html" uid="$store.session.user?.uid" classes="h-9 w-9 text-sm text-white bg-gradient-to-br from-brand-300 to-brand-600"></include>
                     <span class="sr-only">Profile</span>
                 </button>
 
@@ -91,8 +93,7 @@
                      x-transition:leave="transition duration-100 ease-in" x-transition:leave-end="-translate-y-1 scale-95 opacity-0"
                      class="absolute top-12 right-0 w-72 max-w-[calc(100vw-2rem)] origin-top-right rounded-3xl bg-white p-2 shadow-2xl ring-1 ring-slate-900/5">
                     <div class="flex items-center gap-3 p-3">
-                        <span class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-300 to-brand-600 text-lg font-bold text-white"
-                              aria-hidden="true" x-text="$store.session.initial"></span>
+                        <include src="partials/avatar.html" uid="$store.session.user?.uid" classes="h-12 w-12 text-lg text-white bg-gradient-to-br from-brand-300 to-brand-600"></include>
                         <div class="min-w-0">
                             <p class="truncate font-semibold text-slate-900" x-text="$store.session.user?.displayName"></p>
                             <p class="truncate text-sm text-slate-500" x-text="$store.session.user?.email"></p>
@@ -101,6 +102,15 @@
                         </div>
                     </div>
                     <div class="my-1 border-t border-slate-100"></div>
+                    <button type="button" @click="menu = false; $dispatch('open-profile')"
+                            class="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                        <x-icon name="user" class="h-[18px] w-[18px] shrink-0 text-slate-500"/>
+                        <span class="min-w-0 flex-1">
+                            Edit profile
+                            <span class="block text-xs font-normal text-slate-500">Photo and name</span>
+                        </span>
+                        <x-icon name="chevron-right" class="h-4 w-4 shrink-0 text-slate-300"/>
+                    </button>
                     <button type="button" x-show="$store.push.supported || $store.push.needsInstall" x-cloak
                             @click="$store.push.toggle()" :disabled="$store.push.busy || $store.push.needsInstall"
                             role="switch" :aria-checked="$store.push.enabled"
@@ -174,6 +184,7 @@
         You’re offline. Live updates are paused and some actions won’t work until you reconnect.
     </div>
 
+    <include src="partials/profile-dialog.html"></include>
     <include src="partials/confirm-dialog.html"></include>
     <include src="partials/toasts.html"></include>
     <include src="partials/chat.html"></include>
