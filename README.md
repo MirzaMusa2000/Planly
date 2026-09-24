@@ -68,7 +68,8 @@ FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:909
 ### Tests
 
 ```bash
-npm run test:rules       # 57 security-rules tests against a throwaway emulator
+npm run test:rules       # 63 security-rules tests against a throwaway emulator
+npm run test:push        # push worker: encryption, VAPID, who gets notified (emulator)
 npm run build            # static site into dist/
 ```
 `test:rules` starts its own Firestore emulator, so stop `npm run emulators` first.
@@ -117,6 +118,34 @@ Spark limits that matter: Hosting 10 GB storage / 360 MB per day transfer; Fires
 
 ---
 
+## Push notifications (Cloudflare Workers, free)
+
+Admins hear about new sign-ups; everyone hears about new proposals and chat
+messages, even with Planly closed. Each person turns them on per device (banner,
+bell in the sidebar, or the profile menu on phones). On iPhone this needs iOS 16.4+
+and Planly added to the Home Screen.
+
+Firebase's free plan has no server to send pushes, so a small **Cloudflare Worker**
+(`workers/push/`, free plan, no card) does it:
+
+1. The browser creates a proposal / message / sign-up, then calls the worker's
+   `POST /notify` with its Firebase ID token.
+2. The worker verifies the token, re-reads that document with the service account,
+   checks the caller created it in the last 10 minutes and that it wasn't announced
+   already (`pushLog/`), then sends Web Push (VAPID + aes128gcm, `webpush.js`) to
+   the recipients' devices in `users/{uid}/pushSubscriptions`.
+
+One-time setup:
+```bash
+node scripts/generate-vapid.mjs   # secrets/vapid.json; put the public key in .env
+npx wrangler login                # opens the browser once
+npm run push:secrets              # uploads the service account + VAPID private key
+npm run push:deploy               # prints the worker URL -> VITE_PUSH_URL in .env
+```
+Then deploy the site as usual. Without `VITE_PUSH_URL`/`VITE_VAPID_PUBLIC_KEY` the
+feature is hidden. `npm run push:logs` streams the worker's logs. Free plan limits:
+100k requests/day and 50 devices per notification.
+
 ## Project layout
 
 ```
@@ -138,5 +167,7 @@ firestore.rules, firestore.indexes.json     security rules + composite indexes
 tests/rules/                                rules tests (npm run test:rules)
 scripts/make-admin.mjs                      bootstrap the first admin
 scripts/generate-icons.mjs                  app icons + favicon (npm run icons)
+src/js/push.js, src/public/sw.js            notifications: device opt-in, service worker
+workers/push/                               push worker (Cloudflare), tests in tests/push/
 firebase.json                               Hosting (dist/, clean URLs, headers) + emulators
 ```

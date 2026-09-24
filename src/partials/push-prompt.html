@@ -1,0 +1,25 @@
+<!-- "Turn on notifications" banner (js/push.js). On iPhone outside the Home Screen
+     app it explains how to install instead. -->
+<div x-data x-show="$store.push.showPrompt" x-cloak x-transition.opacity
+     class="mb-5 flex flex-col gap-3 rounded-3xl border border-brand-100 bg-white p-4 shadow-soft sm:flex-row sm:items-center">
+    <div class="flex min-w-0 flex-1 items-start gap-3">
+        <span class="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-brand-50 text-brand-600">
+            <x-icon name="bell" class="h-5 w-5"/>
+        </span>
+        <div class="min-w-0">
+            <p class="font-semibold text-slate-900">Get notified about new plans and messages</p>
+            <p x-show="!$store.push.needsInstall" class="text-sm text-slate-500">
+                New proposals, chat messages<span x-show="$store.session.isAdmin"> and members waiting for approval</span>, even when Planly is closed.
+            </p>
+            <p x-show="$store.push.needsInstall" class="text-sm text-slate-500">
+                On iPhone, first add Planly to your Home Screen: tap <span class="font-semibold">Share</span>, then
+                <span class="font-semibold">Add to Home Screen</span>. Open it from there and turn notifications on.
+            </p>
+        </div>
+    </div>
+    <div class="flex shrink-0 gap-2 sm:ml-auto">
+        <button type="button" x-show="!$store.push.needsInstall" @click="$store.push.enable()" :disabled="$store.push.busy"
+                class="btn btn-primary flex-1 py-2 sm:flex-none">Turn on</button>
+        <button type="button" @click="$store.push.dismissPrompt()" class="btn btn-secondary flex-1 py-2 sm:flex-none">Not now</button>
+    </div>
+</div>

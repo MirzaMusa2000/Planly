@@ -58,6 +58,28 @@ export function iconSvg({ maskable = false } = {}) {
 `;
 }
 
+/**
+ * Notification badge (Android status bar): a white silhouette on transparent;
+ * only the alpha channel is used. The calendar with the tick cut out.
+ */
+export function badgeSvg() {
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <defs>
+    <mask id="cut">
+      <rect width="96" height="96" fill="#fff"/>
+      <path d="M31 57l10 10 24-25" fill="none" stroke="#000" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="12" y="30" width="72" height="5" fill="#000"/>
+    </mask>
+  </defs>
+  <g fill="#fff" mask="url(#cut)">
+    <rect x="12" y="20" width="72" height="66" rx="14"/>
+    <rect x="28" y="10" width="9" height="20" rx="4.5"/>
+    <rect x="59" y="10" width="9" height="20" rx="4.5"/>
+  </g>
+</svg>
+`;
+}
+
 /** Minimal .ico container holding PNG images (supported by all current browsers). */
 function toIco(pngs) {
     const header = Buffer.alloc(6 + 16 * pngs.length);
@@ -92,6 +114,7 @@ fs.writeFileSync(path.join(out, 'icons/apple-touch-icon.png'), await png(maskabl
 fs.writeFileSync(path.join(out, 'icons/icon-192.png'), await png(standard, 192));
 fs.writeFileSync(path.join(out, 'icons/icon-512.png'), await png(standard, 512));
 fs.writeFileSync(path.join(out, 'icons/maskable-512.png'), await png(maskable, 512));
+fs.writeFileSync(path.join(out, 'icons/badge-96.png'), await png(badgeSvg(), 96));
 fs.writeFileSync(path.join(out, 'favicon.ico'), toIco(await Promise.all([16, 32, 48].map(async (size) => ({ size, data: await png(standard, size) })))));
 
 console.log('Icons written to src/public/ (favicon.svg, favicon.ico, icons/*.png)');

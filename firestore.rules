@@ -57,6 +57,26 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Push notification devices (Web Push subscriptions), one per browser.
+    // Only the owner sees or changes them; the push worker reads them with the
+    // service account. pushLog/ (the worker's "sent once" locks) has no rules,
+    // so browsers can't touch it.
+    match /users/{uid}/pushSubscriptions/{subId} {
+      function validSubscription(d) {
+        return d.keys().hasOnly(['endpoint', 'p256dh', 'auth', 'uid', 'userAgent', 'createdAt'])
+            && d.keys().hasAll(['endpoint', 'p256dh', 'auth', 'uid', 'createdAt'])
+            && isStr(d.endpoint, 12, 1000) && d.endpoint.matches('^https://.+')
+            && isStr(d.p256dh, 80, 100)
+            && isStr(d.auth, 16, 40)
+            && d.uid == uid
+            && (!('userAgent' in d) || isStr(d.userAgent, 0, 200))
+            && d.createdAt == request.time;
+      }
+
+      allow read, delete: if signedIn() && request.auth.uid == uid;
+      allow create, update: if approved() && request.auth.uid == uid && validSubscription(request.resource.data);
+    }
+
     // ---------------------------------------------------------------------
     // events/{eventId}
     // ---------------------------------------------------------------------

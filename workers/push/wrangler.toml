@@ -1,0 +1,20 @@
+# Planly push worker: sends Web Push notifications (Cloudflare Workers free plan).
+# Deploy: npm run push:deploy   ·   Secrets: npm run push:secrets
+name = "planly-push"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+workers_dev = true
+
+[vars]
+PROJECT_ID = "planly-794a5"
+# Sites allowed to call the worker (preview channels of PROJECT_ID are allowed too).
+ALLOWED_ORIGINS = "https://planly-794a5.web.app,https://planly-794a5.firebaseapp.com,http://localhost:5173"
+VAPID_SUBJECT = "https://planly-794a5.web.app"
+VAPID_PUBLIC_KEY = "BIXoW10esLCfkwzVJjcYjq1j7xYnY7uyIadG0roJU0f_6ChOcewuim8iHIITnJvaomkNlUbJ7LRhGQaSxmoYDxg"
+
+# Secrets (not in this file; set with `npm run push:secrets`):
+#   FIREBASE_SERVICE_ACCOUNT  contents of secrets/service-account.json
+#   VAPID_PRIVATE_JWK         privateJwk from secrets/vapid.json
+
+[observability]
+enabled = true

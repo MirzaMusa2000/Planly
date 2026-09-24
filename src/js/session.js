@@ -7,6 +7,7 @@ import Alpine from 'alpinejs';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
+import { notify } from './push';
 
 export const TIMEZONE = 'Asia/Kuala_Lumpur';
 
@@ -34,6 +35,8 @@ Alpine.store('session', {
     },
 
     async logout(reason = null) {
+        // This device shouldn't keep getting your notifications after you leave.
+        await Alpine.store('push').disable({ quiet: true });
         await signOut(auth).catch(() => {});
         window.location.replace(reason ? `/login?reason=${reason}` : '/login');
     },
@@ -70,6 +73,8 @@ export async function ensureUserDoc(user, displayName = null) {
         lastReadChatAt: null,
     };
     await setDoc(ref, profile);
+    // Tell the admins someone is waiting (don't hold up sign-up for long).
+    await Promise.race([notify('signup'), new Promise((resolve) => setTimeout(resolve, 3000))]);
     return profile;
 }
 
@@ -136,6 +141,7 @@ export async function boot() {
     window.Planly.user = me;
     Alpine.store('session').user = me;
     approvedUserPromise = Promise.resolve(user);
+    Alpine.store('push').start(user.uid);
 
     watchSession(user.uid, access);
     return true;

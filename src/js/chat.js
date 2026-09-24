@@ -16,6 +16,7 @@ import {
     updateDoc,
 } from 'firebase/firestore';
 import { approvedUser } from './session';
+import { notify } from './push';
 import { db } from './firebase';
 import { addDays, formatShort } from './dates';
 
@@ -74,6 +75,15 @@ Alpine.data('chat', () => {
                 }
             });
             document.addEventListener('visibilitychange', () => this.markRead());
+
+            // "#chat" (e.g. from a notification) opens the chat.
+            const openFromLink = () => {
+                if (window.location.hash !== '#chat') return;
+                history.replaceState(null, '', window.location.pathname + window.location.search);
+                this.open = true;
+            };
+            window.addEventListener('hashchange', openFromLink);
+            openFromLink();
 
             const user = await approvedUser();
             if (!user) return;
@@ -187,12 +197,13 @@ Alpine.data('chat', () => {
             try {
                 // The live listener shows the message immediately (pending);
                 // awaiting only surfaces a rejected write.
-                await addDoc(messagesRef(), {
+                const ref = await addDoc(messagesRef(), {
                     senderId: this.me.uid,
                     senderName: (this.me.displayName || '').slice(0, 60),
                     text,
                     createdAt: serverTimestamp(),
                 });
+                notify('chat', { messageId: ref.id });
             } catch (e) {
                 console.error(e);
                 this.draft = draft;

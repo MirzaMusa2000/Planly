@@ -3,6 +3,7 @@
 import Alpine from 'alpinejs';
 import { addDoc, collection, doc, onSnapshot, query, serverTimestamp, where } from 'firebase/firestore';
 import { approvedUser } from './session';
+import { notify } from './push';
 import { db } from './firebase';
 import { format, formatLong, formatShort, today } from './dates';
 import { cancelEvent, confirmEvent, errorMessage, setAvailability, setRsvp } from './voting';
@@ -257,6 +258,18 @@ function syncMyVoteListeners(eventIds) {
     }
 }
 
+/** "/#event=ID" (e.g. from a notification) opens that event's sheet on Home. */
+function openLinkedEvent() {
+    const id = window.location.hash.match(/^#event=([\w-]+)$/)?.[1];
+    if (!id || document.body.dataset.page !== 'home') return;
+    const store = Alpine.store('planner');
+    if (store.loading) return; // tried again once events arrive
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+    if (store.events.some((e) => e.id === id)) store.open(id);
+    else toast('That event is no longer open.', 'error');
+}
+window.addEventListener('hashchange', openLinkedEvent);
+
 let started = false;
 
 /** Attach the Firestore listeners once per page. */
@@ -281,6 +294,7 @@ export async function startEventsFeed() {
             store.loading = false;
             store.error = null;
             syncMyVoteListeners(store.events.map((e) => e.id));
+            openLinkedEvent();
 
             // The open event was cancelled (or deleted) by someone else.
             if (store.selectedId && !store.selected) store.close();
@@ -323,5 +337,6 @@ export async function proposeEvent({ title, description, location, candidateDate
         rsvpSummary: { join: 0, notAvailable: 0 },
     });
 
+    notify('proposal', { eventId: ref.id });
     return ref.id;
 }
