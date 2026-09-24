@@ -1,6 +1,6 @@
 <!-- Event details, voting and RSVP: bottom sheet on mobile, right-hand drawer on desktop.  -->
 <div x-data x-show="$store.planner.selected" x-cloak class="fixed inset-0 z-[60]"
-     @keydown.escape.window="$store.planner.selected && !$store.overlays.chat && $store.planner.close()">
+     @keydown.escape.window="$store.planner.selected && !$store.overlays.chat && !$store.overlays.dialog && $store.planner.close()">
     <div class="absolute inset-0 bg-ink-950/50 backdrop-blur-sm" x-show="$store.planner.selected" x-transition.opacity
          @click="$store.planner.close()"></div>
 
@@ -37,11 +37,15 @@
                     <dl class="mt-6 space-y-3 rounded-2xl bg-ink-800/70 p-4 text-sm">
                         <div class="flex items-center gap-3" x-show="e.status === 'confirmed'">
                             <dt><x-icon name="calendar" class="h-[18px] w-[18px] text-slate-400"/><span class="sr-only">Date</span></dt>
-                            <dd class="font-semibold" x-text="$dates.long(e.finalDate)"></dd>
+                            <dd class="font-semibold">
+                                <span x-text="$store.planner.whenLong(e)"></span>
+                                <span x-show="e.finalEndDate !== e.finalDate" class="chip ml-1 bg-white/10 text-slate-200"
+                                      x-text="$store.planner.optionDays(e, e.finalDate) + ' days'"></span>
+                            </dd>
                         </div>
                         <div class="flex items-center gap-3" x-show="e.status !== 'confirmed'">
                             <dt><x-icon name="calendar" class="h-[18px] w-[18px] text-slate-400"/><span class="sr-only">Dates</span></dt>
-                            <dd x-text="e.candidateDates.length + (e.candidateDates.length === 1 ? ' candidate date' : ' candidate dates')"></dd>
+                            <dd x-text="e.candidateDates.length + (e.candidateDates.length === 1 ? ' date option' : ' date options')"></dd>
                         </div>
                         <div class="flex items-center gap-3" x-show="e.location">
                             <dt><x-icon name="map-pin" class="h-[18px] w-[18px] text-slate-400"/><span class="sr-only">Location</span></dt>
@@ -63,7 +67,7 @@
                     <section class="mt-6" x-show="e.status === 'proposed'">
                         <div class="flex items-baseline justify-between">
                             <h3 class="text-sm font-semibold text-slate-300">When are you free?</h3>
-                            <p class="text-xs text-slate-500">Tap every date that works</p>
+                            <p class="text-xs text-slate-500">Tap every option that works</p>
                         </div>
                         <ul class="mt-2 space-y-2">
                             <template x-for="date in e.candidateDates" :key="date">
@@ -71,8 +75,10 @@
                                     :class="$store.planner.everyoneFreeLive(e, date) ? 'bg-amber-300/15 ring-1 ring-amber-300/40' : 'bg-ink-800'">
                                     <div class="flex items-center gap-3">
                                         <div class="min-w-0 flex-1">
-                                            <p class="flex items-center gap-2 font-semibold">
-                                                <span x-text="$dates.short(date)"></span>
+                                            <p class="flex flex-wrap items-center gap-x-2 gap-y-1 font-semibold">
+                                                <span x-text="$store.planner.optionLabel(e, date)"></span>
+                                                <span x-show="$store.planner.optionDays(e, date) > 1" class="chip bg-white/10 text-slate-300"
+                                                      x-text="$store.planner.optionDays(e, date) + ' days'"></span>
                                                 <span x-show="$store.planner.everyoneFreeLive(e, date)" class="chip bg-amber-300/20 text-amber-200">Everyone free ⭐</span>
                                             </p>
                                             <p class="mt-0.5 text-xs break-words text-slate-400" x-text="$store.planner.freeLine(e, date)"></p>
@@ -80,7 +86,7 @@
 
                                         <button type="button" role="checkbox"
                                                 :aria-checked="$store.planner.iAmFree(e.id, date)"
-                                                :aria-label="'I’m free on ' + $dates.short(date)"
+                                                :aria-label="'I’m free on ' + $store.planner.optionLabel(e, date)"
                                                 :disabled="$store.planner.isPending(e.id + ':' + date)"
                                                 @click="$store.planner.toggleFree(e, date)"
                                                 :class="$store.planner.iAmFree(e.id, date)
@@ -96,7 +102,7 @@
                                         <button type="button" @click="$store.planner.confirmDate(e, date)"
                                                 :disabled="$store.planner.isPending(e.id + ':manage')"
                                                 class="rounded-full px-3 py-1 text-xs font-semibold text-brand-200 hover:bg-brand-500/20 disabled:opacity-50">
-                                            Confirm this date →
+                                            <span x-text="$store.planner.optionDays(e, date) > 1 ? 'Confirm these dates →' : 'Confirm this date →'"></span>
                                         </button>
                                     </div>
                                 </li>
@@ -108,7 +114,7 @@
                     <button type="button" x-show="e.status === 'confirmed'"
                             @click="const d = e.finalDate; $store.planner.close(); $dispatch('open-day', { date: d })"
                             class="btn mt-5 w-full bg-brand-500/15 py-3 text-brand-200 hover:bg-brand-500/25">
-                        <x-icon name="clock" class="h-4 w-4"/> Plan the day
+                        <x-icon name="clock" class="h-4 w-4"/> <span x-text="e.finalEndDate !== e.finalDate ? 'Plan the days' : 'Plan the day'"></span>
                     </button>
 
                     <!-- RSVP (confirmed)  -->

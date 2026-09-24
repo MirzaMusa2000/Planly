@@ -5,6 +5,7 @@ import Alpine from 'alpinejs';
 import { collection, doc, onSnapshot, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { approvedUser } from './session';
 import { db } from './firebase';
+import { confirmDialog } from './ui';
 
 const TIMEZONE = window.Planly?.timezone || 'Asia/Kuala_Lumpur';
 const joinedFormat = new Intl.DateTimeFormat('en-GB', { timeZone: TIMEZONE, day: 'numeric', month: 'short', year: 'numeric' });
@@ -115,8 +116,16 @@ Alpine.data('membersPage', () => ({
     },
 
     revoke(user) {
-        if (!window.confirm(`Revoke access for ${this.label(user)}? They’ll lose access immediately.`)) return;
-        return this.setStatus(user, { status: 'rejected' }, `Revoked access for ${this.label(user)}.`);
+        return confirmDialog({
+            title: 'Revoke access?',
+            message: 'They’ll be signed out of Planly right away. You can approve them again later.',
+            detail: this.label(user),
+            detailSub: user.displayName && user.email ? user.email : '',
+            confirmLabel: 'Revoke access',
+            tone: 'danger',
+            icon: 'user-x',
+            action: () => this.setStatus(user, { status: 'rejected' }, `Revoked access for ${this.label(user)}.`),
+        });
     },
 }));
 

@@ -41,6 +41,35 @@ export function format(dateString, options) {
 export const formatShort = (d) => format(d, { weekday: 'short', day: 'numeric', month: 'short' });
 export const formatLong = (d) => format(d, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
+/** Every date from start to end, inclusive. */
+export function daysInRange(start, end) {
+    const days = [];
+    for (let d = start; d <= (end || start); d = addDays(d, 1)) days.push(d);
+    return days;
+}
+
+export const dayCount = (start, end) => daysInRange(start, end).length;
+
+/** "Fri, 2 Oct" · "Fri–Sun, 1–3 Oct" · "Wed 30 Sept – Fri 2 Oct" */
+export function formatRange(start, end) {
+    if (!end || end === start) return formatShort(start);
+    const weekday = (d) => format(d, { weekday: 'short' });
+    const day = (d) => format(d, { day: 'numeric' });
+    const month = (d) => format(d, { month: 'short' });
+    if (start.slice(0, 7) === end.slice(0, 7)) return `${weekday(start)}–${weekday(end)}, ${day(start)}–${day(end)} ${month(end)}`;
+    return `${weekday(start)} ${day(start)} ${month(start)} – ${weekday(end)} ${day(end)} ${month(end)}`;
+}
+
+/** "Friday, 2 October 2026" · "Friday 2 – Sunday 4 October 2026" · across months/years. */
+export function formatRangeLong(start, end) {
+    if (!end || end === start) return formatLong(start);
+    const dayName = (d) => format(d, { weekday: 'long', day: 'numeric' });
+    if (start.slice(0, 7) === end.slice(0, 7)) return `${dayName(start)} – ${dayName(end)} ${format(end, { month: 'long', year: 'numeric' })}`;
+    const withMonth = (d) => format(d, { weekday: 'long', day: 'numeric', month: 'long' });
+    if (start.slice(0, 4) === end.slice(0, 4)) return `${withMonth(start)} – ${withMonth(end)} ${end.slice(0, 4)}`;
+    return `${formatLong(start)} – ${formatLong(end)}`;
+}
+
 /**
  * Weeks for a month grid (Sunday first). Days outside the month are null.
  * @returns {Array<Array<string|null>>}

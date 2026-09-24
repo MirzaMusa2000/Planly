@@ -79,7 +79,8 @@ export async function setRsvp(eventId, choice) {
 
 /**
  * Confirm / cancel. firestore.rules allow these only for the admin or the
- * proposer: confirm only a proposed event onto one of its candidate dates,
+ * proposer: confirm only a proposed event onto one of its date options (a
+ * multi-day option also sets finalEndDate to its last day),
  * cancel only a proposed or confirmed event. The transaction re-reads the
  * event so two people acting at once get a clear message.
  */
@@ -90,7 +91,7 @@ export async function confirmEvent(event, date) {
         const status = snap.data()?.status;
         if (status !== 'proposed') throw new Error(status === 'confirmed' ? 'This event is already confirmed.' : 'This event was cancelled.');
         if (!snap.data().candidateDates?.includes(date)) throw new Error('That date is not one of the candidate dates.');
-        tx.update(ref, { status: 'confirmed', finalDate: date });
+        tx.update(ref, { status: 'confirmed', finalDate: date, finalEndDate: snap.data().candidateEnds?.[date] ?? date });
     });
     return { message: `Confirmed “${event.title}”.` };
 }

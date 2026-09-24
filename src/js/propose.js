@@ -1,6 +1,7 @@
-// "Propose event" sheet with a multi-date picker.
+// "Propose event" sheet with a date-option picker. Each option people vote on
+// is one day, or several consecutive days (e.g. a Fri–Sun camping trip).
 import Alpine from 'alpinejs';
-import { format, formatShort, monthGrid, today, toUtcDate } from './dates';
+import { dayCount, daysInRange, format, formatRange, formatShort, monthGrid, today, toUtcDate } from './dates';
 import { LIMITS, proposeEvent } from './events';
 
 Alpine.data('proposeModal', () => ({
@@ -11,7 +12,10 @@ Alpine.data('proposeModal', () => ({
     title: '',
     description: '',
     location: '',
-    dates: [],
+    mode: 'day', // 'day': each tap is an option · 'range': tap the first, then the last day
+    options: [], // [{ start, end }] sorted, never overlapping
+    rangeStart: null, // first tap of a range in progress
+    hover: null, // date under the pointer (range preview)
     cursor: { year: 0, month: 0 },
 
     init() {
@@ -35,13 +39,22 @@ Alpine.data('proposeModal', () => ({
         this.title = '';
         this.description = '';
         this.location = '';
-        this.dates = start ? [start] : [];
+        this.mode = 'day';
+        this.options = start ? [{ start, end: start }] : [];
+        this.rangeStart = null;
+        this.hover = null;
         this.setCursor(start ?? t);
         this.open = true;
     },
 
     close() {
         if (!this.busy) this.open = false;
+    },
+
+    setMode(mode) {
+        this.mode = mode;
+        this.rangeStart = null;
+        this.error = '';
     },
 
     setCursor(dateString) {
@@ -72,6 +85,12 @@ Alpine.data('proposeModal', () => ({
         this.cursor = { year: this.cursor.year + Math.floor(m / 12), month: ((m % 12) + 12) % 12 };
     },
 
+    get hint() {
+        if (this.mode === 'day') return 'Tap every date that could work.';
+        if (!this.rangeStart) return 'Tap the first day, then the last day. Add as many options as you like.';
+        return `From ${formatShort(this.rangeStart)}: now tap the last day (or the same day again for one day).`;
+    },
+
     isPast(date) {
         return date < today();
     },
@@ -80,27 +99,106 @@ Alpine.data('proposeModal', () => ({
         return date === today();
     },
 
-    isSelected(date) {
-        return this.dates.includes(date);
+    optionAt(date) {
+        return this.options.find((o) => o.start <= date && date <= o.end) ?? null;
     },
 
-    toggle(date) {
+    /** The range the pointer would create (desktop preview). */
+    get preview() {
+        if (!this.rangeStart || !this.hover || this.hover < this.rangeStart) return null;
+        return { start: this.rangeStart, end: this.hover, ok: this.rangeProblem(this.rangeStart, this.hover) === '' };
+    },
+
+    rangeProblem(start, end) {
+        if (dayCount(start, end) > LIMITS.rangeDays) return `An option can be at most ${LIMITS.rangeDays} days.`;
+        if (daysInRange(start, end).some((d) => this.optionAt(d))) return 'Options can’t overlap. Remove the other one first.';
+        return '';
+    },
+
+    /** Classes for one calendar cell. */
+    cellClass(date) {
+        if (this.isPast(date)) return 'rounded-xl text-slate-600 cursor-not-allowed';
+
+        const option = this.optionAt(date);
+        if (option) {
+            if (option.start === option.end) return 'rounded-xl bg-brand-500 font-bold text-white shadow-lift';
+            if (date === option.start) return 'rounded-l-xl bg-brand-500 font-bold text-white';
+            if (date === option.end) return 'rounded-r-xl bg-brand-500 font-bold text-white';
+            return 'bg-brand-500/35 font-semibold text-white';
+        }
+        if (date === this.rangeStart) return 'rounded-xl bg-brand-400 font-bold text-white ring-2 ring-brand-200 ring-offset-2 ring-offset-ink-800';
+
+        const p = this.preview;
+        if (p && p.start <= date && date <= p.end) {
+            const ends = `${date === p.end ? 'rounded-r-xl' : ''}`;
+            return p.ok ? `${ends} bg-brand-500/20 text-brand-100` : `${ends} bg-rose-500/20 text-rose-200`;
+        }
+        return `rounded-xl text-slate-200 hover:bg-white/10 ${this.isToday(date) ? 'ring-1 ring-brand-400' : ''}`;
+    },
+
+    tap(date) {
         if (!date || this.isPast(date)) return;
         this.error = '';
-        if (this.isSelected(date)) {
-            this.dates = this.dates.filter((d) => d !== date);
-        } else if (this.dates.length >= LIMITS.dates) {
-            this.error = `You can pick up to ${LIMITS.dates} dates.`;
-        } else {
-            this.dates = [...this.dates, date].sort();
+
+        // Tapping a chosen option removes it (in either mode).
+        const existing = this.optionAt(date);
+        if (existing && !this.rangeStart) {
+            this.remove(existing);
+            return;
         }
+
+        if (this.mode === 'day') return this.add({ start: date, end: date });
+
+        if (!this.rangeStart || date < this.rangeStart) {
+            if (existing) return; // can't start inside another option
+            this.rangeStart = date;
+            return;
+        }
+
+        const problem = this.rangeProblem(this.rangeStart, date);
+        if (problem) {
+            this.error = `${problem} Pick the first day again.`;
+            this.rangeStart = null;
+            return;
+        }
+        this.add({ start: this.rangeStart, end: date });
+        this.rangeStart = null;
+        this.hover = null;
+    },
+
+    add(option) {
+        if (this.options.length >= LIMITS.dates) {
+            this.error = `You can add up to ${LIMITS.dates} date options.`;
+            return;
+        }
+        this.options = [...this.options, option].sort((a, b) => a.start.localeCompare(b.start));
+    },
+
+    remove(option) {
+        this.options = this.options.filter((o) => o !== option);
+    },
+
+    optionLabel(option) {
+        return formatRange(option.start, option.end);
+    },
+
+    optionDays(option) {
+        return dayCount(option.start, option.end);
+    },
+
+    cellLabel(date) {
+        const option = this.optionAt(date);
+        return option ? `${formatShort(date)}, selected (${this.optionLabel(option)})` : formatShort(date);
     },
 
     dayNumber(date) {
         return Number(date.slice(8));
     },
 
-    formatShort,
+    get submitLabel() {
+        if (this.busy) return 'Saving…';
+        return this.options.length > 1 ? `Propose ${this.options.length} options` : 'Propose event';
+    },
 
     async submit() {
         if (this.busy) return;
@@ -112,7 +210,7 @@ Alpine.data('proposeModal', () => ({
                 title: this.title,
                 description: this.description,
                 location: this.location,
-                candidateDates: this.dates,
+                options: this.options,
             });
             this.busy = false;
             this.open = false;

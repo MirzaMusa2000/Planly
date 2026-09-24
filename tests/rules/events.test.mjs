@@ -47,16 +47,39 @@ describe('events/{eventId}', () => {
     });
 
     test('the proposer or the admin confirms onto a candidate date', async () => {
-        await assertSucceeds(updateDoc(doc(as(env, 'ali'), 'events/e1'), { status: 'confirmed', finalDate: D2 }));
+        await assertSucceeds(updateDoc(doc(as(env, 'ali'), 'events/e1'), { status: 'confirmed', finalDate: D2, finalEndDate: D2 }));
         await seed(env, (db) => setDoc(doc(db, 'events/e2'), { ...newEvent('mei'), createdAt: new Date() }));
-        await assertSucceeds(updateDoc(doc(asAdmin(env), 'events/e2'), { status: 'confirmed', finalDate: D1 }));
+        await assertSucceeds(updateDoc(doc(asAdmin(env), 'events/e2'), { status: 'confirmed', finalDate: D1, finalEndDate: D1 }));
     });
 
     test('confirming is guarded', async () => {
-        await assertFails(updateDoc(doc(as(env, 'mei'), 'events/e1'), { status: 'confirmed', finalDate: D1 })); // not the proposer
-        await assertFails(updateDoc(doc(as(env, 'ali'), 'events/e1'), { status: 'confirmed', finalDate: '2026-12-25' })); // not a candidate
-        await assertFails(updateDoc(doc(as(env, 'ali'), 'events/e1'), { status: 'confirmed', finalDate: D1, title: 'Renamed' })); // extra change
-        await assertFails(updateDoc(doc(as(env, 'ali'), 'events/c1'), { status: 'confirmed', finalDate: D2 })); // already confirmed
+        await assertFails(updateDoc(doc(as(env, 'mei'), 'events/e1'), { status: 'confirmed', finalDate: D1, finalEndDate: D1 })); // not the proposer
+        await assertFails(updateDoc(doc(as(env, 'ali'), 'events/e1'), { status: 'confirmed', finalDate: '2026-12-25', finalEndDate: '2026-12-25' })); // not a candidate
+        await assertFails(updateDoc(doc(as(env, 'ali'), 'events/e1'), { status: 'confirmed', finalDate: D1, finalEndDate: D1, title: 'Renamed' })); // extra change
+        await assertFails(updateDoc(doc(as(env, 'ali'), 'events/c1'), { status: 'confirmed', finalDate: D2, finalEndDate: D2 })); // already confirmed
+    });
+
+    test('multi-day options: proposed with candidateEnds, confirmed with the matching end', async () => {
+        const trip = newEvent('mei', { candidateDates: ['2026-11-06', '2026-11-13'], candidateEnds: { '2026-11-06': '2026-11-08' } });
+        await assertSucceeds(propose(as(env, 'mei'), trip));
+        await assertFails(propose(as(env, 'mei'), { ...trip, candidateEnds: { '2026-11-07': '2026-11-08' } })); // not an option's first day
+        await assertFails(propose(as(env, 'mei'), { ...trip, candidateEnds: ['2026-11-08'] })); // not a map
+        await assertFails(propose(as(env, 'mei'), { ...trip, finalEndDate: '2026-11-08' })); // not confirmed yet
+
+        await seed(env, (db) => setDoc(doc(db, 'events/t1'), { ...trip, createdAt: new Date() }));
+        const mei = as(env, 'mei');
+        await assertFails(updateDoc(doc(mei, 'events/t1'), { status: 'confirmed', finalDate: '2026-11-06' })); // end missing
+        await assertFails(updateDoc(doc(mei, 'events/t1'), { status: 'confirmed', finalDate: '2026-11-06', finalEndDate: '2026-11-06' })); // wrong end
+        await assertFails(updateDoc(doc(mei, 'events/t1'), { status: 'confirmed', finalDate: '2026-11-06', finalEndDate: '2026-11-20' })); // stretched
+        await assertSucceeds(updateDoc(doc(mei, 'events/t1'), { status: 'confirmed', finalDate: '2026-11-06', finalEndDate: '2026-11-08' }));
+
+        await seed(env, (db) => setDoc(doc(db, 'events/t2'), { ...trip, createdAt: new Date() }));
+        await assertFails(updateDoc(doc(mei, 'events/t2'), { status: 'confirmed', finalDate: '2026-11-13', finalEndDate: '2026-11-15' })); // one-day option
+        await assertSucceeds(updateDoc(doc(mei, 'events/t2'), { status: 'confirmed', finalDate: '2026-11-13', finalEndDate: '2026-11-13' }));
+    });
+
+    test('older pages may still confirm a one-day option without finalEndDate', async () => {
+        await assertSucceeds(updateDoc(doc(as(env, 'ali'), 'events/e1'), { status: 'confirmed', finalDate: D1 }));
     });
 
     test('the proposer or the admin cancels', async () => {
@@ -68,7 +91,7 @@ describe('events/{eventId}', () => {
         await assertFails(updateDoc(doc(as(env, 'mei'), 'events/e1'), { status: 'cancelled' })); // not the proposer
         await assertFails(updateDoc(doc(as(env, 'ali'), 'events/e1'), { status: 'proposed' })); // not a valid transition
         await updateDoc(doc(as(env, 'ali'), 'events/e1'), { status: 'cancelled' });
-        await assertFails(updateDoc(doc(as(env, 'ali'), 'events/e1'), { status: 'confirmed', finalDate: D1 })); // no resurrecting
+        await assertFails(updateDoc(doc(as(env, 'ali'), 'events/e1'), { status: 'confirmed', finalDate: D1, finalEndDate: D1 })); // no resurrecting
     });
 
     test('summaries cannot be edited on their own', async () => {

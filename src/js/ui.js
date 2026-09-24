@@ -53,5 +53,71 @@ Alpine.store('sidebar', {
 });
 
 // Which top-level overlays are open. Escape handlers use it so a single press
-// closes only the top layer (chat > propose form / event sheet > day panel).
-Alpine.store('overlays', { propose: false, chat: false });
+// closes only the top layer (dialog > chat > propose form / event sheet > day panel).
+Alpine.store('overlays', { propose: false, chat: false, dialog: false });
+
+// Confirmation dialog (partials/confirm-dialog.html), instead of window.confirm():
+//
+//   const ok = await confirmDialog({ title, message, detail, confirmLabel, tone, icon, action });
+//
+// tone: 'danger' | 'primary' | 'success'. With `action`, the dialog stays open
+// showing progress on the confirm button until the action settles.
+const DIALOG_DEFAULTS = {
+    title: '',
+    message: '',
+    detail: '', // highlighted line, e.g. the event name
+    detailSub: '', // smaller line under it, e.g. its dates
+    confirmLabel: 'Confirm',
+    cancelLabel: 'Cancel',
+    tone: 'primary',
+    icon: 'alert',
+};
+
+let settle = null; // resolves the open dialog's promise
+let pendingAction = null;
+
+Alpine.store('dialog', {
+    ...DIALOG_DEFAULTS,
+    open: false,
+    busy: false,
+
+    confirm(options) {
+        settle?.(false); // a newer dialog replaces an unanswered one
+        Object.assign(this, DIALOG_DEFAULTS, options);
+        pendingAction = options.action ?? null;
+        this.busy = false;
+        this.open = true;
+        Alpine.store('overlays').dialog = true;
+        // A focus-trapped sheet underneath marks its siblings aria-hidden.
+        document.getElementById('confirm-dialog')?.removeAttribute('aria-hidden');
+        return new Promise((resolve) => (settle = resolve));
+    },
+
+    async accept() {
+        if (this.busy) return;
+        if (pendingAction) {
+            this.busy = true;
+            try {
+                await pendingAction();
+            } finally {
+                this.busy = false;
+            }
+        }
+        this.finish(true);
+    },
+
+    cancel() {
+        if (!this.busy) this.finish(false);
+    },
+
+    finish(result) {
+        this.open = false;
+        Alpine.store('overlays').dialog = false;
+        pendingAction = null;
+        const resolve = settle;
+        settle = null;
+        resolve?.(result);
+    },
+});
+
+export const confirmDialog = (options) => Alpine.store('dialog').confirm(options);

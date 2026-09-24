@@ -41,6 +41,17 @@ describe('events/{id}/itinerary', () => {
         await assertFails(updateDoc(doc(mei, 'events/c/itinerary/i1'), { date: D2 })); // moved to another day
     });
 
+    test('multi-day events take items on each of their days', async () => {
+        await seed(env, (db) => setDoc(doc(db, 'events/trip'), {
+            ...newEvent('ali', { status: 'confirmed', finalDate: '2026-11-06', finalEndDate: '2026-11-08', candidateEnds: { '2026-11-06': '2026-11-08' } }),
+            createdAt: new Date(),
+        }));
+        const mei = as(env, 'mei');
+        for (const date of ['2026-11-06', '2026-11-07', '2026-11-08']) await assertSucceeds(add(mei, 'trip', item('mei', { date })));
+        await assertFails(add(mei, 'trip', item('mei', { date: '2026-11-05' })));
+        await assertFails(add(mei, 'trip', item('mei', { date: '2026-11-09' })));
+    });
+
     test('createdBy is honest and immutable', async () => {
         await assertFails(add(as(env, 'mei'), 'c', item('ali')));
         await assertFails(updateDoc(doc(as(env, 'mei'), 'events/c/itinerary/i1'), { createdBy: 'mei' }));

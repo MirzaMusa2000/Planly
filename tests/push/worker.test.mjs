@@ -181,6 +181,23 @@ describe('push worker', () => {
         assert.equal(await exists('users/mei/pushSubscriptions/mei-tablet'), true);
     });
 
+    test('multi-day proposals say "date options"', async () => {
+        const fields = { title: 'Camping', status: 'proposed', proposedBy: 'ali', proposedByName: 'Ali', candidateDates: ['2026-11-06', '2026-11-13'], createdAt: now() };
+        const response = await realFetch(`${DOCS}/events/trip`, {
+            method: 'PATCH',
+            headers: owner,
+            body: JSON.stringify({
+                fields: {
+                    ...Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, encode(v)])),
+                    candidateEnds: { mapValue: { fields: { '2026-11-06': { stringValue: '2026-11-08' } } } },
+                },
+            }),
+        });
+        assert.ok(response.ok);
+        await call({ type: 'proposal', eventId: 'trip' }, { uid: 'ali' });
+        assert.equal((await inbox())['mei-phone'][0].body, 'Ali suggested 2 date options. Tap to vote.');
+    });
+
     test('you can only announce your own, new proposal', async () => {
         await put('events/e1', { title: 'X', status: 'proposed', proposedBy: 'ali', candidateDates: [], createdAt: now() });
         await put('events/old', { title: 'X', status: 'proposed', proposedBy: 'mei', candidateDates: [], createdAt: hourAgo() });

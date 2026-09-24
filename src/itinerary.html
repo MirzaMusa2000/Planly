@@ -34,7 +34,7 @@
                                 :class="option.id === e.id ? 'bg-ink-950 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'"
                                 class="flex shrink-0 items-center gap-2 rounded-2xl px-3.5 py-2 text-sm font-semibold shadow-soft transition">
                             <span x-text="option.title" class="max-w-40 truncate"></span>
-                            <span class="text-xs font-medium opacity-70" x-text="$dates.day(option.finalDate) + ' ' + $dates.month(option.finalDate)"></span>
+                            <span class="text-xs font-medium opacity-70" x-text="$dates.range(option.finalDate, option.finalEndDate)"></span>
                         </button>
                     </template>
                 </div>
@@ -43,13 +43,13 @@
                 <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 via-brand-600 to-violet-700 p-5 text-white shadow-lift sm:p-6">
                     <div class="flex items-start gap-4">
                         <span class="grid w-16 shrink-0 place-items-center rounded-2xl bg-white/15 py-2 backdrop-blur">
-                            <span class="text-xs font-bold tracking-wide uppercase" x-text="$dates.month(e.finalDate)"></span>
-                            <span class="text-2xl leading-none font-bold" x-text="$dates.day(e.finalDate)"></span>
+                            <span class="text-xs font-bold tracking-wide whitespace-nowrap uppercase" x-text="monthBadge(e)"></span>
+                            <span class="leading-none font-bold whitespace-nowrap" :class="isMultiDay(e) ? 'text-lg' : 'text-2xl'" x-text="dayBadge(e)"></span>
                         </span>
                         <div class="min-w-0 flex-1">
                             <span class="chip bg-white/20 text-white" x-text="countdown(e)"></span>
                             <h2 class="mt-1.5 text-xl font-bold break-words sm:text-2xl" x-text="e.title"></h2>
-                            <p class="mt-1 text-sm text-white/80" x-text="$dates.long(e.finalDate)"></p>
+                            <p class="mt-1 text-sm text-white/80" x-text="$store.planner.whenLong(e)"></p>
                             <p x-show="e.location" class="mt-1 flex items-center gap-1 text-sm text-white/80">
                                 <x-icon name="map-pin" class="h-4 w-4 shrink-0"/>
                                 <span class="break-words" x-text="e.location"></span>
@@ -58,8 +58,9 @@
                     </div>
                     <div class="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
                         <span class="rounded-full bg-white/15 px-3 py-1" x-text="e.rsvpSummary.join + ' joining'"></span>
+                        <span x-show="isMultiDay(e)" class="rounded-full bg-white/15 px-3 py-1" x-text="eventDays(e).length + ' days'"></span>
                         <span class="rounded-full bg-white/15 px-3 py-1"
-                              x-text="itemsFor(e.id).length + (itemsFor(e.id).length === 1 ? ' activity' : ' activities')"></span>
+                              x-text="itemCount(e.id) + (itemCount(e.id) === 1 ? ' activity' : ' activities')"></span>
                         <span class="rounded-full bg-white/15 px-3 py-1" x-text="doneCount + '/' + checklist.length + ' packed'"></span>
                     </div>
                 </section>
@@ -73,7 +74,19 @@
                             </span>
                             <h2 id="itinerary-title" class="text-base font-bold text-slate-900">Itinerary</h2>
                         </div>
-                        <include src="partials/itinerary-timeline.html" empty="No plans yet. Add the first stop!"></include>
+                        <!-- One timeline per day -->
+                        <div class="space-y-6">
+                            <template x-for="day in eventDays(e)" :key="day">
+                                <div>
+                                    <h3 x-show="isMultiDay(e)" class="mb-3 flex items-center gap-2 text-xs font-bold tracking-wide text-slate-500 uppercase">
+                                        <span class="h-px flex-1 bg-slate-100"></span>
+                                        <span x-text="dayHeading(e, day)"></span>
+                                        <span class="h-px flex-1 bg-slate-100"></span>
+                                    </h3>
+                                    <include src="partials/itinerary-timeline.html" empty="No plans yet. Add the first stop!"></include>
+                                </div>
+                            </template>
+                        </div>
                     </section>
 
                     <!-- Checklist -->

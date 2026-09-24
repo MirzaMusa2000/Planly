@@ -6,8 +6,9 @@ import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, updateD
 import { db } from './firebase';
 import { startEventsFeed } from './events';
 import { itineraryEditor } from './itinerary';
-import { today, toUtcDate } from './dates';
+import { daysInRange, format, today, toUtcDate } from './dates';
 import { errorMessage } from './voting';
+import { confirmDialog } from './ui';
 
 export const CHECKLIST_LIMITS = { item: 120, quantity: 40, notes: 500 };
 
@@ -47,7 +48,7 @@ Alpine.data('itineraryPage', () => {
             return Alpine.store('planner');
         },
 
-        /** Confirmed events from today onwards, soonest first. */
+        /** Confirmed events not over yet, soonest first. */
         get events() {
             return this.store.upcoming;
         },
@@ -70,17 +71,45 @@ Alpine.data('itineraryPage', () => {
         /** Live listeners for the shown event (driven by x-effect). */
         sync() {
             const e = this.event;
-            this.watchItineraries(e ? [[e.id, e.finalDate]] : []);
+            this.watchItineraries(e ? this.eventDays(e).map((day) => [e.id, day]) : []);
             this.watchChecklist(e?.id ?? null);
         },
 
         // --- Event header -------------------------------------------------------
 
+        eventDays(e) {
+            return daysInRange(e.finalDate, e.finalEndDate);
+        },
+
+        isMultiDay(e) {
+            return e.finalEndDate !== e.finalDate;
+        },
+
+        /** "Day 2 · Sat 3 Oct" */
+        dayHeading(e, day) {
+            return `Day ${this.eventDays(e).indexOf(day) + 1} · ${format(day, { weekday: 'short', day: 'numeric', month: 'short' })}`;
+        },
+
         countdown(e) {
-            const days = Math.round((toUtcDate(e.finalDate) - toUtcDate(today())) / 86_400_000);
-            if (days === 0) return 'Today';
+            const t = today();
+            if (e.finalDate <= t && t <= e.finalEndDate) {
+                return this.isMultiDay(e) ? `Happening now · Day ${this.eventDays(e).indexOf(t) + 1}` : 'Today';
+            }
+            const days = Math.round((toUtcDate(e.finalDate) - toUtcDate(t)) / 86_400_000);
             if (days === 1) return 'Tomorrow';
             return `In ${days} days`;
+        },
+
+        /** "Oct" or "Sept–Oct" for the date badge. */
+        monthBadge(e) {
+            const month = (d) => format(d, { month: 'short' });
+            return e.finalDate.slice(0, 7) === e.finalEndDate.slice(0, 7) ? month(e.finalDate) : `${month(e.finalDate)}–${month(e.finalEndDate)}`;
+        },
+
+        /** "2" or "2–4" for the date badge. */
+        dayBadge(e) {
+            const day = (d) => format(d, { day: 'numeric' });
+            return this.isMultiDay(e) ? `${day(e.finalDate)}–${day(e.finalEndDate)}` : day(e.finalDate);
         },
 
         memberName(uid) {
@@ -221,15 +250,27 @@ Alpine.data('itineraryPage', () => {
             }
         },
 
-        async removeListItem() {
+        removeListItem() {
             const f = this.listForm;
-            if (!f.id || !this.event || !window.confirm(`Remove “${f.item}” from the checklist?`)) return;
-            try {
-                await deleteDoc(doc(checklistRef(this.event.id), f.id));
-                this.closeListForm();
-            } catch (e) {
-                this.listError = errorMessage(e);
-            }
+            if (!f.id || !this.event) return;
+            const eventId = this.event.id;
+            return confirmDialog({
+                title: 'Remove from the checklist?',
+                message: 'It’s removed for everyone.',
+                detail: f.item,
+                detailSub: [f.quantity && `Qty ${f.quantity}`, this.memberName(f.picUid)].filter(Boolean).join(' · '),
+                confirmLabel: 'Remove',
+                tone: 'danger',
+                icon: 'trash',
+                action: async () => {
+                    try {
+                        await deleteDoc(doc(checklistRef(eventId), f.id));
+                        this.closeListForm();
+                    } catch (e) {
+                        this.listError = errorMessage(e);
+                    }
+                },
+            });
         },
     };
 });

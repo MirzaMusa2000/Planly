@@ -5,20 +5,24 @@ import { addDoc, collection, doc, onSnapshot, query, serverTimestamp, where } fr
 import { approvedUser } from './session';
 import { notify } from './push';
 import { db } from './firebase';
-import { format, formatLong, formatShort, today } from './dates';
+import { dayCount, format, formatLong, formatRange, formatRangeLong, formatShort, today } from './dates';
 import { cancelEvent, confirmEvent, errorMessage, setAvailability, setRsvp } from './voting';
+import { confirmDialog } from './ui';
 
-// $dates in templates: $dates.short(d), $dates.long(d), $dates.month(d), $dates.day(d)
+// $dates in templates: $dates.short(d), $dates.long(d), $dates.range(a, b), $dates.month(d), $dates.day(d)
 Alpine.magic('dates', () => ({
     today,
     short: formatShort,
     long: formatLong,
+    range: formatRange,
+    rangeLong: formatRangeLong,
     month: (d) => format(d, { month: 'short' }),
     day: (d) => format(d, { day: 'numeric' }),
     weekday: (d) => format(d, { weekday: 'short' }),
 }));
 
-export const LIMITS = { title: 120, description: 2000, location: 200, dates: 31 };
+// dates: options per proposal; rangeDays: longest multi-day option.
+export const LIMITS = { title: 120, description: 2000, location: 200, dates: 31, rangeDays: 14 };
 
 function normalise(snap) {
     const d = snap.data({ serverTimestamps: 'estimate' });
@@ -31,8 +35,11 @@ function normalise(snap) {
         proposedBy: d.proposedBy,
         proposedByName: d.proposedByName ?? '',
         createdAt: d.createdAt?.toDate?.() ?? null,
+        // Each option is keyed by its first day; multi-day options end on candidateEnds[start].
         candidateDates: [...(d.candidateDates ?? [])].sort(),
+        candidateEnds: d.candidateEnds ?? {},
         finalDate: d.finalDate ?? null,
+        finalEndDate: d.finalEndDate ?? d.finalDate ?? null,
         availabilitySummary: d.availabilitySummary ?? {},
         rsvpSummary: { join: 0, notAvailable: 0, ...(d.rsvpSummary ?? {}) },
     };
@@ -62,6 +69,31 @@ Alpine.store('planner', {
     /** Admin or the proposer may confirm / cancel. */
     canManage(event) {
         return this.me?.role === 'admin' || event?.proposedBy === this.me?.uid;
+    },
+
+    // --- Date options (one day, or several: first day -> candidateEnds) ------
+
+    endOf(event, start) {
+        return event.candidateEnds?.[start] ?? start;
+    },
+
+    optionDays(event, start) {
+        return start ? dayCount(start, this.endOf(event, start)) : 0;
+    },
+
+    /** "Fri, 2 Oct" or "Fri–Sun, 2–4 Oct". */
+    optionLabel(event, start) {
+        return formatRange(start, this.endOf(event, start));
+    },
+
+    /** The option (its first day) that covers `date`, or null. */
+    optionAt(event, date) {
+        return event.candidateDates.find((s) => s <= date && date <= this.endOf(event, s)) ?? null;
+    },
+
+    /** When a confirmed event happens, e.g. "Friday 2 – Sunday 4 October 2026". */
+    whenLong(event) {
+        return formatRangeLong(event.finalDate, event.finalEndDate);
     },
 
     myVote(eventId) {
@@ -141,36 +173,56 @@ Alpine.store('planner', {
     },
 
     confirmDate(event, date) {
-        if (!window.confirm(`Confirm ${formatLong(date)} for “${event.title}”? Voting will close and people can RSVP.`)) return;
-        return this.run(`${event.id}:manage`, () => confirmEvent(event, date), (r) => r.message);
+        const days = this.optionDays(event, date);
+        return confirmDialog({
+            title: days > 1 ? 'Confirm these dates?' : 'Confirm this date?',
+            message: 'Voting closes and everyone can RSVP.',
+            detail: event.title,
+            detailSub: `${formatRangeLong(date, this.endOf(event, date))} · ${this.freeLine(event, date)}`,
+            confirmLabel: days > 1 ? `Confirm ${days} days` : 'Confirm date',
+            tone: 'success',
+            icon: 'calendar-check',
+            action: () => this.run(`${event.id}:manage`, () => confirmEvent(event, date), (r) => r.message),
+        });
     },
 
     cancel(event) {
-        if (!window.confirm(`Cancel “${event.title}”? It will disappear from everyone’s calendar.`)) return;
-        return this.run(`${event.id}:manage`, async () => {
-            const result = await cancelEvent(event);
-            this.close();
-            return result;
-        }, (r) => r.message);
+        return confirmDialog({
+            title: 'Cancel this event?',
+            message: 'It disappears from everyone’s calendar. This can’t be undone.',
+            detail: event.title,
+            detailSub: event.status === 'confirmed'
+                ? this.whenLong(event)
+                : `Proposed · ${event.candidateDates.length} date ${event.candidateDates.length === 1 ? 'option' : 'options'}`,
+            confirmLabel: 'Cancel event',
+            cancelLabel: 'Keep it',
+            tone: 'danger',
+            icon: 'calendar-x',
+            action: () => this.run(`${event.id}:manage`, async () => {
+                const result = await cancelEvent(event);
+                this.close();
+                return result;
+            }, (r) => r.message),
+        });
     },
 
     get selected() {
         return this.events.find((e) => e.id === this.selectedId) ?? null;
     },
 
-    /** Confirmed events from today onwards, soonest first. */
+    /** Confirmed events not over yet (including ones happening now), soonest first. */
     get upcoming() {
         const t = today();
         return this.events
-            .filter((e) => e.status === 'confirmed' && e.finalDate && e.finalDate >= t)
+            .filter((e) => e.status === 'confirmed' && e.finalDate && e.finalEndDate >= t)
             .sort((a, b) => a.finalDate.localeCompare(b.finalDate));
     },
 
-    /** Proposals that still have a candidate date today or later. */
+    /** Proposals that still have a date option ending today or later. */
     get proposals() {
         const t = today();
         return this.events
-            .filter((e) => e.status === 'proposed' && e.candidateDates.some((d) => d >= t))
+            .filter((e) => e.status === 'proposed' && e.candidateDates.some((d) => this.endOf(e, d) >= t))
             .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
     },
 
@@ -314,14 +366,24 @@ export async function startEventsFeed() {
     );
 }
 
-/** Create a proposed event. Throws on validation or permission errors. */
-export async function proposeEvent({ title, description, location, candidateDates }) {
+/**
+ * Create a proposed event. `options` are the date choices people vote on:
+ * [{ start, end }] (end === start for a one-day option). Throws on validation
+ * or permission errors.
+ */
+export async function proposeEvent({ title, description, location, options }) {
     const me = window.Planly.user;
-    const dates = [...new Set(candidateDates)].sort();
+    const sorted = [...options].sort((a, b) => a.start.localeCompare(b.start));
+    const dates = sorted.map((o) => o.start);
 
     if (!title.trim()) throw new Error('Give your event a title.');
     if (dates.length === 0) throw new Error('Pick at least one date.');
-    if (dates.length > LIMITS.dates) throw new Error(`Pick at most ${LIMITS.dates} dates.`);
+    if (dates.length > LIMITS.dates) throw new Error(`Pick at most ${LIMITS.dates} date options.`);
+    sorted.forEach((o, i) => {
+        if (o.end < o.start || dayCount(o.start, o.end) > LIMITS.rangeDays) throw new Error(`A date option can be at most ${LIMITS.rangeDays} days.`);
+        if (i > 0 && o.start <= sorted[i - 1].end) throw new Error('Date options can’t overlap.');
+    });
+    const candidateEnds = Object.fromEntries(sorted.filter((o) => o.end !== o.start).map((o) => [o.start, o.end]));
 
     const ref = await addDoc(collection(db, 'events'), {
         title: title.trim().slice(0, LIMITS.title),
@@ -332,7 +394,9 @@ export async function proposeEvent({ title, description, location, candidateDate
         proposedByName: (me.displayName || '').slice(0, 60),
         createdAt: serverTimestamp(),
         candidateDates: dates,
+        candidateEnds,
         finalDate: null,
+        finalEndDate: null,
         availabilitySummary: {},
         rsvpSummary: { join: 0, notAvailable: 0 },
     });

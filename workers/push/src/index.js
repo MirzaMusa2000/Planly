@@ -87,12 +87,14 @@ async function plan(db, body, uid) {
                 throw new HttpError(409, 'Nothing new.');
             }
             const dates = event.candidateDates?.length ?? 0;
+            // Multi-day options ("Fri–Sun") read better as "date options".
+            const noun = Object.keys(event.candidateEnds ?? {}).length ? 'date option' : 'date';
             return {
                 lock: `proposal-${body.eventId}`,
                 recipients: (await approved()).map((u) => u.id).filter((id) => id !== uid),
                 message: {
                     title: `New proposal: ${truncate(event.title, 80)}`,
-                    body: `${event.proposedByName || caller.displayName} suggested ${dates} ${dates === 1 ? 'date' : 'dates'}. Tap to vote.`,
+                    body: `${event.proposedByName || caller.displayName} suggested ${dates} ${noun}${dates === 1 ? '' : 's'}. Tap to vote.`,
                     url: `/#event=${body.eventId}`,
                     tag: `planly-event-${body.eventId}`,
                 },

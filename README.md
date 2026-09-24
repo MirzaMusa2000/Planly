@@ -1,7 +1,7 @@
 # Planly
 
 A private group planner for friends: propose events with candidate dates, vote on
-availability, confirm and RSVP, plan a day-by-day itinerary, share a "who brings what"
+availability, confirm and RSVP, plan a day-by-day itinerary (events can span several days), share a "who brings what"
 checklist (Itinerary page), and chat. New members wait for admin approval.
 
 **Runs entirely on Firebase's free Spark plan.** It's a static site (HTML + JavaScript,
@@ -68,7 +68,7 @@ FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:909
 ### Tests
 
 ```bash
-npm run test:rules       # 63 security-rules tests against a throwaway emulator
+npm run test:rules       # 66 security-rules tests against a throwaway emulator
 npm run test:push        # push worker: encryption, VAPID, who gets notified (emulator)
 npm run build            # static site into dist/
 ```

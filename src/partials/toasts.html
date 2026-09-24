@@ -1,5 +1,5 @@
 <!-- Toasts: Alpine.store('toast').show('Saved!') -->
-<div x-data class="pointer-events-none fixed inset-x-0 bottom-24 z-[70] flex flex-col items-center gap-2 px-4 lg:bottom-6" aria-live="polite">
+<div x-data class="pointer-events-none fixed inset-x-0 bottom-24 z-[90] flex flex-col items-center gap-2 px-4 lg:bottom-6" aria-live="polite">
     <template x-for="t in $store.toast.items" :key="t.id">
         <div x-transition.opacity class="pointer-events-auto flex max-w-sm items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold shadow-lg"
              :class="t.type === 'error' ? 'bg-rose-600 text-white' : 'bg-ink-900 text-white'">

@@ -80,10 +80,14 @@ service cloud.firestore {
     // ---------------------------------------------------------------------
     // events/{eventId}
     // ---------------------------------------------------------------------
+    // Date options are keyed by their first day (candidateDates). A multi-day
+    // option also has candidateEnds[firstDay] = lastDay; votes stay keyed by
+    // the first day. (Rules can't loop, so the end dates' order and length are
+    // checked by the browser; confirming copies the chosen one to finalEndDate.)
     function validNewEvent(d) {
       return d.keys().hasOnly(['title', 'description', 'location', 'status', 'proposedBy',
-                               'proposedByName', 'createdAt', 'candidateDates', 'finalDate',
-                               'availabilitySummary', 'rsvpSummary'])
+                               'proposedByName', 'createdAt', 'candidateDates', 'candidateEnds',
+                               'finalDate', 'finalEndDate', 'availabilitySummary', 'rsvpSummary'])
           && d.keys().hasAll(['title', 'status', 'proposedBy', 'candidateDates'])
           && d.status == 'proposed'
           && d.proposedBy == request.auth.uid
@@ -94,7 +98,10 @@ service cloud.firestore {
           && (!('createdAt' in d) || d.createdAt == request.time)
           && d.candidateDates is list
           && d.candidateDates.size() >= 1 && d.candidateDates.size() <= 31
+          && (!('candidateEnds' in d)
+              || (d.candidateEnds is map && d.candidateEnds.keys().hasOnly(d.candidateDates)))
           && (!('finalDate' in d) || d.finalDate == null)
+          && (!('finalEndDate' in d) || d.finalEndDate == null)
           // New events start with no votes.
           && (!('availabilitySummary' in d) || (d.availabilitySummary is map && d.availabilitySummary.size() == 0))
           && (!('rsvpSummary' in d) || d.rsvpSummary == {'join': 0, 'notAvailable': 0});
@@ -137,12 +144,21 @@ service cloud.firestore {
 
       function canManage() { return isAdmin() || resource.data.proposedBy == request.auth.uid; }
 
-      // Confirm: admin or proposer, proposed -> confirmed on a candidate date.
+      // Confirm: admin or proposer, proposed -> confirmed on one date option;
+      // finalEndDate is that option's last day (= finalDate for one day). Pages
+      // from before multi-day events send no finalEndDate: fine for one day.
+      function chosenEnd() {
+        return resource.data.get('candidateEnds', {}).get(request.resource.data.finalDate, null);
+      }
       allow update: if approved() && canManage()
-                    && changed().hasOnly(['status', 'finalDate'])
+                    && changed().hasOnly(['status', 'finalDate', 'finalEndDate'])
                     && resource.data.status == 'proposed'
                     && request.resource.data.status == 'confirmed'
-                    && request.resource.data.finalDate in resource.data.candidateDates;
+                    && request.resource.data.finalDate in resource.data.candidateDates
+                    && (request.resource.data.get('finalEndDate', null) == null
+                        ? chosenEnd() == null
+                        : request.resource.data.finalEndDate
+                            == (chosenEnd() == null ? request.resource.data.finalDate : chosenEnd()));
 
       // Cancel: admin or proposer, proposed/confirmed -> cancelled.
       allow update: if approved() && canManage()
@@ -195,8 +211,9 @@ service cloud.firestore {
         allow delete: if false;
       }
 
-      // Any approved member may plan a confirmed event's day. Items must sit on
-      // the event's finalDate; end time (if any) must be after the start.
+      // Any approved member may plan a confirmed event's day(s). Items must sit
+      // on one of its days (finalDate..finalEndDate; events confirmed before
+      // multi-day events have only finalDate); end time (if any) after the start.
       match /itinerary/{itemId} {
         function validItem(d) {
           let e = event();
@@ -204,7 +221,9 @@ service cloud.firestore {
               && d.keys().hasAll(['date', 'startTime', 'activity', 'order', 'createdBy'])
               && e.status == 'confirmed'
               && isDate(d.date)
-              && d.date == e.finalDate
+              && (e.get('finalEndDate', null) == null
+                  ? d.date == e.finalDate
+                  : (d.date >= e.finalDate && d.date <= e.finalEndDate))
               && isTime(d.startTime)
               && (!('endTime' in d) || d.endTime == null || (isTime(d.endTime) && d.endTime > d.startTime))
               && isStr(d.activity, 1, 200)

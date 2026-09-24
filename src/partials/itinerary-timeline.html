@@ -1,21 +1,21 @@
-<!-- Itinerary of one confirmed event `e` (timeline + add/edit). Needs a component
-     that mixes in itineraryEditor() (js/itinerary.js). Param: empty (text when there are no items). -->
+<!-- Itinerary of one day (`day`) of a confirmed event (`e`): timeline + add/edit. Needs a
+     component that mixes in itineraryEditor() (js/itinerary.js). Param: empty (text when there are no items). -->
 <div>
-    <p x-show="isLoading(e.id)" class="py-4 text-center text-sm text-slate-400">Loading…</p>
-    <p x-show="!isLoading(e.id) && itemsFor(e.id).length === 0 && !isEditing(e.id)"
+    <p x-show="isLoading(e.id, day)" class="py-4 text-center text-sm text-slate-400">Loading…</p>
+    <p x-show="!isLoading(e.id, day) && itemsFor(e.id, day).length === 0 && !isEditing(e.id, day)"
        class="rounded-2xl border-2 border-dashed border-slate-200 px-4 py-5 text-center text-sm text-slate-400">
         {{ empty }}
     </p>
 
     <!-- Timeline  -->
     <ol class="space-y-2">
-        <template x-for="(item, index) in itemsFor(e.id)" :key="item.id">
+        <template x-for="(item, index) in itemsFor(e.id, day)" :key="item.id">
             <li class="flex gap-3">
                 <span class="w-12 shrink-0 pt-3 text-right text-xs font-semibold text-slate-500" x-text="item.startTime"></span>
 
                 <div class="min-w-0 flex-1">
                     <!-- Read mode  -->
-                    <div x-show="!isEditing(e.id, item.id)" class="rounded-2xl border-l-4 px-3.5 py-2.5" :class="colour(index)">
+                    <div x-show="!isEditing(e.id, day, item.id)" class="rounded-2xl border-l-4 px-3.5 py-2.5" :class="colour(index)">
                         <div class="flex items-start gap-2">
                             <div class="min-w-0 flex-1">
                                 <p class="font-semibold break-words" x-text="item.activity"></p>
@@ -29,14 +29,14 @@
                             </div>
 
                             <div class="-mr-1 flex shrink-0 flex-col items-center">
-                                <button type="button" @click="move(e.id, index, -1)" :disabled="!canMove(e.id, index, -1)"
+                                <button type="button" @click="move(e.id, day, index, -1)" :disabled="!canMove(e.id, day, index, -1)"
                                         class="grid h-7 w-7 place-items-center rounded-lg hover:bg-black/5 disabled:opacity-25"
-                                        :title="canMove(e.id, index, -1) ? 'Move up' : 'Items are ordered by start time'" aria-label="Move up">
+                                        :title="canMove(e.id, day, index, -1) ? 'Move up' : 'Items are ordered by start time'" aria-label="Move up">
                                     <x-icon name="chevron-left" class="h-4 w-4 rotate-90"/>
                                 </button>
-                                <button type="button" @click="move(e.id, index, 1)" :disabled="!canMove(e.id, index, 1)"
+                                <button type="button" @click="move(e.id, day, index, 1)" :disabled="!canMove(e.id, day, index, 1)"
                                         class="grid h-7 w-7 place-items-center rounded-lg hover:bg-black/5 disabled:opacity-25"
-                                        :title="canMove(e.id, index, 1) ? 'Move down' : 'Items are ordered by start time'" aria-label="Move down">
+                                        :title="canMove(e.id, day, index, 1) ? 'Move down' : 'Items are ordered by start time'" aria-label="Move down">
                                     <x-icon name="chevron-right" class="h-4 w-4 rotate-90"/>
                                 </button>
                             </div>
@@ -48,7 +48,7 @@
                     </div>
 
                     <!-- Edit mode  -->
-                    <template x-if="isEditing(e.id, item.id)">
+                    <template x-if="isEditing(e.id, day, item.id)">
                         <include src="partials/itinerary-form.html"></include>
                     </template>
                 </div>
@@ -57,11 +57,11 @@
     </ol>
 
     <!-- Add  -->
-    <div class="mt-2" :class="isEditing(e.id) ? '' : 'pl-15'">
-        <template x-if="isEditing(e.id)">
+    <div class="mt-2" :class="isEditing(e.id, day) ? '' : 'pl-15'">
+        <template x-if="isEditing(e.id, day)">
             <include src="partials/itinerary-form.html"></include>
         </template>
-        <button type="button" x-show="!isEditing(e.id)" @click="startAdd(e)"
+        <button type="button" x-show="!isEditing(e.id, day)" @click="startAdd(e, day)"
                 class="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 py-2.5 text-sm font-semibold text-slate-500 transition hover:border-brand-300 hover:text-brand-600">
             <x-icon name="plus" class="h-4 w-4"/> Add to itinerary
         </button>

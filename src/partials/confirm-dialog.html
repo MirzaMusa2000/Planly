@@ -1,0 +1,65 @@
+<!-- Confirmation dialog (js/ui.js `confirmDialog`). Bottom sheet on phones, centred card
+     elsewhere. Escape / backdrop = cancel; the confirm button shows progress while an
+     action runs. Above sheets (z-60) and the chat; below toasts. -->
+<div id="confirm-dialog" x-data x-show="$store.dialog.open" x-cloak class="fixed inset-0 z-[85] flex items-end justify-center sm:items-center sm:p-4"
+     @keydown.escape.window="$store.dialog.open && $store.dialog.cancel()">
+    <div class="absolute inset-0 bg-ink-950/55 backdrop-blur-sm" x-show="$store.dialog.open" x-transition.opacity.duration.200ms
+         @click="$store.dialog.cancel()"></div>
+
+    <div x-show="$store.dialog.open" x-trap.noscroll="$store.dialog.open"
+         x-transition:enter="transition duration-200 ease-out"
+         x-transition:enter-start="translate-y-6 opacity-0 sm:translate-y-0 sm:scale-95"
+         x-transition:enter-end="translate-y-0 opacity-100 sm:scale-100"
+         x-transition:leave="transition duration-150 ease-in"
+         x-transition:leave-start="opacity-100 sm:scale-100"
+         x-transition:leave-end="translate-y-6 opacity-0 sm:translate-y-0 sm:scale-95"
+         role="alertdialog" aria-modal="true" aria-labelledby="confirm-dialog-title" aria-describedby="confirm-dialog-message"
+         class="relative w-full rounded-t-3xl bg-white px-6 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-center shadow-2xl sm:max-w-sm sm:rounded-3xl sm:pb-6">
+
+        <!-- Grab handle (phones) -->
+        <span class="mx-auto -mt-2 mb-4 block h-1.5 w-10 rounded-full bg-slate-200 sm:hidden" aria-hidden="true"></span>
+
+        <!-- Icon -->
+        <span class="relative mx-auto grid h-16 w-16 place-items-center rounded-full"
+              :class="{
+                  'bg-rose-50 text-rose-600': $store.dialog.tone === 'danger',
+                  'bg-emerald-50 text-emerald-600': $store.dialog.tone === 'success',
+                  'bg-brand-50 text-brand-600': $store.dialog.tone === 'primary',
+              }">
+            <span class="absolute inset-0 animate-ping rounded-full opacity-20 [animation-iteration-count:2]"
+                  :class="{ 'bg-rose-400': $store.dialog.tone === 'danger', 'bg-emerald-400': $store.dialog.tone === 'success', 'bg-brand-400': $store.dialog.tone === 'primary' }"></span>
+            <x-icon name="alert" x-show="$store.dialog.icon === 'alert'" class="h-7 w-7"/>
+            <x-icon name="trash" x-show="$store.dialog.icon === 'trash'" class="h-7 w-7"/>
+            <x-icon name="user-x" x-show="$store.dialog.icon === 'user-x'" class="h-7 w-7"/>
+            <x-icon name="calendar-check" x-show="$store.dialog.icon === 'calendar-check'" class="h-7 w-7"/>
+            <x-icon name="calendar-x" x-show="$store.dialog.icon === 'calendar-x'" class="h-7 w-7"/>
+        </span>
+
+        <h2 id="confirm-dialog-title" class="mt-4 text-lg font-bold text-slate-900" x-text="$store.dialog.title"></h2>
+        <p id="confirm-dialog-message" x-show="$store.dialog.message" class="mt-1.5 text-sm text-slate-500" x-text="$store.dialog.message"></p>
+
+        <!-- What it's about -->
+        <div x-show="$store.dialog.detail" class="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-left ring-1 ring-slate-100">
+            <p class="font-semibold break-words text-slate-900" x-text="$store.dialog.detail"></p>
+            <p x-show="$store.dialog.detailSub" class="mt-0.5 text-xs text-slate-500" x-text="$store.dialog.detailSub"></p>
+        </div>
+
+        <div class="mt-6 flex flex-col-reverse gap-2 sm:flex-row">
+            <button type="button" @click="$store.dialog.cancel()" :disabled="$store.dialog.busy"
+                    class="btn btn-secondary flex-1 py-3" x-text="$store.dialog.cancelLabel"></button>
+            <button type="button" @click="$store.dialog.accept()" :disabled="$store.dialog.busy"
+                    :class="{
+                        'bg-rose-600 text-white shadow-lg shadow-rose-600/25 hover:bg-rose-700': $store.dialog.tone === 'danger',
+                        'btn-success shadow-lg shadow-emerald-500/25': $store.dialog.tone === 'success',
+                        'btn-primary': $store.dialog.tone === 'primary',
+                    }"
+                    class="btn flex-1 py-3">
+                <svg x-show="$store.dialog.busy" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"/>
+                    <path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+                </svg>
+                <span x-text="$store.dialog.busy ? 'Working…' : $store.dialog.confirmLabel"></span>
+            </button>
+        </div>
+    </div>
+</div>

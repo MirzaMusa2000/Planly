@@ -1,5 +1,5 @@
 <!-- Group chat: floating button + slide-up panel (full screen on mobile).  -->
-<div x-data="chat" @keydown.escape.window="open && close()">
+<div x-data="chat" @keydown.escape.window="open && !$store.overlays.dialog && close()">
     <!-- Floating button (sits above the mobile tab bar)  -->
     <button type="button" @click="toggle()"
             :aria-expanded="open" aria-controls="chat-panel"

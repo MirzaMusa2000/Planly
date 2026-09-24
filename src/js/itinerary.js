@@ -15,8 +15,9 @@ import {
     writeBatch,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { addDays, format, today, toUtcDate } from './dates';
+import { addDays, daysInRange, format, today, toUtcDate } from './dates';
 import { errorMessage } from './voting';
+import { confirmDialog } from './ui';
 
 export const ITEM_LIMITS = { activity: 200, location: 200, notes: 1000 };
 
@@ -36,8 +37,9 @@ const itineraryRef = (eventId) => collection(db, 'events', eventId, 'itinerary')
 
 /**
  * State and methods for showing and editing event itineraries, mixed into an
- * Alpine component. Templates use partials/itinerary-timeline.html with `e`
- * bound to a confirmed event.
+ * Alpine component. A multi-day event has one itinerary per day, so items are
+ * keyed by event and day. Templates use partials/itinerary-timeline.html with
+ * `e` (a confirmed event) and `day` (one of its dates) in scope.
  */
 export function itineraryEditor() {
     // Outside reactive state: listener handles. Key "eventId|date".
@@ -45,7 +47,7 @@ export function itineraryEditor() {
 
     return {
         ITEM_LIMITS,
-        items: {}, // eventId -> items, sorted by startTime, order
+        items: {}, // "eventId|date" -> items, sorted by startTime, order
         form: emptyForm(),
         formError: '',
         busy: false,
@@ -70,7 +72,7 @@ export function itineraryEditor() {
                     if (!listeners.has(key)) return; // stale listener
                     this.items = {
                         ...this.items,
-                        [eventId]: snapshot.docs.map((d) => ({ id: d.id, ...d.data() })),
+                        [key]: snapshot.docs.map((d) => ({ id: d.id, ...d.data() })),
                     };
                 }, (error) => {
                     console.error(error);
@@ -79,12 +81,19 @@ export function itineraryEditor() {
             }
         },
 
-        itemsFor(eventId) {
-            return this.items[eventId] ?? [];
+        itemsFor(eventId, day) {
+            return this.items[`${eventId}|${day}`] ?? [];
         },
 
-        isLoading(eventId) {
-            return !(eventId in this.items);
+        isLoading(eventId, day) {
+            return !(`${eventId}|${day}` in this.items);
+        },
+
+        /** All items of an event across its days (for counts). */
+        itemCount(eventId) {
+            return Object.entries(this.items)
+                .filter(([key]) => key.startsWith(`${eventId}|`))
+                .reduce((n, [, list]) => n + list.length, 0);
         },
 
         colour(index) {
@@ -101,19 +110,19 @@ export function itineraryEditor() {
 
         // --- Add / edit -------------------------------------------------------
 
-        isEditing(eventId, itemId = null) {
-            return this.form.eventId === eventId && this.form.id === itemId;
+        isEditing(eventId, day, itemId = null) {
+            return this.form.eventId === eventId && this.form.date === day && this.form.id === itemId;
         },
 
-        /** Items sit on the event's confirmed date. */
-        startAdd(event) {
-            const items = this.itemsFor(event.id);
+        /** A new item on one of the event's confirmed days. */
+        startAdd(event, day) {
+            const items = this.itemsFor(event.id, day);
             const last = items[items.length - 1];
             this.formError = '';
             this.form = {
                 ...emptyForm(),
                 eventId: event.id,
-                date: event.finalDate,
+                date: day,
                 startTime: last?.endTime || last?.startTime || '09:00',
             };
             this.$nextTick(() => this.$root.querySelector('[data-item-form] input[type=time]')?.focus());
@@ -165,7 +174,7 @@ export function itineraryEditor() {
                 if (f.id) {
                     await updateDoc(doc(itineraryRef(f.eventId), f.id), data);
                 } else {
-                    const orders = this.itemsFor(f.eventId).map((i) => i.order ?? 0);
+                    const orders = this.itemsFor(f.eventId, f.date).map((i) => i.order ?? 0);
                     await addDoc(itineraryRef(f.eventId), {
                         ...data,
                         date: f.date,
@@ -181,27 +190,37 @@ export function itineraryEditor() {
             }
         },
 
-        async remove(eventId, item) {
-            if (!window.confirm(`Remove “${item.activity}” from the plan?`)) return;
-            try {
-                await deleteDoc(doc(itineraryRef(eventId), item.id));
-                if (this.form.id === item.id) this.cancelForm();
-            } catch (e) {
-                Alpine.store('toast').show(errorMessage(e), 'error');
-            }
+        remove(eventId, item) {
+            return confirmDialog({
+                title: 'Remove from the plan?',
+                message: 'It’s removed from the itinerary for everyone.',
+                detail: item.activity,
+                detailSub: [this.timeRange(item), item.location].filter(Boolean).join(' · '),
+                confirmLabel: 'Remove',
+                tone: 'danger',
+                icon: 'trash',
+                action: async () => {
+                    try {
+                        await deleteDoc(doc(itineraryRef(eventId), item.id));
+                        if (this.form.id === item.id) this.cancelForm();
+                    } catch (e) {
+                        Alpine.store('toast').show(errorMessage(e), 'error');
+                    }
+                },
+            });
         },
 
         // --- Reorder (items are sorted by start time, then order) --------------
 
-        canMove(eventId, index, dir) {
-            const items = this.itemsFor(eventId);
+        canMove(eventId, day, index, dir) {
+            const items = this.itemsFor(eventId, day);
             const other = items[index + dir];
             return Boolean(other) && other.startTime === items[index].startTime;
         },
 
-        async move(eventId, index, dir) {
-            if (!this.canMove(eventId, index, dir)) return;
-            const items = this.itemsFor(eventId);
+        async move(eventId, day, index, dir) {
+            if (!this.canMove(eventId, day, index, dir)) return;
+            const items = this.itemsFor(eventId, day);
             const a = items[index];
             const b = items[index + dir];
             // Same order values (e.g. legacy data) would make a swap a no-op.
@@ -252,7 +271,7 @@ Alpine.data('dayPanel', () => ({
     /** Escape closes the top layer only: an overlay above us, then the form, then the panel. */
     onEscape() {
         const overlays = Alpine.store('overlays');
-        if (!this.open || overlays.propose || overlays.chat || this.store.selected) return;
+        if (!this.open || overlays.propose || overlays.chat || overlays.dialog || this.store.selected) return;
         if (this.form.eventId) this.cancelForm();
         else this.close();
     },
@@ -265,8 +284,14 @@ Alpine.data('dayPanel', () => ({
 
     eventsOn(date) {
         return this.store.events.filter((e) =>
-            (e.status === 'confirmed' && e.finalDate === date)
-            || (e.status === 'proposed' && e.candidateDates.includes(date)));
+            (e.status === 'confirmed' && e.finalDate <= date && date <= e.finalEndDate)
+            || (e.status === 'proposed' && this.store.optionAt(e, date)));
+    },
+
+    /** "Day 2 of 3" for a multi-day event, else ''. */
+    dayOf(event, date) {
+        const days = daysInRange(event.finalDate, event.finalEndDate);
+        return days.length > 1 ? `Day ${days.indexOf(date) + 1} of ${days.length}` : '';
     },
 
     get confirmedEvents() {

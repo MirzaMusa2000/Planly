@@ -62,8 +62,9 @@
                             <span class="chip shrink-0 bg-amber-200/70 text-amber-800">Proposed</span>
                         </span>
                         <span class="block text-xs text-amber-800"
-                              x-text="($store.planner.everyoneFree(e, date) ? '⭐ Everyone free · ' : '')
-                                    + $store.planner.availableCount(e, date) + '/' + $store.planner.approvedCount + ' free · tap to vote'"></span>
+                              x-text="($store.planner.everyoneFree(e, $store.planner.optionAt(e, date)) ? '⭐ Everyone free · ' : '')
+                                    + ($store.planner.optionDays(e, $store.planner.optionAt(e, date)) > 1 ? $store.planner.optionLabel(e, $store.planner.optionAt(e, date)) + ' · ' : '')
+                                    + $store.planner.availableCount(e, $store.planner.optionAt(e, date)) + '/' + $store.planner.approvedCount + ' free · tap to vote'"></span>
                     </span>
                     <x-icon name="chevron-right" class="h-4 w-4 shrink-0 text-amber-600"/>
                 </button>
@@ -85,8 +86,12 @@
                         <x-icon name="chevron-right" class="h-4 w-4 shrink-0 text-emerald-600"/>
                     </button>
 
-                    <h3 class="mt-4 mb-2 text-xs font-bold tracking-wide text-slate-400 uppercase">Itinerary</h3>
-                    <include src="partials/itinerary-timeline.html" empty="No plans yet for this day. Add the first stop!"></include>
+                    <h3 class="mt-4 mb-2 text-xs font-bold tracking-wide text-slate-400 uppercase">
+                        Itinerary<span x-show="dayOf(e, date)" x-text="' · ' + dayOf(e, date)"></span>
+                    </h3>
+                    <template x-for="day in [date]" :key="day">
+                        <include src="partials/itinerary-timeline.html" empty="No plans yet for this day. Add the first stop!"></include>
+                    </template>
                 </section>
             </template>
 

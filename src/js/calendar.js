@@ -1,6 +1,7 @@
 // Dashboard calendar (FullCalendar) fed by the realtime planner store.
 import Alpine from 'alpinejs';
 import { startEventsFeed } from './events';
+import { addDays } from './dates';
 
 // FullCalendar is loaded on demand so pages without a calendar stay light.
 const loadFullCalendar = () =>
@@ -19,7 +20,11 @@ const COLOURS = {
     confirmed: { backgroundColor: '#d1fae5', borderColor: '#10b981', textColor: '#065f46' },
 };
 
-/** Map store events to FullCalendar events: proposals on every candidate date, confirmed on finalDate. */
+/**
+ * Map store events to FullCalendar events: proposals on every date option,
+ * confirmed ones on their final day(s). FullCalendar's all-day `end` is
+ * exclusive, hence the +1 day.
+ */
 function toCalendarEvents(store) {
     const items = [];
 
@@ -29,6 +34,7 @@ function toCalendarEvents(store) {
                 id: event.id,
                 title: event.title,
                 start: event.finalDate,
+                end: addDays(event.finalEndDate, 1),
                 allDay: true,
                 classNames: ['ev', 'ev-confirmed'],
                 extendedProps: { eventId: event.id, kind: 'confirmed', star: false },
@@ -43,6 +49,7 @@ function toCalendarEvents(store) {
                     id: `${event.id}:${date}`,
                     title: event.title,
                     start: date,
+                    end: addDays(store.endOf(event, date), 1),
                     allDay: true,
                     classNames: ['ev', 'ev-proposed', ...(star ? ['ev-star'] : [])],
                     extendedProps: { eventId: event.id, kind: 'proposed', star },
