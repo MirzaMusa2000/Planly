@@ -5,7 +5,7 @@
 // Each page declares <body data-access="guest|pending|approved|admin|public">.
 import Alpine from 'alpinejs';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore';
+import { clearIndexedDbPersistence, doc, getDoc, getDocFromCache, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { notify } from './push';
 import { startPeopleFeed } from './people';
@@ -79,6 +79,20 @@ export async function ensureUserDoc(user, displayName = null) {
     return profile;
 }
 
+/**
+ * The profile as last seen on this device, or null. Pages use it to open at
+ * once; watchSession() then checks the live copy and redirects if access has
+ * changed (and firestore.rules check every read and write anyway).
+ */
+async function cachedApprovedProfile(uid) {
+    try {
+        const snap = await getDocFromCache(userRef(uid));
+        return snap.exists() && snap.data().status === 'approved' ? snap.data() : null;
+    } catch {
+        return null; // not cached yet, or no offline cache in this browser
+    }
+}
+
 /** Where a signed-in user belongs, given their profile. */
 export function homeFor(profile) {
     return profile?.status === 'approved' ? '/' : '/pending';
@@ -102,8 +116,13 @@ export async function boot() {
     const user = await authReady();
 
     if (access === 'guest') {
+        // Signed out: forget the previous person's cached data on this device.
+        // (Safe here: nothing has used Firestore on this page yet.)
+        if (!user) {
+            await clearIndexedDbPersistence(db).catch(() => {});
+            return true;
+        }
         // Already signed in? Continue straight to where they belong.
-        if (!user) return true;
         const profile = await ensureUserDoc(user).catch(() => null);
         if (!profile) return true;
         window.location.replace(homeFor(profile));
@@ -115,7 +134,9 @@ export async function boot() {
         return false;
     }
 
-    const profile = await ensureUserDoc(user);
+    // Approved members: open from the cached profile (instant), else ask the server.
+    const pageNeedsServer = access === 'pending';
+    const profile = (!pageNeedsServer && await cachedApprovedProfile(user.uid)) || await ensureUserDoc(user);
 
     if (access === 'pending') {
         if (profile.status === 'approved') {

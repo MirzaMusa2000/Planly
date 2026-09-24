@@ -5,10 +5,10 @@
 </head>
 <!-- data-access: who may see this page (checked in js/session.js before Alpine starts) -->
 <body class="h-full font-sans text-slate-800 antialiased" data-access="{{ access }}" data-page="{{ page }}">
-    <include src="partials/boot-splash.html"></include>
+    <include src="partials/boot-splash.html" area="inset-x-0 top-14 bottom-16 lg:inset-y-0 lg:right-0 lg:left-64 lg:collapsed:left-20"></include>
 
     <!-- Desktop sidebar (collapsible to icons only; `collapsed:` styles, js/ui.js) -->
-    <aside x-data class="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col bg-ink-950 px-4 py-6 transition-[width,padding] duration-200 lg:flex collapsed:w-20 collapsed:px-3">
+    <aside x-data class="fixed inset-y-0 left-0 z-40 hidden [view-transition-name:planly-sidebar] w-64 flex-col bg-ink-950 px-4 py-6 transition-[width,padding] duration-200 lg:flex collapsed:w-20 collapsed:px-3">
         <a href="/" class="flex items-center gap-2.5 px-2 collapsed:justify-center collapsed:px-0" title="Planly">
             <include src="partials/logo.html" size="h-9 w-9 shrink-0" id="sidebar"></include>
             <span class="text-xl font-bold tracking-tight whitespace-nowrap text-white collapsed:hidden">Planly</span>
@@ -28,20 +28,19 @@
         </button>
 
         <nav class="mt-6 space-y-1" aria-label="Main">
-            <a href="/" class="nav-link" :class="{ 'nav-link-active': $store.session.page === 'home' }"
+            <a href="/" class="nav-link" data-nav="home"
                :aria-current="$store.session.page === 'home' ? 'page' : null" :title="$store.sidebar.collapsed ? 'Home' : null">
                 <x-icon name="home" class="h-5 w-5 shrink-0"/> <span class="whitespace-nowrap collapsed:sr-only">Home</span>
             </a>
-            <a href="/itinerary" class="nav-link" :class="{ 'nav-link-active': $store.session.page === 'itinerary' }"
+            <a href="/itinerary" class="nav-link" data-nav="itinerary"
                :aria-current="$store.session.page === 'itinerary' ? 'page' : null" :title="$store.sidebar.collapsed ? 'Itinerary' : null">
                 <x-icon name="clipboard" class="h-5 w-5 shrink-0"/> <span class="whitespace-nowrap collapsed:sr-only">Itinerary</span>
             </a>
-            <a href="/expenses" class="nav-link" :class="{ 'nav-link-active': $store.session.page === 'expenses' }"
+            <a href="/expenses" class="nav-link" data-nav="expenses"
                :aria-current="$store.session.page === 'expenses' ? 'page' : null" :title="$store.sidebar.collapsed ? 'Expenses' : null">
                 <x-icon name="wallet" class="h-5 w-5 shrink-0"/> <span class="whitespace-nowrap collapsed:sr-only">Expenses</span>
             </a>
-            <a href="/members" x-show="$store.session.isAdmin" x-cloak class="nav-link"
-               :class="{ 'nav-link-active': $store.session.page === 'members' }"
+            <a href="/members" x-show="$store.session.isAdmin" x-cloak class="nav-link" data-nav="members"
                :aria-current="$store.session.page === 'members' ? 'page' : null" :title="$store.sidebar.collapsed ? 'Members' : null">
                 <x-icon name="users" class="h-5 w-5 shrink-0"/> <span class="whitespace-nowrap collapsed:sr-only">Members</span>
             </a>
@@ -74,7 +73,7 @@
 
     <div class="flex min-h-full flex-col transition-[padding] duration-200 lg:pl-64 lg:collapsed:pl-20">
         <!-- Mobile header -->
-        <header x-data="{ menu: false }" class="sticky top-0 z-30 flex h-14 items-center gap-2.5 bg-canvas/80 px-4 backdrop-blur lg:hidden"
+        <header x-data="{ menu: false }" class="sticky top-0 z-30 flex h-14 items-center gap-2.5 bg-canvas/80 px-4 backdrop-blur [view-transition-name:planly-header] lg:hidden"
                 @keydown.escape.window="menu = false">
             <include src="partials/logo.html" size="h-8 w-8" id="header"></include>
             <span class="text-lg font-bold tracking-tight text-slate-900">Planly</span>
@@ -141,16 +140,14 @@
     </div>
 
     <!-- Mobile bottom tab bar (Sign out lives in the profile menu, top right) -->
-    <nav x-data class="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/70 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden" aria-label="Main">
+    <nav x-data class="fixed inset-x-0 bottom-0 z-40 [view-transition-name:planly-tabbar] border-t border-slate-200/70 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden" aria-label="Main">
         <div class="mx-auto flex h-16 max-w-md items-stretch px-2">
             <!-- Home, Itinerary | + | Expenses, Members (admins) -->
             <div class="flex flex-1 items-stretch justify-around">
-                <a href="/" class="flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold"
-                   :class="$store.session.page === 'home' ? 'text-brand-600' : 'text-slate-400'">
+                <a href="/" class="tab-link flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold text-slate-400" data-nav="home">
                     <x-icon name="home" class="h-[22px] w-[22px]"/> Home
                 </a>
-                <a href="/itinerary" class="flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold"
-                   :class="$store.session.page === 'itinerary' ? 'text-brand-600' : 'text-slate-400'">
+                <a href="/itinerary" class="tab-link flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold text-slate-400" data-nav="itinerary">
                     <x-icon name="clipboard" class="h-[22px] w-[22px]"/> Itinerary
                 </a>
             </div>
@@ -165,12 +162,10 @@
             </div>
 
             <div class="flex flex-1 items-stretch justify-around">
-                <a href="/expenses" class="flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold"
-                   :class="$store.session.page === 'expenses' ? 'text-brand-600' : 'text-slate-400'">
+                <a href="/expenses" class="tab-link flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold text-slate-400" data-nav="expenses">
                     <x-icon name="wallet" class="h-[22px] w-[22px]"/> Expenses
                 </a>
-                <a href="/members" x-show="$store.session.isAdmin" x-cloak class="flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold"
-                   :class="$store.session.page === 'members' ? 'text-brand-600' : 'text-slate-400'">
+                <a href="/members" x-show="$store.session.isAdmin" x-cloak class="tab-link flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold text-slate-400" data-nav="members">
                     <x-icon name="users" class="h-[22px] w-[22px]"/> Members
                 </a>
             </div>

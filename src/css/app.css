@@ -108,6 +108,23 @@
     }
 }
 
+/* The current page in the sidebar and tab bar comes from <body data-page>, so
+ * it's right before Alpine starts and the frame doesn't flicker between pages.
+ * Outside @layer so it wins over the links' own colour utilities. */
+[data-page='home'] .nav-link[data-nav='home'],
+[data-page='itinerary'] .nav-link[data-nav='itinerary'],
+[data-page='expenses'] .nav-link[data-nav='expenses'],
+[data-page='members'] .nav-link[data-nav='members'] {
+    background-color: color-mix(in srgb, var(--color-ink-700) 80%, transparent);
+    color: #fff;
+}
+[data-page='home'] .tab-link[data-nav='home'],
+[data-page='itinerary'] .tab-link[data-nav='itinerary'],
+[data-page='expenses'] .tab-link[data-nav='expenses'],
+[data-page='members'] .tab-link[data-nav='members'] {
+    color: var(--color-brand-600);
+}
+
 /* ---------------------------------------------------------------------------
  * FullCalendar theme
  * ------------------------------------------------------------------------- */
@@ -267,5 +284,23 @@
     }
     .planly-calendar .fc-dayGridMonth-view .ev-suffix {
         display: none;
+    }
+}
+
+/* ---------------------------------------------------------------------------
+ * Page switches: a quick cross-fade between pages (Chrome, Edge, Safari 18.2+);
+ * the sidebar, header and tab bar are named so they stay put.
+ * ------------------------------------------------------------------------- */
+@view-transition {
+    navigation: auto;
+}
+::view-transition-group(root) {
+    animation-duration: 150ms;
+}
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+        animation: none !important;
     }
 }

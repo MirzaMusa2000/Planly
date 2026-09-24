@@ -20,9 +20,17 @@ import './members';
 Alpine.plugin(focus);
 window.Alpine = Alpine;
 
+// The service worker caches pages and assets (fast page switches) and shows
+// push notifications. Registering again is a no-op.
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+}
+
 // Check sign-in and page access first, then render. If boot() redirects, the
 // page never renders (the loading splash stays up until the browser leaves).
+// "planly:boot" in DevTools > Performance shows how long that took.
 (async () => {
+    performance.mark('planly:boot-start');
     let allowed = false;
     try {
         allowed = await boot();
@@ -35,4 +43,5 @@ window.Alpine = Alpine;
 
     Alpine.start();
     document.getElementById('boot-splash')?.remove();
+    performance.measure('planly:boot', 'planly:boot-start');
 })();
