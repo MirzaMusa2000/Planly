@@ -7,55 +7,94 @@
 <body class="h-full font-sans text-slate-800 antialiased" data-access="{{ access }}" data-page="{{ page }}">
     <include src="partials/boot-splash.html"></include>
 
-    <!-- Desktop sidebar -->
-    <aside x-data class="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col bg-ink-950 px-4 py-6 lg:flex">
-        <a href="/" class="flex items-center gap-2.5 px-2">
-            <include src="partials/logo.html" size="h-9 w-9" id="sidebar"></include>
-            <span class="text-xl font-bold tracking-tight text-white">Planly</span>
+    <!-- Desktop sidebar (collapsible to icons only; `collapsed:` styles, js/ui.js) -->
+    <aside x-data class="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col bg-ink-950 px-4 py-6 transition-[width,padding] duration-200 lg:flex collapsed:w-20 collapsed:px-3">
+        <a href="/" class="flex items-center gap-2.5 px-2 collapsed:justify-center collapsed:px-0" title="Planly">
+            <include src="partials/logo.html" size="h-9 w-9 shrink-0" id="sidebar"></include>
+            <span class="text-xl font-bold tracking-tight whitespace-nowrap text-white collapsed:hidden">Planly</span>
         </a>
 
-        <button type="button" @click="$store.session.propose()" class="btn btn-primary mt-8 w-full py-3">
-            <x-icon name="plus" class="h-4 w-4"/> Propose event
+        <button type="button" @click="$store.sidebar.toggle()"
+                :aria-label="$store.sidebar.collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+                :title="$store.sidebar.collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+                :aria-expanded="!$store.sidebar.collapsed"
+                class="absolute top-8 -right-3.5 grid h-7 w-7 place-items-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-soft transition hover:text-brand-600">
+            <x-icon name="chevron-left" class="h-4 w-4 transition-transform collapsed:rotate-180"/>
+        </button>
+
+        <button type="button" @click="$store.session.propose()" class="btn btn-primary mt-8 w-full overflow-hidden py-3 whitespace-nowrap collapsed:px-0"
+                aria-label="Propose event" :title="$store.sidebar.collapsed ? 'Propose event' : null">
+            <x-icon name="plus" class="h-4 w-4 shrink-0"/> <span class="collapsed:hidden">Propose event</span>
         </button>
 
         <nav class="mt-6 space-y-1" aria-label="Main">
             <a href="/" class="nav-link" :class="{ 'nav-link-active': $store.session.page === 'home' }"
-               :aria-current="$store.session.page === 'home' ? 'page' : null">
-                <x-icon name="home"/> Home
+               :aria-current="$store.session.page === 'home' ? 'page' : null" :title="$store.sidebar.collapsed ? 'Home' : null">
+                <x-icon name="home" class="h-5 w-5 shrink-0"/> <span class="whitespace-nowrap collapsed:sr-only">Home</span>
             </a>
             <a href="/itinerary" class="nav-link" :class="{ 'nav-link-active': $store.session.page === 'itinerary' }"
-               :aria-current="$store.session.page === 'itinerary' ? 'page' : null">
-                <x-icon name="clipboard"/> Itinerary
+               :aria-current="$store.session.page === 'itinerary' ? 'page' : null" :title="$store.sidebar.collapsed ? 'Itinerary' : null">
+                <x-icon name="clipboard" class="h-5 w-5 shrink-0"/> <span class="whitespace-nowrap collapsed:sr-only">Itinerary</span>
             </a>
             <a href="/members" x-show="$store.session.isAdmin" x-cloak class="nav-link"
                :class="{ 'nav-link-active': $store.session.page === 'members' }"
-               :aria-current="$store.session.page === 'members' ? 'page' : null">
-                <x-icon name="users"/> Members
+               :aria-current="$store.session.page === 'members' ? 'page' : null" :title="$store.sidebar.collapsed ? 'Members' : null">
+                <x-icon name="users" class="h-5 w-5 shrink-0"/> <span class="whitespace-nowrap collapsed:sr-only">Members</span>
             </a>
         </nav>
 
-        <div class="mt-auto flex items-center gap-3 rounded-2xl bg-ink-900 p-3">
+        <div class="mt-auto flex items-center gap-3 rounded-2xl bg-ink-900 p-3 collapsed:flex-col collapsed:gap-2 collapsed:p-2">
             <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-300 to-brand-600 text-sm font-bold text-white"
-                  aria-hidden="true" x-text="$store.session.initial"></span>
-            <div class="min-w-0 flex-1">
+                  aria-hidden="true" x-text="$store.session.initial" :title="$store.sidebar.collapsed ? $store.session.user?.displayName : null"></span>
+            <div class="min-w-0 flex-1 collapsed:hidden">
                 <p class="truncate text-sm font-semibold text-white" x-text="$store.session.user?.displayName"></p>
                 <p class="truncate text-xs text-slate-400" x-text="$store.session.isAdmin ? 'Admin' : 'Member'"></p>
             </div>
             <button type="button" @click="$store.session.logout()" title="Sign out"
-                    class="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-white/5 hover:text-white">
+                    class="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-slate-400 hover:bg-white/5 hover:text-white">
                 <x-icon name="logout" class="h-[18px] w-[18px]"/>
                 <span class="sr-only">Sign out</span>
             </button>
         </div>
     </aside>
 
-    <div class="flex min-h-full flex-col lg:pl-64">
+    <div class="flex min-h-full flex-col transition-[padding] duration-200 lg:pl-64 lg:collapsed:pl-20">
         <!-- Mobile header -->
-        <header x-data class="sticky top-0 z-30 flex h-14 items-center gap-2.5 bg-canvas/80 px-4 backdrop-blur lg:hidden">
+        <header x-data="{ menu: false }" class="sticky top-0 z-30 flex h-14 items-center gap-2.5 bg-canvas/80 px-4 backdrop-blur lg:hidden"
+                @keydown.escape.window="menu = false">
             <include src="partials/logo.html" size="h-8 w-8" id="header"></include>
             <span class="text-lg font-bold tracking-tight text-slate-900">Planly</span>
-            <span class="ml-auto grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-brand-300 to-brand-600 text-sm font-bold text-white"
-                  aria-hidden="true" x-text="$store.session.initial"></span>
+
+            <!-- Profile menu -->
+            <div class="relative ml-auto" @click.outside="menu = false">
+                <button type="button" @click="menu = !menu" :aria-expanded="menu" aria-haspopup="true" aria-controls="profile-menu"
+                        class="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-brand-300 to-brand-600 text-sm font-bold text-white ring-offset-2 ring-offset-canvas transition"
+                        :class="menu ? 'ring-2 ring-brand-400' : ''">
+                    <span aria-hidden="true" x-text="$store.session.initial"></span>
+                    <span class="sr-only">Profile</span>
+                </button>
+
+                <div id="profile-menu" x-show="menu" x-cloak
+                     x-transition:enter="transition duration-150 ease-out" x-transition:enter-start="-translate-y-1 scale-95 opacity-0"
+                     x-transition:leave="transition duration-100 ease-in" x-transition:leave-end="-translate-y-1 scale-95 opacity-0"
+                     class="absolute top-12 right-0 w-72 max-w-[calc(100vw-2rem)] origin-top-right rounded-3xl bg-white p-2 shadow-2xl ring-1 ring-slate-900/5">
+                    <div class="flex items-center gap-3 p-3">
+                        <span class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-300 to-brand-600 text-lg font-bold text-white"
+                              aria-hidden="true" x-text="$store.session.initial"></span>
+                        <div class="min-w-0">
+                            <p class="truncate font-semibold text-slate-900" x-text="$store.session.user?.displayName"></p>
+                            <p class="truncate text-sm text-slate-500" x-text="$store.session.user?.email"></p>
+                            <span class="chip mt-1" :class="$store.session.isAdmin ? 'bg-brand-100 text-brand-700' : 'bg-slate-100 text-slate-600'"
+                                  x-text="$store.session.isAdmin ? 'Admin' : 'Member'"></span>
+                        </div>
+                    </div>
+                    <div class="my-1 border-t border-slate-100"></div>
+                    <button type="button" @click="$store.session.logout()"
+                            class="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold text-rose-600 transition hover:bg-rose-50">
+                        <x-icon name="logout" class="h-[18px] w-[18px]"/> Sign out
+                    </button>
+                </div>
+            </div>
         </header>
 
         <main class="mx-auto w-full max-w-6xl flex-1 px-4 pt-2 pb-28 sm:px-6 lg:px-8 lg:pt-8 lg:pb-10">
@@ -63,15 +102,17 @@
         </main>
     </div>
 
-    <!-- Mobile bottom tab bar -->
+    <!-- Mobile bottom tab bar (Sign out lives in the profile menu, top right) -->
     <nav x-data class="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/70 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden" aria-label="Main">
         <div class="mx-auto flex h-16 max-w-md items-stretch px-2">
+            <!-- Admins: Home, Itinerary | + | Members. Members: Home | + | Itinerary. -->
             <div class="flex flex-1 items-stretch justify-around">
                 <a href="/" class="flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold"
                    :class="$store.session.page === 'home' ? 'text-brand-600' : 'text-slate-400'">
                     <x-icon name="home" class="h-[22px] w-[22px]"/> Home
                 </a>
-                <a href="/itinerary" class="flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold"
+                <a href="/itinerary" x-show="$store.session.isAdmin" x-cloak
+                   class="flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold"
                    :class="$store.session.page === 'itinerary' ? 'text-brand-600' : 'text-slate-400'">
                     <x-icon name="clipboard" class="h-[22px] w-[22px]"/> Itinerary
                 </a>
@@ -87,15 +128,16 @@
             </div>
 
             <div class="flex flex-1 items-stretch justify-around">
+                <a href="/itinerary" x-show="!$store.session.isAdmin"
+                   class="flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold"
+                   :class="$store.session.page === 'itinerary' ? 'text-brand-600' : 'text-slate-400'">
+                    <x-icon name="clipboard" class="h-[22px] w-[22px]"/> Itinerary
+                </a>
                 <a href="/members" x-show="$store.session.isAdmin" x-cloak
                    class="flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold"
                    :class="$store.session.page === 'members' ? 'text-brand-600' : 'text-slate-400'">
                     <x-icon name="users" class="h-[22px] w-[22px]"/> Members
                 </a>
-                <button type="button" @click="$store.session.logout()" class="flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold text-slate-400">
-                    <x-icon name="logout" class="h-[22px] w-[22px]"/>
-                    Sign out
-                </button>
             </div>
         </div>
     </nav>

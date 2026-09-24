@@ -4,6 +4,9 @@
 @source '../js/**/*.js';
 @source '../../build/*.js'; /* default icon classes */
 
+/* `collapsed:` applies while the desktop sidebar is icons-only (js/ui.js). */
+@custom-variant collapsed (.sidebar-collapsed &);
+
 /*
  * Design tokens. Dark navy chrome, lavender canvas, white cards, indigo-violet
  * accent, pastel colour-coding.
@@ -98,6 +101,10 @@
     }
     .nav-link-active {
         @apply bg-ink-700/80 text-white;
+    }
+    /* Icons-only sidebar */
+    .sidebar-collapsed .nav-link {
+        @apply justify-center px-0;
     }
 }
 
