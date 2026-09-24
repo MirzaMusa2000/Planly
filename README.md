@@ -93,12 +93,24 @@ npm run build            # static site into dist/
 
 ## Deploy (Firebase Hosting, free)
 
-```bash
-npm run deploy
-```
-This builds the site and deploys **Hosting + Firestore rules + indexes**. Your site is at
-`https://<project-id>.web.app` (and `.firebaseapp.com`), both already authorized for
-sign-in. Friends sign up there, and you approve them under **Members**.
+Work goes to the `staging` branch first; `main` is what's live.
+
+| Command | Branch | Goes to |
+|---|---|---|
+| `npm run deploy:staging` | `staging` | the **staging preview channel**, its own URL (printed after deploy), Hosting only |
+| `npm run deploy` | `main` | **production**, `https://<project-id>.web.app`, Hosting + Firestore rules + indexes |
+
+Both build the site first and refuse to deploy from the wrong branch, with uncommitted
+changes, or when the branch isn't pushed, so what's online always matches a commit on
+GitHub. They use the `prod` alias in `.firebaserc`.
+
+The staging preview shares production's users and Firestore data (and rules): only the
+website is separate. Rules only change with a production deploy, so test rule changes
+with `npm run test:rules` and the emulators first. A preview channel expires 30 days
+after its last deploy; deploy again to bring it back.
+
+To release: merge `staging` into `main`, push, then `npm run deploy` on `main`.
+Friends sign up on the production site, and you approve them under **Members**.
 
 Spark limits that matter: Hosting 10 GB storage / 360 MB per day transfer; Firestore
 50k reads / 20k writes per day. A friends group is far below these.

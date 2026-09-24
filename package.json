@@ -11,7 +11,8 @@
         "dev:all": "concurrently -k -n emu,vite -c yellow,magenta \"npm run emulators\" \"npm run dev:emulators\"",
         "test:rules": "firebase emulators:exec --only firestore --project demo-planly \"node --test --test-concurrency=1 tests/rules/*.test.mjs\"",
         "make-admin": "node scripts/make-admin.mjs",
-        "deploy": "firebase deploy --only hosting,firestore:rules,firestore:indexes",
+        "deploy": "node scripts/deploy.mjs production",
+        "deploy:staging": "node scripts/deploy.mjs staging",
         "dev:emulators": "vite --mode emulators",
         "icons": "node scripts/generate-icons.mjs"
     },
