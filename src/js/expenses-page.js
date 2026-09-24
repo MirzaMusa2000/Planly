@@ -212,13 +212,13 @@ Alpine.data('expensesPage', () => {
             return settleUp(this.balanceRows);
         },
 
-        /** Only the two people involved can say a payment happened. */
+        /** The two people involved, or the admin, can say a payment happened. */
         canRecord(t) {
-            return t.from === this.me.uid || t.to === this.me.uid;
+            return t.from === this.me.uid || t.to === this.me.uid || this.me.role === 'admin';
         },
 
         canUndo(s) {
-            return s.createdBy === this.me.uid;
+            return s.createdBy === this.me.uid || this.me.role === 'admin';
         },
 
         paidOn(s) {
