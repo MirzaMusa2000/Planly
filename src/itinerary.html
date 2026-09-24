@@ -1,0 +1,84 @@
+<!-- layout: app | title: Itinerary | page: itinerary | access: approved -->
+    <div x-data="itineraryPage" x-effect="sync()">
+        <div class="mb-6">
+            <h1 class="text-2xl font-bold tracking-tight text-slate-900">Itinerary</h1>
+            <p class="mt-1 text-sm text-slate-500">The plan and the checklist for upcoming events.</p>
+        </div>
+
+        <p x-show="store.error" x-text="store.error" x-cloak role="alert" class="mb-5 rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700"></p>
+
+        <!-- Loading -->
+        <div x-show="store.loading" class="space-y-4" aria-hidden="true">
+            <div class="h-36 animate-pulse rounded-3xl bg-white/70"></div>
+            <div class="h-64 animate-pulse rounded-3xl bg-white/70"></div>
+        </div>
+
+        <!-- No upcoming event -->
+        <div x-show="!store.loading && !event" x-cloak class="card flex flex-col items-center px-6 py-14 text-center">
+            <div class="grid h-16 w-16 place-items-center rounded-3xl bg-brand-50 text-3xl" aria-hidden="true">🏕️</div>
+            <p class="mt-4 text-lg font-bold text-slate-900">No upcoming event</p>
+            <p class="mt-1 max-w-sm text-sm text-slate-500">Once an event is confirmed, its itinerary and checklist show up here.</p>
+            <a href="/" class="btn btn-primary mt-6">
+                <x-icon name="calendar" class="h-4 w-4"/> Go to calendar
+            </a>
+        </div>
+
+        <!-- The shown event (x-for over one item puts it in scope as `e` and re-renders on switch) -->
+        <template x-for="e in (event ? [event] : [])" :key="e.id">
+            <div>
+                <!-- Event switcher -->
+                <div x-show="events.length > 1" class="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0"
+                     role="tablist" aria-label="Upcoming events">
+                    <template x-for="option in events" :key="option.id">
+                        <button type="button" role="tab" @click="select(option.id)" :aria-selected="option.id === e.id"
+                                :class="option.id === e.id ? 'bg-ink-950 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'"
+                                class="flex shrink-0 items-center gap-2 rounded-2xl px-3.5 py-2 text-sm font-semibold shadow-soft transition">
+                            <span x-text="option.title" class="max-w-40 truncate"></span>
+                            <span class="text-xs font-medium opacity-70" x-text="$dates.day(option.finalDate) + ' ' + $dates.month(option.finalDate)"></span>
+                        </button>
+                    </template>
+                </div>
+
+                <!-- Event header -->
+                <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 via-brand-600 to-violet-700 p-5 text-white shadow-lift sm:p-6">
+                    <div class="flex items-start gap-4">
+                        <span class="grid w-16 shrink-0 place-items-center rounded-2xl bg-white/15 py-2 backdrop-blur">
+                            <span class="text-xs font-bold tracking-wide uppercase" x-text="$dates.month(e.finalDate)"></span>
+                            <span class="text-2xl leading-none font-bold" x-text="$dates.day(e.finalDate)"></span>
+                        </span>
+                        <div class="min-w-0 flex-1">
+                            <span class="chip bg-white/20 text-white" x-text="countdown(e)"></span>
+                            <h2 class="mt-1.5 text-xl font-bold break-words sm:text-2xl" x-text="e.title"></h2>
+                            <p class="mt-1 text-sm text-white/80" x-text="$dates.long(e.finalDate)"></p>
+                            <p x-show="e.location" class="mt-1 flex items-center gap-1 text-sm text-white/80">
+                                <x-icon name="map-pin" class="h-4 w-4 shrink-0"/>
+                                <span class="break-words" x-text="e.location"></span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
+                        <span class="rounded-full bg-white/15 px-3 py-1" x-text="e.rsvpSummary.join + ' joining'"></span>
+                        <span class="rounded-full bg-white/15 px-3 py-1"
+                              x-text="itemsFor(e.id).length + (itemsFor(e.id).length === 1 ? ' activity' : ' activities')"></span>
+                        <span class="rounded-full bg-white/15 px-3 py-1" x-text="doneCount + '/' + checklist.length + ' packed'"></span>
+                    </div>
+                </section>
+
+                <div class="mt-6 grid items-start gap-6 xl:grid-cols-2">
+                    <!-- Itinerary -->
+                    <section class="card p-5" aria-labelledby="itinerary-title">
+                        <div class="mb-4 flex items-center gap-2">
+                            <span class="grid h-9 w-9 place-items-center rounded-xl bg-brand-50 text-brand-600">
+                                <x-icon name="clock" class="h-[18px] w-[18px]"/>
+                            </span>
+                            <h2 id="itinerary-title" class="text-base font-bold text-slate-900">Itinerary</h2>
+                        </div>
+                        <include src="partials/itinerary-timeline.html" empty="No plans yet. Add the first stop!"></include>
+                    </section>
+
+                    <!-- Checklist -->
+                    <include src="partials/checklist.html"></include>
+                </div>
+            </div>
+        </template>
+    </div>

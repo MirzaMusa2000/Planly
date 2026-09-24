@@ -204,6 +204,40 @@ service cloud.firestore {
           && request.resource.data.createdBy == resource.data.createdBy
           && request.resource.data.date == resource.data.date;
       }
+
+      // Shared "who brings what" checklist of a confirmed event. Any approved
+      // member may add, edit, tick off and delete items. The PIC (if any) must
+      // be an approved member when assigned.
+      match /checklist/{itemId} {
+        function validChecklistItem(d) {
+          return d.keys().hasOnly(['item', 'quantity', 'picUid', 'done', 'notes', 'order', 'createdBy'])
+              && d.keys().hasAll(['item', 'done', 'order', 'createdBy'])
+              && event().status == 'confirmed'
+              && isStr(d.item, 1, 120)
+              && (!('quantity' in d) || isStr(d.quantity, 0, 40))
+              && (!('notes' in d) || isStr(d.notes, 0, 500))
+              && d.done is bool
+              && d.order is number;
+        }
+
+        function validPic(d) {
+          return d.get('picUid', null) == null
+              || (d.picUid is string
+                  && get(/databases/$(db)/documents/users/$(d.picUid)).data.status == 'approved');
+        }
+
+        allow read, delete: if approved();
+
+        allow create: if approved()
+          && validChecklistItem(request.resource.data)
+          && validPic(request.resource.data)
+          && request.resource.data.createdBy == request.auth.uid;
+
+        allow update: if approved()
+          && validChecklistItem(request.resource.data)
+          && (!('picUid' in changed()) || validPic(request.resource.data))
+          && request.resource.data.createdBy == resource.data.createdBy;
+      }
     }
 
     // ---------------------------------------------------------------------

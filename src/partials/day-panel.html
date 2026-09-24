@@ -86,72 +86,7 @@
                     </button>
 
                     <h3 class="mt-4 mb-2 text-xs font-bold tracking-wide text-slate-400 uppercase">Itinerary</h3>
-
-                    <p x-show="isLoading(e.id)" class="py-4 text-center text-sm text-slate-400">Loading…</p>
-                    <p x-show="!isLoading(e.id) && itemsFor(e.id).length === 0 && !isEditing(e.id)"
-                       class="rounded-2xl border-2 border-dashed border-slate-200 px-4 py-5 text-center text-sm text-slate-400">
-                        No plans yet for this day. Add the first stop!
-                    </p>
-
-                    <!-- Timeline  -->
-                    <ol class="space-y-2">
-                        <template x-for="(item, index) in itemsFor(e.id)" :key="item.id">
-                            <li class="flex gap-3">
-                                <span class="w-12 shrink-0 pt-3 text-right text-xs font-semibold text-slate-500" x-text="item.startTime"></span>
-
-                                <div class="min-w-0 flex-1">
-                                    <!-- Read mode  -->
-                                    <div x-show="!isEditing(e.id, item.id)" class="rounded-2xl border-l-4 px-3.5 py-2.5" :class="colour(index)">
-                                        <div class="flex items-start gap-2">
-                                            <div class="min-w-0 flex-1">
-                                                <p class="font-semibold break-words" x-text="item.activity"></p>
-                                                <p class="text-xs opacity-80" x-text="timeRange(item)"></p>
-                                                <p x-show="item.location" class="mt-1 flex items-center gap-1 text-xs opacity-90">
-                                                    <x-icon name="map-pin" class="h-3.5 w-3.5 shrink-0"/>
-                                                    <span class="break-words" x-text="item.location"></span>
-                                                </p>
-                                                <p x-show="item.notes" class="mt-1 text-xs whitespace-pre-line break-words opacity-80" x-text="item.notes"></p>
-                                                <p x-show="addedBy(item)" class="mt-1 text-[11px] opacity-60" x-text="'Added by ' + addedBy(item)"></p>
-                                            </div>
-
-                                            <div class="-mr-1 flex shrink-0 flex-col items-center">
-                                                <button type="button" @click="move(e.id, index, -1)" :disabled="!canMove(e.id, index, -1)"
-                                                        class="grid h-7 w-7 place-items-center rounded-lg hover:bg-black/5 disabled:opacity-25"
-                                                        :title="canMove(e.id, index, -1) ? 'Move up' : 'Items are ordered by start time'" aria-label="Move up">
-                                                    <x-icon name="chevron-left" class="h-4 w-4 rotate-90"/>
-                                                </button>
-                                                <button type="button" @click="move(e.id, index, 1)" :disabled="!canMove(e.id, index, 1)"
-                                                        class="grid h-7 w-7 place-items-center rounded-lg hover:bg-black/5 disabled:opacity-25"
-                                                        :title="canMove(e.id, index, 1) ? 'Move down' : 'Items are ordered by start time'" aria-label="Move down">
-                                                    <x-icon name="chevron-right" class="h-4 w-4 rotate-90"/>
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div class="mt-1.5 flex gap-3 text-xs font-semibold">
-                                            <button type="button" @click="startEdit(e.id, item)" class="opacity-80 hover:opacity-100">Edit</button>
-                                            <button type="button" @click="remove(e.id, item)" class="text-rose-600 opacity-80 hover:opacity-100">Delete</button>
-                                        </div>
-                                    </div>
-
-                                    <!-- Edit mode  -->
-                                    <template x-if="isEditing(e.id, item.id)">
-                                        <include src="partials/itinerary-form.html"></include>
-                                    </template>
-                                </div>
-                            </li>
-                        </template>
-                    </ol>
-
-                    <!-- Add  -->
-                    <div class="mt-2" :class="isEditing(e.id) ? '' : 'pl-15'">
-                        <template x-if="isEditing(e.id)">
-                            <include src="partials/itinerary-form.html"></include>
-                        </template>
-                        <button type="button" x-show="!isEditing(e.id)" @click="startAdd(e.id)"
-                                class="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 py-2.5 text-sm font-semibold text-slate-500 transition hover:border-brand-300 hover:text-brand-600">
-                            <x-icon name="plus" class="h-4 w-4"/> Add to itinerary
-                        </button>
-                    </div>
+                    <include src="partials/itinerary-timeline.html" empty="No plans yet for this day. Add the first stop!"></include>
                 </section>
             </template>
 

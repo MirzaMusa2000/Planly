@@ -1,8 +1,8 @@
 # Planly
 
 A private group planner for friends: propose events with candidate dates, vote on
-availability, confirm and RSVP, plan a day-by-day itinerary, and chat. New members
-wait for admin approval.
+availability, confirm and RSVP, plan a day-by-day itinerary, share a "who brings what"
+checklist (Itinerary page), and chat. New members wait for admin approval.
 
 **Runs entirely on Firebase's free Spark plan.** It's a static site (HTML + JavaScript,
 built with Vite) on **Firebase Hosting**, using **Firebase Auth** and **Cloud Firestore**
@@ -12,8 +12,8 @@ to run or pay for.
 **Stack:** Vite · Tailwind v4 · Alpine.js · FullCalendar · Firebase JS SDK v12 ·
 Firestore security rules (tested with `@firebase/rules-unit-testing`).
 
-> The earlier Laravel version (server-rendered, needs a paid PHP host) lives on the
-> `staging` branch.
+> The earlier Laravel version (server-rendered, needs a paid PHP host) is in the git
+> history at commit `10ebeed`.
 
 ---
 
@@ -68,7 +68,7 @@ FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:909
 ### Tests
 
 ```bash
-npm run test:rules       # 50 security-rules tests against a throwaway emulator
+npm run test:rules       # 57 security-rules tests against a throwaway emulator
 npm run build            # static site into dist/
 ```
 `test:rules` starts its own Firestore emulator, so stop `npm run emulators` first.
@@ -109,14 +109,15 @@ Spark limits that matter: Hosting 10 GB storage / 360 MB per day transfer; Fires
 
 ```
 src/index.html, login.html, pending.html,
-    members.html, 404.html                  pages (layout directive on line 1)
+    itinerary.html, members.html, 404.html  pages (layout directive on line 1)
 src/layouts/, src/partials/                 page shells and shared markup
 src/js/session.js                           sign-in state, page access, live revocation
 src/js/auth.js                              sign-in / sign-up, waiting page
 src/js/events.js                            realtime planner store, propose
 src/js/calendar.js                          FullCalendar (lazy-loaded), colour coding, ⭐
 src/js/voting.js                            votes / RSVP transactions, confirm, cancel
-src/js/itinerary.js                         day panel + itinerary
+src/js/itinerary.js                         day panel + itinerary editing (shared)
+src/js/itinerary-page.js                    Itinerary page: upcoming events, checklist
 src/js/chat.js                              group chat, unread badge
 src/js/members.js                           admin Members page, Home greeting
 src/js/dates.js                             YYYY-MM-DD helpers (Asia/Kuala_Lumpur)

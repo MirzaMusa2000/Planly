@@ -1,5 +1,6 @@
-// Day panel: what's on a date, plus the itinerary of each confirmed event
-// that day. Any approved member can add, edit, delete and reorder items.
+// Itineraries of confirmed events. Any approved member can add, edit, delete
+// and reorder items. The editing logic (itineraryEditor) is shared by the day
+// panel on the dashboard and the Itinerary page.
 import Alpine from 'alpinejs';
 import {
     addDoc,
@@ -29,106 +30,29 @@ const PALETTE = [
     'bg-sky-50 border-sky-400 text-sky-800',
 ];
 
-const emptyForm = () => ({ id: null, eventId: null, startTime: '', endTime: '', activity: '', location: '', notes: '' });
+const emptyForm = () => ({ id: null, eventId: null, date: null, startTime: '', endTime: '', activity: '', location: '', notes: '' });
 
 const itineraryRef = (eventId) => collection(db, 'events', eventId, 'itinerary');
 
-Alpine.data('dayPanel', () => {
+/**
+ * State and methods for showing and editing event itineraries, mixed into an
+ * Alpine component. Templates use partials/itinerary-timeline.html with `e`
+ * bound to a confirmed event.
+ */
+export function itineraryEditor() {
     // Outside reactive state: listener handles. Key "eventId|date".
     const listeners = new Map();
 
     return {
         ITEM_LIMITS,
-        open: false,
-        date: null,
-        items: {}, // eventId -> items for this.date, sorted by startTime, order
+        items: {}, // eventId -> items, sorted by startTime, order
         form: emptyForm(),
         formError: '',
         busy: false,
 
-        init() {
-            window.addEventListener('date-selected', (e) => this.show(e.detail.date));
-            window.addEventListener('open-day', (e) => this.show(e.detail.date));
-        },
-
-        get store() {
-            return Alpine.store('planner');
-        },
-
-        show(date) {
-            this.cancelForm();
-            if (date !== this.date) this.items = {}; // don't flash the previous day's plan
-            this.date = date;
-            this.open = true;
-        },
-
-        close() {
-            this.cancelForm();
-            this.open = false;
-        },
-
-        /** Escape closes the top layer only: an overlay above us, then the form, then the panel. */
-        onEscape() {
-            const overlays = Alpine.store('overlays');
-            if (!this.open || overlays.propose || overlays.chat || this.store.selected) return;
-            if (this.form.eventId) this.cancelForm();
-            else this.close();
-        },
-
-        shiftDay(n) {
-            this.show(addDays(this.date, n));
-        },
-
-        // --- What's on a day --------------------------------------------------
-
-        eventsOn(date) {
-            return this.store.events.filter((e) =>
-                (e.status === 'confirmed' && e.finalDate === date)
-                || (e.status === 'proposed' && e.candidateDates.includes(date)));
-        },
-
-        get confirmedEvents() {
-            return this.eventsOn(this.date).filter((e) => e.status === 'confirmed');
-        },
-
-        get proposedEvents() {
-            return this.eventsOn(this.date).filter((e) => e.status === 'proposed');
-        },
-
-        get isEmpty() {
-            return this.eventsOn(this.date).length === 0;
-        },
-
-        get isPast() {
-            return this.date < today();
-        },
-
-        /** "Saturday, 10 October" (the year is omitted to fit phone widths). */
-        get title() {
-            return this.date ? format(this.date, { weekday: 'long', day: 'numeric', month: 'long' }) : '';
-        },
-
-        /** Sunday..Saturday of the selected date's week. */
-        get week() {
-            if (!this.date) return [];
-            const start = addDays(this.date, -toUtcDate(this.date).getUTCDay());
-            return Array.from({ length: 7 }, (_, i) => addDays(start, i));
-        },
-
-        weekday: (d) => format(d, { weekday: 'short' }),
-        dayNumber: (d) => Number(d.slice(8)),
-
-        dotClass(date) {
-            const events = this.eventsOn(date);
-            if (events.some((e) => e.status === 'confirmed')) return 'bg-emerald-500';
-            if (events.length) return 'bg-amber-400';
-            return 'bg-transparent';
-        },
-
-        // --- Live itinerary listeners (driven by x-effect) --------------------
-
-        syncListeners() {
-            const wanted = new Set(this.open && this.date ? this.confirmedEvents.map((e) => `${e.id}|${this.date}`) : []);
+        /** Keep exactly one live listener per [eventId, date] pair. */
+        watchItineraries(pairs) {
+            const wanted = new Set(pairs.map(([eventId, date]) => `${eventId}|${date}`));
 
             for (const [key, unsubscribe] of listeners) {
                 if (!wanted.has(key)) {
@@ -143,7 +67,7 @@ Alpine.data('dayPanel', () => {
                 const q = query(itineraryRef(eventId), where('date', '==', date), orderBy('startTime'), orderBy('order'));
 
                 listeners.set(key, onSnapshot(q, (snapshot) => {
-                    if (this.date !== date) return; // stale listener for a previous day
+                    if (!listeners.has(key)) return; // stale listener
                     this.items = {
                         ...this.items,
                         [eventId]: snapshot.docs.map((d) => ({ id: d.id, ...d.data() })),
@@ -172,7 +96,7 @@ Alpine.data('dayPanel', () => {
         },
 
         addedBy(item) {
-            return this.store.members.find((m) => m.uid === item.createdBy)?.displayName ?? '';
+            return Alpine.store('planner').members.find((m) => m.uid === item.createdBy)?.displayName ?? '';
         },
 
         // --- Add / edit -------------------------------------------------------
@@ -181,11 +105,17 @@ Alpine.data('dayPanel', () => {
             return this.form.eventId === eventId && this.form.id === itemId;
         },
 
-        startAdd(eventId) {
-            const items = this.itemsFor(eventId);
+        /** Items sit on the event's confirmed date. */
+        startAdd(event) {
+            const items = this.itemsFor(event.id);
             const last = items[items.length - 1];
             this.formError = '';
-            this.form = { ...emptyForm(), eventId, startTime: last?.endTime || last?.startTime || '09:00' };
+            this.form = {
+                ...emptyForm(),
+                eventId: event.id,
+                date: event.finalDate,
+                startTime: last?.endTime || last?.startTime || '09:00',
+            };
             this.$nextTick(() => this.$root.querySelector('[data-item-form] input[type=time]')?.focus());
         },
 
@@ -194,6 +124,7 @@ Alpine.data('dayPanel', () => {
             this.form = {
                 id: item.id,
                 eventId,
+                date: item.date,
                 startTime: item.startTime,
                 endTime: item.endTime ?? '',
                 activity: item.activity,
@@ -237,7 +168,7 @@ Alpine.data('dayPanel', () => {
                     const orders = this.itemsFor(f.eventId).map((i) => i.order ?? 0);
                     await addDoc(itineraryRef(f.eventId), {
                         ...data,
-                        date: this.date,
+                        date: f.date,
                         order: orders.length ? Math.max(...orders) + 1 : 0,
                         createdBy: window.Planly.user.uid,
                     });
@@ -285,9 +216,103 @@ Alpine.data('dayPanel', () => {
                 Alpine.store('toast').show(errorMessage(e), 'error');
             }
         },
-
-        proposeOnThisDay() {
-            window.dispatchEvent(new CustomEvent('propose-event', { detail: { date: this.date } }));
-        },
     };
-});
+}
+
+// ---------------------------------------------------------------------------
+// Day panel: what's on a date, plus the itinerary of each confirmed event
+// that day.
+// ---------------------------------------------------------------------------
+Alpine.data('dayPanel', () => ({
+    ...itineraryEditor(),
+    open: false,
+    date: null,
+
+    init() {
+        window.addEventListener('date-selected', (e) => this.show(e.detail.date));
+        window.addEventListener('open-day', (e) => this.show(e.detail.date));
+    },
+
+    get store() {
+        return Alpine.store('planner');
+    },
+
+    show(date) {
+        this.cancelForm();
+        if (date !== this.date) this.items = {}; // don't flash the previous day's plan
+        this.date = date;
+        this.open = true;
+    },
+
+    close() {
+        this.cancelForm();
+        this.open = false;
+    },
+
+    /** Escape closes the top layer only: an overlay above us, then the form, then the panel. */
+    onEscape() {
+        const overlays = Alpine.store('overlays');
+        if (!this.open || overlays.propose || overlays.chat || this.store.selected) return;
+        if (this.form.eventId) this.cancelForm();
+        else this.close();
+    },
+
+    shiftDay(n) {
+        this.show(addDays(this.date, n));
+    },
+
+    // --- What's on a day ------------------------------------------------------
+
+    eventsOn(date) {
+        return this.store.events.filter((e) =>
+            (e.status === 'confirmed' && e.finalDate === date)
+            || (e.status === 'proposed' && e.candidateDates.includes(date)));
+    },
+
+    get confirmedEvents() {
+        return this.eventsOn(this.date).filter((e) => e.status === 'confirmed');
+    },
+
+    get proposedEvents() {
+        return this.eventsOn(this.date).filter((e) => e.status === 'proposed');
+    },
+
+    get isEmpty() {
+        return this.eventsOn(this.date).length === 0;
+    },
+
+    get isPast() {
+        return this.date < today();
+    },
+
+    /** "Saturday, 10 October" (the year is omitted to fit phone widths). */
+    get title() {
+        return this.date ? format(this.date, { weekday: 'long', day: 'numeric', month: 'long' }) : '';
+    },
+
+    /** Sunday..Saturday of the selected date's week. */
+    get week() {
+        if (!this.date) return [];
+        const start = addDays(this.date, -toUtcDate(this.date).getUTCDay());
+        return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+    },
+
+    weekday: (d) => format(d, { weekday: 'short' }),
+    dayNumber: (d) => Number(d.slice(8)),
+
+    dotClass(date) {
+        const events = this.eventsOn(date);
+        if (events.some((e) => e.status === 'confirmed')) return 'bg-emerald-500';
+        if (events.length) return 'bg-amber-400';
+        return 'bg-transparent';
+    },
+
+    /** Live itinerary listeners (driven by x-effect). */
+    syncListeners() {
+        this.watchItineraries(this.open && this.date ? this.confirmedEvents.map((e) => [e.id, this.date]) : []);
+    },
+
+    proposeOnThisDay() {
+        window.dispatchEvent(new CustomEvent('propose-event', { detail: { date: this.date } }));
+    },
+}));

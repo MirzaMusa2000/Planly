@@ -23,6 +23,10 @@
                :aria-current="$store.session.page === 'home' ? 'page' : null">
                 <x-icon name="home"/> Home
             </a>
+            <a href="/itinerary" class="nav-link" :class="{ 'nav-link-active': $store.session.page === 'itinerary' }"
+               :aria-current="$store.session.page === 'itinerary' ? 'page' : null">
+                <x-icon name="clipboard"/> Itinerary
+            </a>
             <a href="/members" x-show="$store.session.isAdmin" x-cloak class="nav-link"
                :class="{ 'nav-link-active': $store.session.page === 'members' }"
                :aria-current="$store.session.page === 'members' ? 'page' : null">
@@ -67,10 +71,9 @@
                    :class="$store.session.page === 'home' ? 'text-brand-600' : 'text-slate-400'">
                     <x-icon name="home" class="h-[22px] w-[22px]"/> Home
                 </a>
-                <a href="/members" x-show="$store.session.isAdmin" x-cloak
-                   class="flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold"
-                   :class="$store.session.page === 'members' ? 'text-brand-600' : 'text-slate-400'">
-                    <x-icon name="users" class="h-[22px] w-[22px]"/> Members
+                <a href="/itinerary" class="flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold"
+                   :class="$store.session.page === 'itinerary' ? 'text-brand-600' : 'text-slate-400'">
+                    <x-icon name="clipboard" class="h-[22px] w-[22px]"/> Itinerary
                 </a>
             </div>
 
@@ -84,6 +87,11 @@
             </div>
 
             <div class="flex flex-1 items-stretch justify-around">
+                <a href="/members" x-show="$store.session.isAdmin" x-cloak
+                   class="flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold"
+                   :class="$store.session.page === 'members' ? 'text-brand-600' : 'text-slate-400'">
+                    <x-icon name="users" class="h-[22px] w-[22px]"/> Members
+                </a>
                 <button type="button" @click="$store.session.logout()" class="flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-semibold text-slate-400">
                     <x-icon name="logout" class="h-[22px] w-[22px]"/>
                     Sign out

@@ -1,0 +1,107 @@
+<!-- Checklist of the shown event `e`: No / Item / Qty / PIC / Status / Notes, like the
+     group's spreadsheet. Lives inside itineraryPage (js/itinerary-page.js). -->
+<section class="card p-5" aria-labelledby="checklist-title">
+    <div class="flex items-center gap-2">
+        <span class="grid h-9 w-9 place-items-center rounded-xl bg-emerald-50 text-emerald-600">
+            <x-icon name="clipboard" class="h-[18px] w-[18px]"/>
+        </span>
+        <h2 id="checklist-title" class="text-base font-bold text-slate-900">Checklist</h2>
+        <span class="ml-auto text-sm font-semibold text-slate-500" x-show="checklist.length"
+              x-text="doneCount + ' / ' + checklist.length + ' done'"></span>
+    </div>
+
+    <!-- Progress -->
+    <div x-show="checklist.length" class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100"
+         role="progressbar" aria-label="Checklist progress" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="progress">
+        <div class="h-full rounded-full bg-emerald-500 transition-all duration-300" :style="`width: ${progress}%`"></div>
+    </div>
+
+    <!-- Filters -->
+    <div x-show="checklist.length" class="mt-4 flex gap-1 rounded-2xl bg-slate-100 p-1" role="group" aria-label="Filter">
+        <button type="button" @click="filter = 'all'" :aria-pressed="filter === 'all'"
+                :class="filter === 'all' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+                class="flex-1 rounded-xl py-1.5 text-xs font-semibold transition">All</button>
+        <button type="button" @click="filter = 'todo'" :aria-pressed="filter === 'todo'"
+                :class="filter === 'todo' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+                class="flex-1 rounded-xl py-1.5 text-xs font-semibold transition">
+            To do · <span x-text="checklist.length - doneCount"></span>
+        </button>
+        <button type="button" @click="filter = 'mine'" :aria-pressed="filter === 'mine'"
+                :class="filter === 'mine' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'"
+                class="flex-1 rounded-xl py-1.5 text-xs font-semibold transition">
+            Mine<span x-show="mineCount" x-text="' · ' + mineCount"></span>
+        </button>
+    </div>
+
+    <p x-show="checklistLoading" class="py-6 text-center text-sm text-slate-400">Loading…</p>
+    <p x-show="!checklistLoading && checklist.length === 0 && !(listFormOpen && !listForm.id)"
+       class="mt-4 rounded-2xl border-2 border-dashed border-slate-200 px-4 py-5 text-center text-sm text-slate-400">
+        Nothing on the list yet. What does everyone need to bring?
+    </p>
+    <p x-show="checklist.length && rows.length === 0" x-text="emptyFilterText"
+       class="mt-4 rounded-2xl bg-slate-50 px-4 py-5 text-center text-sm text-slate-500"></p>
+
+    <!-- Column headings (wider screens) -->
+    <div x-show="rows.length" aria-hidden="true"
+         class="mt-4 hidden grid-cols-[1.75rem_minmax(0,1fr)_4.5rem_7rem_2.75rem] gap-3 border-b border-slate-100 pb-2 text-[11px] font-bold tracking-wide text-slate-400 uppercase sm:grid">
+        <span class="text-right">No</span>
+        <span>Item</span>
+        <span>Qty</span>
+        <span>PIC</span>
+        <span class="text-center">Done</span>
+    </div>
+
+    <ul class="divide-y divide-slate-100 sm:mt-0" :class="rows.length ? 'mt-3' : ''">
+        <template x-for="row in rows" :key="row.id">
+            <li>
+                <!-- Read mode -->
+                <div x-show="!isEditingRow(row.id)"
+                     class="grid grid-cols-[1.75rem_minmax(0,1fr)_2.75rem] items-center gap-3 py-2.5 sm:grid-cols-[1.75rem_minmax(0,1fr)_4.5rem_7rem_2.75rem]">
+                    <span class="text-right text-xs font-semibold text-slate-400" x-text="row.no"></span>
+
+                    <button type="button" @click="openEdit(row)" class="min-w-0 rounded-lg text-left" :aria-label="'Edit ' + row.item">
+                        <span class="block font-semibold break-words transition"
+                              :class="row.done ? 'text-slate-400 line-through' : 'text-slate-900'" x-text="row.item"></span>
+                        <!-- Qty and PIC under the item on phones -->
+                        <span class="block text-xs text-slate-500 sm:hidden"
+                              x-show="row.quantity || memberName(row.picUid)"
+                              x-text="[row.quantity ? 'Qty ' + row.quantity : '', memberName(row.picUid)].filter(Boolean).join(' · ')"></span>
+                        <span x-show="row.notes" class="block text-xs break-words text-slate-400" x-text="row.notes"></span>
+                    </button>
+
+                    <span class="hidden text-sm break-words text-slate-600 sm:block" x-text="row.quantity || '—'"></span>
+
+                    <span class="hidden min-w-0 sm:block">
+                        <span x-show="memberName(row.picUid)" class="chip max-w-full truncate"
+                              :class="row.picUid === $store.session.user?.uid ? 'bg-brand-100 text-brand-700' : 'bg-slate-100 text-slate-600'"
+                              x-text="memberName(row.picUid)"></span>
+                        <span x-show="!memberName(row.picUid)" class="text-sm text-slate-300">—</span>
+                    </span>
+
+                    <button type="button" @click="toggleDone(row)" :disabled="!!toggling[row.id]"
+                            :aria-pressed="!!row.done" :aria-label="(row.done ? 'Mark not done: ' : 'Mark done: ') + row.item"
+                            :class="row.done ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-300 bg-white text-transparent hover:border-emerald-400'"
+                            class="mx-auto grid h-7 w-7 place-items-center rounded-lg border-2 transition disabled:opacity-60">
+                        <x-icon name="check" class="h-4 w-4"/>
+                    </button>
+                </div>
+
+                <!-- Edit mode -->
+                <template x-if="isEditingRow(row.id)">
+                    <div class="py-2.5"><include src="partials/checklist-form.html"></include></div>
+                </template>
+            </li>
+        </template>
+    </ul>
+
+    <!-- Add -->
+    <div class="mt-3">
+        <template x-if="listFormOpen && !listForm.id">
+            <include src="partials/checklist-form.html"></include>
+        </template>
+        <button type="button" x-show="!(listFormOpen && !listForm.id)" @click="openAdd()"
+                class="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 py-2.5 text-sm font-semibold text-slate-500 transition hover:border-emerald-300 hover:text-emerald-600">
+            <x-icon name="plus" class="h-4 w-4"/> Add item
+        </button>
+    </div>
+</section>
