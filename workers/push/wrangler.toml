@@ -19,3 +19,8 @@ VAPID_PUBLIC_KEY = "BIXoW10esLCfkwzVJjcYjq1j7xYnY7uyIadG0roJU0f_6ChOcewuim8iHIIT
 
 [observability]
 enabled = true
+
+# Daily at 03:00 Malaysia time (19:00 UTC): delete data past its 3-month
+# expiry (see cleanup() in src/index.js).
+[triggers]
+crons = ["0 19 * * *"]

@@ -108,5 +108,27 @@ export function firestore({ projectId, serviceAccount, emulatorHost }) {
             const response = await call(`${base}/${path}`, { method: 'DELETE' });
             if (!response.ok && response.status !== 404) throw new Error(`Firestore delete ${path}: ${response.status}`);
         },
+
+        /** Paths of documents in every `collectionId` collection whose expireAt is before `now`. */
+        async expiredPaths(collectionId, now, limit = 300) {
+            const structuredQuery = {
+                from: [{ collectionId, allDescendants: true }],
+                where: { fieldFilter: { field: { fieldPath: 'expireAt' }, op: 'LESS_THAN', value: { timestampValue: now.toISOString() } } },
+                select: { fields: [{ fieldPath: '__name__' }] },
+                limit,
+            };
+            const response = await call(`${base}:runQuery`, { method: 'POST', body: JSON.stringify({ structuredQuery }) });
+            if (!response.ok) throw new Error(`Firestore expired ${collectionId}: ${response.status} ${await response.text()}`);
+            return (await response.json()).filter((r) => r.document).map((r) => relativePath(r.document.name));
+        },
+
+        /** Delete many documents, 500 per commit (one request each). */
+        async deleteMany(paths) {
+            for (let i = 0; i < paths.length; i += 500) {
+                const writes = paths.slice(i, i + 500).map((p) => ({ delete: `projects/${projectId}/databases/(default)/documents/${p}` }));
+                const response = await call(`${base}:commit`, { method: 'POST', body: JSON.stringify({ writes }) });
+                if (!response.ok) throw new Error(`Firestore commit: ${response.status} ${await response.text()}`);
+            }
+        },
     };
 }

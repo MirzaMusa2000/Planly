@@ -151,7 +151,7 @@ describe('push worker', () => {
         assert.equal(first.data.removed, 1);
         assert.equal(await exists('users/admin/pushSubscriptions/admin-admin-gone'), false);
 
-        // The "sent once" lock is itself deleted after 90 days (Firestore TTL).
+        // The "sent once" lock is itself deleted after 90 days (daily cleanup).
         const lock = await (await realFetch(`${DOCS}/pushLog/signup-newbie`, { headers: owner })).json();
         const days = (new Date(lock.fields.expireAt.timestampValue) - Date.now()) / 86_400_000;
         assert.ok(days > 89 && days < 91, `lock expires in ${days} days`);

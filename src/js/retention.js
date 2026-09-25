@@ -1,5 +1,5 @@
-// Data retention: Firestore TTL policies (firestore.indexes.json) delete a
-// document once its `expireAt` has passed. Users are never deleted.
+// Data retention: the push worker's daily cleanup (workers/push, 03:00) deletes
+// a document once its `expireAt` has passed. Users are never deleted.
 //
 //  - chat messages: 3 months after they're sent
 //  - an event and everything under it (votes, itinerary, checklist,

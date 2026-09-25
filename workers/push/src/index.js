@@ -17,7 +17,7 @@ const GOOGLE_JWKS = createRemoteJWKSet(
 );
 
 const FRESH_MS = 10 * 60 * 1000; // only things created in the last 10 minutes
-const LOG_TTL_MS = 90 * 24 * 60 * 60 * 1000; // pushLog/ locks are deleted after 90 days (Firestore TTL)
+const LOG_KEEP_MS = 90 * 24 * 60 * 60 * 1000; // pushLog/ locks are deleted after 90 days (cleanup below)
 const MAX_DEVICES = 40; // the free plan allows 50 outgoing requests per call
 const ID = /^[A-Za-z0-9_-]{1,64}$/;
 
@@ -190,7 +190,33 @@ async function deliver(db, env, recipients, message) {
     };
 }
 
+// ---------------------------------------------------------------------------
+// Daily cleanup (Cron Trigger in wrangler.toml): delete everything whose
+// expireAt has passed: chat after 3 months, an event and everything under it
+// 3 months after its last day (see src/js/retention.js). Users are never
+// touched. Firestore's own TTL would need a billing account; this is free.
+// ---------------------------------------------------------------------------
+export const EXPIRING = ['messages', 'votes', 'itinerary', 'checklist', 'expenses', 'settlements', 'events', 'pushLog'];
+
+export async function cleanup(env, now = new Date()) {
+    const db = env.FIRESTORE_EMULATOR_HOST // tests only
+        ? firestore({ projectId: env.PROJECT_ID, emulatorHost: env.FIRESTORE_EMULATOR_HOST })
+        : firestore({ projectId: env.PROJECT_ID, serviceAccount: JSON.parse(env.FIREBASE_SERVICE_ACCOUNT) });
+    const deleted = {};
+    for (const collectionId of EXPIRING) {
+        const paths = await db.expiredPaths(collectionId, now);
+        if (paths.length) await db.deleteMany(paths);
+        deleted[collectionId] = paths.length;
+    }
+    console.log('Cleanup:', JSON.stringify(deleted));
+    return deleted;
+}
+
 export default {
+    async scheduled(controller, env, ctx) {
+        ctx.waitUntil(cleanup(env));
+    },
+
     async fetch(request, env) {
         const origin = request.headers.get('Origin');
         const allowed = isAllowedOrigin(origin, env);
@@ -216,7 +242,7 @@ export default {
                 : firestore({ projectId: env.PROJECT_ID, serviceAccount: JSON.parse(env.FIREBASE_SERVICE_ACCOUNT) });
 
             const { lock, recipients, message } = await plan(db, body, uid);
-            if (!(await db.createOnce('pushLog', lock, { type: body.type, by: uid, at: new Date().toISOString(), expireAt: new Date(Date.now() + LOG_TTL_MS) }))) {
+            if (!(await db.createOnce('pushLog', lock, { type: body.type, by: uid, at: new Date().toISOString(), expireAt: new Date(Date.now() + LOG_KEEP_MS) }))) {
                 return json({ skipped: 'already sent' }, 200, cors);
             }
             return json(await deliver(db, env, recipients, message), 200, cors);

@@ -122,9 +122,11 @@ Spark limits that matter: Hosting 10 GB storage / 360 MB per day transfer; Fires
 
 ## Data retention (3 months)
 
-Firestore **TTL policies** (`fieldOverrides` in `firestore.indexes.json`, deployed with
-`npm run deploy`) delete documents once their `expireAt` has passed; Firestore does it
-by itself, typically within a day. Users and their devices are never deleted.
+The push worker (`workers/push`) runs a **daily cleanup at 03:00 Malaysia time** (Cron
+Trigger in `wrangler.toml`, free plan) and deletes every document whose `expireAt` has
+passed. It finds them with collection-group queries on `expireAt` (indexes in
+`firestore.indexes.json`, deployed with `npm run deploy`). Firestore's own TTL policies
+would do the same but need a billing account. Users and their devices are never deleted.
 
 | Data | Deleted |
 |---|---|

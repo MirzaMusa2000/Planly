@@ -1,13 +1,13 @@
 #!/usr/bin/env node
-// Give existing data an expireAt, so Firestore TTL cleans it up like new data
+// Give existing data an expireAt, so the daily cleanup deletes it like new data
 // (js/retention.js): an event and everything under it 90 days after its last
 // day, chat messages 90 days after they were sent. Users are never touched.
 //
 //   npm run backfill-expiry              dry run: counts only, writes nothing
 //   npm run backfill-expiry -- --apply   write expireAt where it's missing
 //
-// Anything whose expiry is already in the past is deleted by Firestore within
-// about a day of --apply (and of the TTL policies being deployed).
+// Anything whose expiry is already in the past is deleted by the push worker's
+// next daily cleanup (03:00 Malaysia time) after --apply.
 // Uses secrets/service-account.json, or the emulators when
 // FIRESTORE_EMULATOR_HOST is set.
 import fs from 'node:fs';
@@ -101,6 +101,6 @@ for (const lock of (await db.collection('pushLog').get()).docs) {
 if (apply && pending) await batch.commit();
 
 console.log(`${apply ? 'Updated' : 'Would update'} ${stats.updated} documents${usingEmulators ? ' (emulators)' : ''}.`);
-console.log(`  ${stats.expiredNow} of them are already past 3 months and will be deleted by Firestore within about a day.`);
+console.log(`  ${stats.expiredNow} of them are already past 3 months and will be deleted by the next daily cleanup (03:00).`);
 console.log(`  ${stats.alreadySet} already had an expiry; ${stats.skipped} events had no dates and were left alone.`);
 if (!apply) console.log('Dry run: nothing was written. Run again with --apply to write.');

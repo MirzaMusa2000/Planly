@@ -1,4 +1,4 @@
-// expireAt (Firestore TTL): optional, but never earlier than the retention
+// expireAt (deleted by the daily cleanup once passed): optional, but never earlier than the retention
 // period allows, so nobody can make data disappear early.
 import { after, before, beforeEach, describe, test } from 'node:test';
 import { addDoc, collection, doc, serverTimestamp, setDoc, Timestamp, updateDoc } from 'firebase/firestore';

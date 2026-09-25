@@ -37,50 +37,114 @@
     {
       "collectionGroup": "events",
       "fieldPath": "expireAt",
-      "ttl": true,
-      "indexes": []
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION_GROUP"
+        }
+      ]
     },
     {
       "collectionGroup": "votes",
       "fieldPath": "expireAt",
-      "ttl": true,
-      "indexes": []
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION_GROUP"
+        }
+      ]
     },
     {
       "collectionGroup": "itinerary",
       "fieldPath": "expireAt",
-      "ttl": true,
-      "indexes": []
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION_GROUP"
+        }
+      ]
     },
     {
       "collectionGroup": "checklist",
       "fieldPath": "expireAt",
-      "ttl": true,
-      "indexes": []
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION_GROUP"
+        }
+      ]
     },
     {
       "collectionGroup": "expenses",
       "fieldPath": "expireAt",
-      "ttl": true,
-      "indexes": []
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION_GROUP"
+        }
+      ]
     },
     {
       "collectionGroup": "settlements",
       "fieldPath": "expireAt",
-      "ttl": true,
-      "indexes": []
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION_GROUP"
+        }
+      ]
     },
     {
       "collectionGroup": "messages",
       "fieldPath": "expireAt",
-      "ttl": true,
-      "indexes": []
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION_GROUP"
+        }
+      ]
     },
     {
       "collectionGroup": "pushLog",
       "fieldPath": "expireAt",
-      "ttl": true,
-      "indexes": []
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION_GROUP"
+        }
+      ]
     }
   ]
 }
