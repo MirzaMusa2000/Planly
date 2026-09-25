@@ -485,7 +485,16 @@
     color: #fde68a !important;
 }
 
-/* Staging site (class set in partials/head.html): the brand reads "Planly Staging". */
+/* Staging site (class set in partials/head.html): a small red "Staging" after the brand. */
 .staging .brand::after {
-    content: ' Staging';
+    content: 'Staging';
+    margin-left: 0.4em;
+    font-size: 0.55em;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #dc2626; /* red-600 on the light header */
+}
+.staging .brand.text-white::after,
+.dark.staging .brand::after {
+    color: #f87171; /* red-400 on dark backgrounds */
 }
