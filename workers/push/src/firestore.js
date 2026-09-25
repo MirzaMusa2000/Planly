@@ -93,7 +93,8 @@ export function firestore({ projectId, serviceAccount, emulatorHost }) {
          * exists: used as a "send once" lock.
          */
         async createOnce(collection, id, fields) {
-            const body = { fields: Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, { stringValue: String(v) }])) };
+            const encode = (v) => (v instanceof Date ? { timestampValue: v.toISOString() } : { stringValue: String(v) });
+            const body = { fields: Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, encode(v)])) };
             const response = await call(`${base}/${collection}?documentId=${encodeURIComponent(id)}`, {
                 method: 'POST',
                 body: JSON.stringify(body),

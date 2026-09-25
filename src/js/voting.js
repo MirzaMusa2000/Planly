@@ -3,6 +3,7 @@
 // the amount the caller's own vote changed.
 import { doc, FieldPath, increment, runTransaction, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase';
+import { expiryAfterDay } from './retention';
 import { t } from './i18n';
 
 const RSVP_FIELD = { join: 'join', not_available: 'notAvailable' };
@@ -10,6 +11,9 @@ const RSVP_FIELD = { join: 'join', not_available: 'notAvailable' };
 function me() {
     return window.Planly.user;
 }
+
+/** A vote is deleted with its event (same expireAt). */
+const expiryOf = (eventSnap) => (eventSnap.data().expireAt ? { expireAt: eventSnap.data().expireAt } : {});
 
 function refs(eventId) {
     const eventRef = doc(db, 'events', eventId);
@@ -44,6 +48,7 @@ export async function setAvailability(eventId, date, free) {
             availableDates,
             rsvp: old.rsvp ?? null,
             updatedAt: serverTimestamp(),
+            ...expiryOf(eventSnap),
         });
         tx.update(eventRef, new FieldPath('availabilitySummary', date), increment(free ? 1 : -1));
     });
@@ -69,6 +74,7 @@ export async function setRsvp(eventId, choice) {
             availableDates: old.availableDates, // unchanged (rules require it)
             rsvp: choice,
             updatedAt: serverTimestamp(),
+            ...expiryOf(eventSnap),
         });
 
         const changes = [];
@@ -92,7 +98,8 @@ export async function confirmEvent(event, date) {
         const status = snap.data()?.status;
         if (status !== 'proposed') throw new Error(status === 'confirmed' ? t('This event is already confirmed.') : t('This event was cancelled.'));
         if (!snap.data().candidateDates?.includes(date)) throw new Error(t('That date is not one of the candidate dates.'));
-        tx.update(ref, { status: 'confirmed', finalDate: date, finalEndDate: snap.data().candidateEnds?.[date] ?? date });
+        const finalEndDate = snap.data().candidateEnds?.[date] ?? date;
+        tx.update(ref, { status: 'confirmed', finalDate: date, finalEndDate, expireAt: expiryAfterDay(finalEndDate) });
     });
     return { message: t('Confirmed “{title}”.', { title: event.title }) };
 }

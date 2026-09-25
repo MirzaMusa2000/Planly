@@ -17,6 +17,7 @@ const GOOGLE_JWKS = createRemoteJWKSet(
 );
 
 const FRESH_MS = 10 * 60 * 1000; // only things created in the last 10 minutes
+const LOG_TTL_MS = 90 * 24 * 60 * 60 * 1000; // pushLog/ locks are deleted after 90 days (Firestore TTL)
 const MAX_DEVICES = 40; // the free plan allows 50 outgoing requests per call
 const ID = /^[A-Za-z0-9_-]{1,64}$/;
 
@@ -215,7 +216,7 @@ export default {
                 : firestore({ projectId: env.PROJECT_ID, serviceAccount: JSON.parse(env.FIREBASE_SERVICE_ACCOUNT) });
 
             const { lock, recipients, message } = await plan(db, body, uid);
-            if (!(await db.createOnce('pushLog', lock, { type: body.type, by: uid, at: new Date().toISOString() }))) {
+            if (!(await db.createOnce('pushLog', lock, { type: body.type, by: uid, at: new Date().toISOString(), expireAt: new Date(Date.now() + LOG_TTL_MS) }))) {
                 return json({ skipped: 'already sent' }, 200, cors);
             }
             return json(await deliver(db, env, recipients, message), 200, cors);

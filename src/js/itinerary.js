@@ -19,6 +19,7 @@ import { addDays, daysInRange, format, today, toUtcDate } from './dates';
 import { errorMessage } from './voting';
 import { confirmDialog } from './ui';
 import { t } from './i18n';
+import { sameExpiryAs } from './retention';
 
 export const ITEM_LIMITS = { activity: 200, location: 200, notes: 1000 };
 
@@ -181,6 +182,7 @@ export function itineraryEditor() {
                         date: f.date,
                         order: orders.length ? Math.max(...orders) + 1 : 0,
                         createdBy: window.Planly.user.uid,
+                        ...sameExpiryAs(Alpine.store('planner').events.find((e) => e.id === f.eventId)),
                     });
                 }
                 this.cancelForm();

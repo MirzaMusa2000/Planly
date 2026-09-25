@@ -68,7 +68,7 @@ FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:909
 ### Tests
 
 ```bash
-npm run test:rules       # 79 security-rules tests against a throwaway emulator
+npm run test:rules       # 85 security-rules tests against a throwaway emulator
 npm run test:unit        # expense maths (splits, balances, settle up)
 npm run test:i18n        # builds, then checks every string has a Malay translation
 npm run test:push        # push worker: encryption, VAPID, who gets notified (emulator)
@@ -119,6 +119,26 @@ Spark limits that matter: Hosting 10 GB storage / 360 MB per day transfer; Fires
 50k reads / 20k writes per day. A friends group is far below these.
 
 ---
+
+## Data retention (3 months)
+
+Firestore **TTL policies** (`fieldOverrides` in `firestore.indexes.json`, deployed with
+`npm run deploy`) delete documents once their `expireAt` has passed; Firestore does it
+by itself, typically within a day. Users and their devices are never deleted.
+
+| Data | Deleted |
+|---|---|
+| Chat messages | 3 months after they're sent |
+| An event and its votes, itinerary, checklist, expenses, payments | 3 months after the event's last day (its last date option while proposed) |
+| Push worker locks (`pushLog/`) | 3 months after they're written |
+
+The browser sets `expireAt` (`src/js/retention.js`); `firestore.rules` accept only the
+exact value, so nobody can make data disappear early. For data created before this
+existed:
+```bash
+npm run backfill-expiry              # dry run: what would change, what is already past 3 months
+npm run backfill-expiry -- --apply   # write expireAt where it's missing
+```
 
 ## Languages and dark mode
 
@@ -183,6 +203,7 @@ build/html-templates.js                     layouts, <include>, <x-icon>, clean 
 firestore.rules, firestore.indexes.json     security rules + composite indexes
 tests/rules/                                rules tests (npm run test:rules)
 scripts/make-admin.mjs                      bootstrap the first admin
+scripts/backfill-expiry.mjs                 give older data an expireAt (3-month retention)
 scripts/generate-icons.mjs                  app icons + favicon (npm run icons)
 src/js/i18n.js, src/js/i18n-ms.js        English / Malay (scripts/i18n-check.mjs)
 src/js/people.js, src/js/profile.js         names + profile photos (small data URLs; Storage needs Blaze)

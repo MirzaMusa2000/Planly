@@ -4,6 +4,7 @@ import Alpine from 'alpinejs';
 import { addDoc, collection, doc, onSnapshot, query, serverTimestamp, where } from 'firebase/firestore';
 import { approvedUser } from './session';
 import { notify } from './push';
+import { expiryAfterDay } from './retention';
 import { db } from './firebase';
 import { dayCount, format, formatLong, formatRange, formatRangeLong, formatShort, today } from './dates';
 import { cancelEvent, confirmEvent, errorMessage, setAvailability, setRsvp } from './voting';
@@ -41,6 +42,7 @@ function normalise(snap) {
         candidateEnds: d.candidateEnds ?? {},
         finalDate: d.finalDate ?? null,
         finalEndDate: d.finalEndDate ?? d.finalDate ?? null,
+        expireAt: d.expireAt ?? null, // Timestamp; things stored under the event copy it
         availabilitySummary: d.availabilitySummary ?? {},
         rsvpSummary: { join: 0, notAvailable: 0, ...(d.rsvpSummary ?? {}) },
     };
@@ -392,6 +394,8 @@ export async function proposeEvent({ title, description, location, options }) {
         finalEndDate: null,
         availabilitySummary: {},
         rsvpSummary: { join: 0, notAvailable: 0 },
+        // Options are sorted and don't overlap, so the last one ends last.
+        expireAt: expiryAfterDay(sorted[sorted.length - 1].end),
     });
 
     notify('proposal', { eventId: ref.id });

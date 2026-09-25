@@ -9,8 +9,8 @@ import { formatRange, today } from './dates';
 import { balances, formatRM, parseRM, settleUp, splitCents } from './money';
 import { errorMessage } from './voting';
 import { confirmDialog } from './ui';
+import { sameExpiryAs } from './retention';
 import { locale, t } from './i18n';
-
 
 export const EXPENSE_LIMITS = { item: 120, notes: 300 };
 
@@ -225,7 +225,8 @@ Alpine.data('expensesPage', () => {
         },
 
         markPaid(transfer) {
-            const eventId = this.event.id;
+            const event = this.event;
+            const eventId = event.id;
             return confirmDialog({
                 title: t('Record this payment?'),
                 message: t('It counts towards settling up for everyone.'),
@@ -242,6 +243,7 @@ Alpine.data('expensesPage', () => {
                             amountCents: transfer.amountCents,
                             createdBy: this.me.uid,
                             createdAt: serverTimestamp(),
+                            ...sameExpiryAs(event),
                         });
                         toast(t('Recorded {amount} from {from} to {to}.', { amount: formatRM(transfer.amountCents), from: this.memberName(transfer.from), to: this.memberName(transfer.to) }));
                     } catch (e) {
@@ -362,6 +364,7 @@ Alpine.data('expensesPage', () => {
                         ...data,
                         createdBy: this.me.uid,
                         createdAt: serverTimestamp(),
+                        ...sameExpiryAs(this.event),
                     });
                     // Ready for the next line, like the sheet (payer and split kept).
                     this.form = { ...emptyForm(), paidBy: f.paidBy, splitWith: f.splitWith };

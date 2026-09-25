@@ -42,7 +42,7 @@
                             x-text="loadingOlder ? $t('Loading…') : $t('Load older messages')"></button>
                 </div>
             </template>
-            <p x-show="ready && !hasMore && messages.length >= 50" class="mb-3 text-center text-[11px] text-slate-400" data-t>That’s the beginning of the chat.</p>
+            <p x-show="ready && !hasMore && messages.length >= 50" class="mb-3 text-center text-[11px] text-slate-400" data-t>That’s the beginning of the chat. Messages are deleted after 3 months.</p>
 
             <p x-show="!ready && !error" class="py-10 text-center text-sm text-slate-400" data-t>Loading chat…</p>
 
@@ -50,6 +50,7 @@
                 <div class="grid h-14 w-14 place-items-center rounded-3xl bg-brand-50 text-2xl" aria-hidden="true">👋</div>
                 <p class="mt-3 font-semibold text-slate-800" data-t>Say hi to the group</p>
                 <p class="mt-1 text-sm text-slate-500" data-t>Messages are shared with every member.</p>
+                <p class="mt-1 text-xs text-slate-400" data-t>Messages are deleted after 3 months.</p>
             </div>
 
             <ol class="space-y-0.5">

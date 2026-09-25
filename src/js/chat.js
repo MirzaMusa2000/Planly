@@ -17,6 +17,7 @@ import {
 } from 'firebase/firestore';
 import { approvedUser } from './session';
 import { notify } from './push';
+import { expiryFromNow } from './retention';
 import { db } from './firebase';
 import { addDays, formatShort } from './dates';
 import { locale, t } from './i18n';
@@ -203,6 +204,7 @@ Alpine.data('chat', () => {
                     senderName: (this.me.displayName || '').slice(0, 60),
                     text,
                     createdAt: serverTimestamp(),
+                    expireAt: expiryFromNow(),
                 });
                 notify('chat', { messageId: ref.id });
             } catch (e) {

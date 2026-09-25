@@ -10,6 +10,7 @@ import { daysInRange, format, today, toUtcDate } from './dates';
 import { errorMessage } from './voting';
 import { confirmDialog } from './ui';
 import { t } from './i18n';
+import { sameExpiryAs } from './retention';
 
 const tr = t; // countdown() has a local `t` (today)
 
@@ -228,6 +229,7 @@ Alpine.data('itineraryPage', () => {
                         done: false,
                         order: orders.length ? Math.max(...orders) + 1 : 0,
                         createdBy: window.Planly.user.uid,
+                        ...sameExpiryAs(this.event),
                     });
                     // Keep the form open for the next item, like adding rows in a sheet.
                     this.listForm = emptyListForm();

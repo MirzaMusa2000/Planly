@@ -19,6 +19,20 @@ service cloud.firestore {
 
     function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
 
+    // Retention (js/retention.js): Firestore TTL deletes a document once its
+    // expireAt has passed. An event and everything under it expire 90 days
+    // after its last day; chat messages 90 days after they're sent. expireAt
+    // is optional (pages from before it existed) but, when given, must be
+    // exactly that, so nobody can make data disappear early.
+    function expiryAfter(day) {
+      let p = day.split('-');
+      return timestamp.date(int(p[0]), int(p[1]), int(p[2])) + duration.value(90, 'd');
+    }
+    /** Something stored under an event expires with it. */
+    function expiresWithEvent(d, e) {
+      return !('expireAt' in d) || d.expireAt == e.get('expireAt', null);
+    }
+
     // ---------------------------------------------------------------------
     // users/{uid}
     // ---------------------------------------------------------------------
@@ -91,10 +105,14 @@ service cloud.firestore {
     // option also has candidateEnds[firstDay] = lastDay; votes stay keyed by
     // the first day. (Rules can't loop, so the end dates' order and length are
     // checked by the browser; confirming copies the chosen one to finalEndDate.)
+    function lastDay(d) {
+      let last = d.candidateDates[d.candidateDates.size() - 1];
+      return d.get('candidateEnds', {}).get(last, last);
+    }
     function validNewEvent(d) {
       return d.keys().hasOnly(['title', 'description', 'location', 'status', 'proposedBy',
                                'proposedByName', 'createdAt', 'candidateDates', 'candidateEnds',
-                               'finalDate', 'finalEndDate', 'availabilitySummary', 'rsvpSummary'])
+                               'finalDate', 'finalEndDate', 'availabilitySummary', 'rsvpSummary', 'expireAt'])
           && d.keys().hasAll(['title', 'status', 'proposedBy', 'candidateDates'])
           && d.status == 'proposed'
           && d.proposedBy == request.auth.uid
@@ -109,6 +127,7 @@ service cloud.firestore {
               || (d.candidateEnds is map && d.candidateEnds.keys().hasOnly(d.candidateDates)))
           && (!('finalDate' in d) || d.finalDate == null)
           && (!('finalEndDate' in d) || d.finalEndDate == null)
+          && (!('expireAt' in d) || d.expireAt == expiryAfter(lastDay(d)))
           // New events start with no votes.
           && (!('availabilitySummary' in d) || (d.availabilitySummary is map && d.availabilitySummary.size() == 0))
           && (!('rsvpSummary' in d) || d.rsvpSummary == {'join': 0, 'notAvailable': 0});
@@ -158,8 +177,11 @@ service cloud.firestore {
         return resource.data.get('candidateEnds', {}).get(request.resource.data.finalDate, null);
       }
       allow update: if approved() && canManage()
-                    && changed().hasOnly(['status', 'finalDate', 'finalEndDate'])
+                    && changed().hasOnly(['status', 'finalDate', 'finalEndDate', 'expireAt'])
                     && resource.data.status == 'proposed'
+                    && (!('expireAt' in changed())
+                        || request.resource.data.expireAt
+                             == expiryAfter(request.resource.data.get('finalEndDate', request.resource.data.finalDate)))
                     && request.resource.data.status == 'confirmed'
                     && request.resource.data.finalDate in resource.data.candidateDates
                     && (request.resource.data.get('finalEndDate', null) == null
@@ -192,7 +214,8 @@ service cloud.firestore {
       // One vote doc per user (doc ID == uid).
       match /votes/{uid} {
         function validVote(before, d, e) {
-          return d.keys().hasOnly(['displayName', 'availableDates', 'rsvp', 'updatedAt'])
+          return d.keys().hasOnly(['displayName', 'availableDates', 'rsvp', 'updatedAt', 'expireAt'])
+              && expiresWithEvent(d, e)
               && d.keys().hasAll(['availableDates', 'rsvp', 'updatedAt'])
               && (!('displayName' in d) || isStr(d.displayName, 0, 60))
               && d.availableDates is list
@@ -224,7 +247,7 @@ service cloud.firestore {
       match /itinerary/{itemId} {
         function validItem(d) {
           let e = event();
-          return d.keys().hasOnly(['date', 'startTime', 'endTime', 'activity', 'location', 'notes', 'order', 'createdBy'])
+          return d.keys().hasOnly(['date', 'startTime', 'endTime', 'activity', 'location', 'notes', 'order', 'createdBy', 'expireAt'])
               && d.keys().hasAll(['date', 'startTime', 'activity', 'order', 'createdBy'])
               && e.status == 'confirmed'
               && isDate(d.date)
@@ -243,10 +266,12 @@ service cloud.firestore {
 
         allow create: if approved()
           && validItem(request.resource.data)
+          && expiresWithEvent(request.resource.data, event())
           && request.resource.data.createdBy == request.auth.uid;
 
         allow update: if approved()
           && validItem(request.resource.data)
+          && !('expireAt' in changed())
           && request.resource.data.createdBy == resource.data.createdBy
           && request.resource.data.date == resource.data.date;
       }
@@ -257,7 +282,7 @@ service cloud.firestore {
       // admin may change or remove it.
       match /expenses/{expenseId} {
         function validExpense(d) {
-          return d.keys().hasOnly(['item', 'amountCents', 'paidBy', 'splitWith', 'notes', 'createdBy', 'createdAt'])
+          return d.keys().hasOnly(['item', 'amountCents', 'paidBy', 'splitWith', 'notes', 'createdBy', 'createdAt', 'expireAt'])
               && d.keys().hasAll(['item', 'amountCents', 'paidBy', 'splitWith', 'createdBy', 'createdAt'])
               && event().status == 'confirmed'
               && isStr(d.item, 1, 120)
@@ -277,6 +302,7 @@ service cloud.firestore {
 
         allow create: if approved()
           && validExpense(request.resource.data)
+          && expiresWithEvent(request.resource.data, event())
           && request.resource.data.createdBy == request.auth.uid
           && request.resource.data.createdAt == request.time
           && approvedMember(request.resource.data.paidBy);
@@ -285,6 +311,7 @@ service cloud.firestore {
           && validExpense(request.resource.data)
           && request.resource.data.createdBy == resource.data.createdBy
           && request.resource.data.createdAt == resource.data.createdAt
+          && !('expireAt' in changed())
           && (!('paidBy' in changed()) || approvedMember(request.resource.data.paidBy));
 
         allow delete: if approved() && canEdit();
@@ -297,7 +324,8 @@ service cloud.firestore {
         allow read: if approved();
 
         allow create: if approved()
-          && request.resource.data.keys().hasOnly(['from', 'to', 'amountCents', 'createdBy', 'createdAt'])
+          && request.resource.data.keys().hasOnly(['from', 'to', 'amountCents', 'createdBy', 'createdAt', 'expireAt'])
+          && expiresWithEvent(request.resource.data, event())
           && request.resource.data.keys().hasAll(['from', 'to', 'amountCents', 'createdBy', 'createdAt'])
           && event().status == 'confirmed'
           && request.resource.data.from is string && request.resource.data.to is string
@@ -319,7 +347,7 @@ service cloud.firestore {
       // be an approved member when assigned.
       match /checklist/{itemId} {
         function validChecklistItem(d) {
-          return d.keys().hasOnly(['item', 'quantity', 'picUid', 'done', 'notes', 'order', 'createdBy'])
+          return d.keys().hasOnly(['item', 'quantity', 'picUid', 'done', 'notes', 'order', 'createdBy', 'expireAt'])
               && d.keys().hasAll(['item', 'done', 'order', 'createdBy'])
               && event().status == 'confirmed'
               && isStr(d.item, 1, 120)
@@ -340,11 +368,13 @@ service cloud.firestore {
         allow create: if approved()
           && validChecklistItem(request.resource.data)
           && validPic(request.resource.data)
+          && expiresWithEvent(request.resource.data, event())
           && request.resource.data.createdBy == request.auth.uid;
 
         allow update: if approved()
           && validChecklistItem(request.resource.data)
           && (!('picUid' in changed()) || validPic(request.resource.data))
+          && !('expireAt' in changed())
           && request.resource.data.createdBy == resource.data.createdBy;
       }
     }
@@ -359,7 +389,10 @@ service cloud.firestore {
       // impersonation), text must contain something other than whitespace.
       allow create: if approved()
                     && room == 'main'
-                    && request.resource.data.keys().hasOnly(['senderId', 'senderName', 'text', 'createdAt'])
+                    && request.resource.data.keys().hasOnly(['senderId', 'senderName', 'text', 'createdAt', 'expireAt'])
+                    && (!('expireAt' in request.resource.data)
+                        || (request.resource.data.expireAt > request.time + duration.value(89, 'd')
+                            && request.resource.data.expireAt < request.time + duration.value(91, 'd')))
                     && request.resource.data.keys().hasAll(['senderId', 'senderName', 'text', 'createdAt'])
                     && request.resource.data.senderId == request.auth.uid
                     && isStr(request.resource.data.senderName, 0, 60)

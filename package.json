@@ -10,6 +10,7 @@
         "emulators:fresh": "firebase emulators:start --only auth,firestore --project demo-planly",
         "dev:all": "concurrently -k -n emu,vite -c yellow,magenta \"npm run emulators\" \"npm run dev:emulators\"",
         "test:rules": "firebase emulators:exec --only firestore --project demo-planly \"node --test --test-concurrency=1 tests/rules/*.test.mjs\"",
+        "backfill-expiry": "node scripts/backfill-expiry.mjs",
         "make-admin": "node scripts/make-admin.mjs",
         "deploy": "node scripts/deploy.mjs production",
         "deploy:staging": "node scripts/deploy.mjs staging",
