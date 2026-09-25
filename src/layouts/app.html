@@ -11,7 +11,7 @@
     <aside x-data class="on-ink fixed inset-y-0 left-0 z-40 hidden [view-transition-name:planly-sidebar] w-64 flex-col bg-ink-950 px-4 py-6 transition-[width,padding] duration-200 lg:flex collapsed:w-20 collapsed:px-3">
         <a href="/" class="flex items-center gap-2.5 px-2 collapsed:justify-center collapsed:px-0" title="Planly">
             <include src="partials/logo.html" size="h-9 w-9 shrink-0" id="sidebar"></include>
-            <span class="text-xl font-bold tracking-tight whitespace-nowrap text-white collapsed:hidden">Planly</span>
+            <span class="brand text-xl font-bold tracking-tight whitespace-nowrap text-white collapsed:hidden">Planly</span>
         </a>
 
         <button type="button" @click="$store.sidebar.toggle()"
@@ -76,7 +76,7 @@
         <header x-data="{ menu: false }" class="sticky top-0 z-30 flex h-14 items-center gap-2.5 bg-canvas/80 px-4 backdrop-blur [view-transition-name:planly-header] lg:hidden"
                 @keydown.escape.window="menu = false">
             <include src="partials/logo.html" size="h-8 w-8" id="header"></include>
-            <span class="text-lg font-bold tracking-tight text-slate-900">Planly</span>
+            <span class="brand text-lg font-bold tracking-tight text-slate-900">Planly</span>
 
             <!-- Profile menu -->
             <div class="relative ml-auto" @click.outside="menu = false">
