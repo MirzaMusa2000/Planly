@@ -70,8 +70,8 @@ export async function openLogin(page) {
 /** Sign in through the real form and wait for the page it lands on. */
 export async function signIn(page, user, landing = '/') {
     await openLogin(page);
-    await page.getByLabel('Email').fill(user.email);
-    await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
+    await page.getByLabel(/^(Email|E-mel)$/).fill(user.email);
+    await page.getByLabel(/^(Password|Kata laluan)$/).fill(PASSWORD);
     await page.locator('form button[type="submit"]').click();
     await expect(page).toHaveURL(landing);
     await ready(page);

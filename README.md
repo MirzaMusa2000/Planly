@@ -74,6 +74,7 @@ npm run test:i18n        # builds, then checks every string has a Malay translat
 npm run test:push        # push worker: encryption, VAPID, who gets notified (emulator)
 npm run test:e2e         # Playwright: the real site in Edge, desktop + phone (emulators)
 npm run test:system      # the whole system as one story, recorded to videos/ (emulators)
+npm run test:manual      # Malay screenshots for the user manual, into screenshots/ (emulators)
 npm run build            # static site into dist/
 ```
 `test:rules`, `test:push` and `test:e2e` start their own emulators, so stop

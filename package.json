@@ -21,6 +21,7 @@
         "test:push": "firebase emulators:exec --only firestore --project demo-planly \"node --test --test-concurrency=1 tests/push/*.test.mjs\"",
         "test:e2e": "firebase emulators:exec --only auth,firestore --project demo-planly \"playwright test --project desktop --project phone\"",
         "test:system": "firebase emulators:exec --only auth,firestore --project demo-planly \"playwright test --project system\"",
+        "test:manual": "firebase emulators:exec --only auth,firestore --project demo-planly \"playwright test --project manual\"",
         "push:deploy": "wrangler deploy --config workers/push/wrangler.toml",
         "push:secrets": "node scripts/push-secrets.mjs",
         "push:logs": "wrangler tail --config workers/push/wrangler.toml"

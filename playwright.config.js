@@ -36,8 +36,10 @@ export default defineConfig({
     },
 
     projects: [
-        { name: 'desktop', testIgnore: /system\.spec/, use: { ...devices['Desktop Chrome'], channel: channel || undefined } },
-        { name: 'phone', testIgnore: /system\.spec/, use: { ...devices['Pixel 7'], channel: channel || undefined } },
+        { name: 'desktop', testIgnore: /(system|manual)\.spec/, use: { ...devices['Desktop Chrome'], channel: channel || undefined } },
+        { name: 'phone', testIgnore: /(system|manual)\.spec/, use: { ...devices['Pixel 7'], channel: channel || undefined } },
+        // Screenshots for the user manual, in Malay (npm run test:manual -> screenshots/).
+        { name: 'manual', testMatch: /manual\.spec/, use: { ...devices['Desktop Chrome'], channel: channel || undefined } },
         // The whole system as one recorded story (npm run test:system -> videos/).
         {
             name: 'system',
