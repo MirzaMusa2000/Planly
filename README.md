@@ -72,9 +72,24 @@ npm run test:rules       # 85 security-rules tests against a throwaway emulator
 npm run test:unit        # expense maths (splits, balances, settle up)
 npm run test:i18n        # builds, then checks every string has a Malay translation
 npm run test:push        # push worker: encryption, VAPID, who gets notified (emulator)
+npm run test:e2e         # Playwright: the real site in Edge, desktop + phone (emulators)
 npm run build            # static site into dist/
 ```
-`test:rules` starts its own Firestore emulator, so stop `npm run emulators` first.
+`test:rules`, `test:push` and `test:e2e` start their own emulators, so stop
+`npm run emulators` first.
+
+**End-to-end tests** (`tests/e2e/`, `playwright.config.js`) build the site against the
+emulators (into `dist-e2e/`), then click through it like a person: sign up and wait for
+approval, admin approves, members kept off admin pages, propose an event, live chat
+between two people, Bahasa Melayu. Each test starts from an empty database
+(`tests/e2e/helpers.js` seeds users directly). They use the Microsoft Edge that comes
+with Windows, so no browser download; `PW_CHANNEL=chrome` uses Google Chrome instead.
+```bash
+npm run test:e2e -- --headed          # watch it in a browser window
+npm run test:e2e -- --project phone   # phone size only (or desktop)
+npm run test:e2e -- -g "chat"         # tests whose name matches
+npx playwright show-report            # last run's report; failures keep a trace
+```
 
 ---
 
@@ -204,6 +219,7 @@ src/js/dates.js                             YYYY-MM-DD helpers (Asia/Kuala_Lumpu
 build/html-templates.js                     layouts, <include>, <x-icon>, clean URLs in dev
 firestore.rules, firestore.indexes.json     security rules + composite indexes
 tests/rules/                                rules tests (npm run test:rules)
+tests/e2e/, playwright.config.js            browser tests (npm run test:e2e)
 scripts/make-admin.mjs                      bootstrap the first admin
 scripts/backfill-expiry.mjs                 give older data an expireAt (3-month retention)
 scripts/generate-icons.mjs                  app icons + favicon (npm run icons)

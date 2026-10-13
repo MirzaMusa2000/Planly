@@ -19,12 +19,14 @@
         "test:i18n": "vite build && node scripts/i18n-check.mjs",
         "test:unit": "node --test tests/unit/*.test.mjs",
         "test:push": "firebase emulators:exec --only firestore --project demo-planly \"node --test --test-concurrency=1 tests/push/*.test.mjs\"",
+        "test:e2e": "firebase emulators:exec --only auth,firestore --project demo-planly \"playwright test\"",
         "push:deploy": "wrangler deploy --config workers/push/wrangler.toml",
         "push:secrets": "node scripts/push-secrets.mjs",
         "push:logs": "wrangler tail --config workers/push/wrangler.toml"
     },
     "devDependencies": {
         "@firebase/rules-unit-testing": "^5.0.2",
+        "@playwright/test": "^1.64.0",
         "@tailwindcss/vite": "^4.0.0",
         "concurrently": "^9.0.1",
         "firebase-admin": "^14.4.0",

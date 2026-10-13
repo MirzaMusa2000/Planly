@@ -30,3 +30,9 @@ Thumbs.db
 # Cloudflare Wrangler
 .wrangler/
 .dev.vars*
+
+# Playwright (npm run test:e2e)
+/test-results/
+/dist-e2e/
+/playwright-report/
+/playwright/.cache/
