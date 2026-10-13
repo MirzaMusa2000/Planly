@@ -355,10 +355,13 @@ Alpine.data('expensesPage', () => {
 
             this.formBusy = true;
             this.formError = '';
+            // Reset the form after the server confirms only if nobody typed in it meanwhile.
+            const before = JSON.stringify(f);
+            const untouched = () => this.form === f && JSON.stringify(f) === before;
             try {
                 if (f.id) {
                     await updateDoc(doc(eventRef(this.event.id), 'expenses', f.id), data);
-                    this.closeForm();
+                    if (untouched()) this.closeForm();
                 } else {
                     await addDoc(collection(eventRef(this.event.id), 'expenses'), {
                         ...data,
@@ -367,6 +370,7 @@ Alpine.data('expensesPage', () => {
                         ...sameExpiryAs(this.event),
                     });
                     // Ready for the next line, like the sheet (payer and split kept).
+                    if (!untouched()) return;
                     this.form = { ...emptyForm(), paidBy: f.paidBy, splitWith: f.splitWith };
                     this.$nextTick(() => this.$root.querySelector('[data-expense-form] input')?.focus());
                 }

@@ -172,6 +172,10 @@ export function itineraryEditor() {
             };
 
             this.busy = true;
+            // The save finishes when the server confirms, which can take a while
+            // on a slow phone. Only close the form if it's still this one, untouched
+            // (not a new item the user has started typing meanwhile).
+            const before = JSON.stringify(f);
             try {
                 if (f.id) {
                     await updateDoc(doc(itineraryRef(f.eventId), f.id), data);
@@ -185,7 +189,7 @@ export function itineraryEditor() {
                         ...sameExpiryAs(Alpine.store('planner').events.find((e) => e.id === f.eventId)),
                     });
                 }
-                this.cancelForm();
+                if (this.form === f && JSON.stringify(f) === before) this.cancelForm();
             } catch (e) {
                 this.formError = errorMessage(e);
             } finally {

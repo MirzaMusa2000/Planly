@@ -218,10 +218,13 @@ Alpine.data('itineraryPage', () => {
 
             this.listBusy = true;
             this.listError = '';
+            // Reset the form after the server confirms only if nobody typed in it meanwhile.
+            const before = JSON.stringify(f);
+            const untouched = () => this.listForm === f && JSON.stringify(f) === before;
             try {
                 if (f.id) {
                     await updateDoc(doc(checklistRef(this.event.id), f.id), data);
-                    this.closeListForm();
+                    if (untouched()) this.closeListForm();
                 } else {
                     const orders = this.checklist.map((i) => i.order ?? 0);
                     await addDoc(checklistRef(this.event.id), {
@@ -232,6 +235,7 @@ Alpine.data('itineraryPage', () => {
                         ...sameExpiryAs(this.event),
                     });
                     // Keep the form open for the next item, like adding rows in a sheet.
+                    if (!untouched()) return;
                     this.listForm = emptyListForm();
                     this.$nextTick(() => this.$root.querySelector('[data-checklist-form] input')?.focus());
                 }

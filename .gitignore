@@ -36,3 +36,4 @@ Thumbs.db
 /dist-e2e/
 /playwright-report/
 /playwright/.cache/
+/videos/

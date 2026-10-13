@@ -3,6 +3,7 @@
 //
 //   npm run test:e2e              starts the emulators, runs tests/e2e/*.spec.js
 //   npm run test:e2e -- --headed  watch it happen
+//   npm run test:system           the whole system as one video (videos/)
 //
 // Uses the Microsoft Edge that comes with Windows (no browser download). Set
 // PW_CHANNEL=chrome for Google Chrome, or PW_CHANNEL= (empty) after
@@ -28,13 +29,27 @@ export default defineConfig({
         channel: channel || undefined,
         locale: 'en-GB',
         timezoneId: 'Asia/Kuala_Lumpur',
+        actionTimeout: 15_000,
+        navigationTimeout: 30_000,
         trace: 'retain-on-failure',
         screenshot: 'only-on-failure',
     },
 
     projects: [
-        { name: 'desktop', use: { ...devices['Desktop Chrome'], channel: channel || undefined } },
-        { name: 'phone', use: { ...devices['Pixel 7'], channel: channel || undefined } },
+        { name: 'desktop', testIgnore: /system\.spec/, use: { ...devices['Desktop Chrome'], channel: channel || undefined } },
+        { name: 'phone', testIgnore: /system\.spec/, use: { ...devices['Pixel 7'], channel: channel || undefined } },
+        // The whole system as one recorded story (npm run test:system -> videos/).
+        {
+            name: 'system',
+            testMatch: /system\.spec/,
+            use: {
+                ...devices['Desktop Chrome'],
+                channel: channel || undefined,
+                viewport: { width: 1280, height: 720 },
+                video: { mode: 'on', size: { width: 1280, height: 720 } },
+                launchOptions: { slowMo: Number(process.env.SLOW_MO ?? 150) },
+            },
+        },
     ],
 
     webServer: {

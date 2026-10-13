@@ -73,6 +73,7 @@ npm run test:unit        # expense maths (splits, balances, settle up)
 npm run test:i18n        # builds, then checks every string has a Malay translation
 npm run test:push        # push worker: encryption, VAPID, who gets notified (emulator)
 npm run test:e2e         # Playwright: the real site in Edge, desktop + phone (emulators)
+npm run test:system      # the whole system as one story, recorded to videos/ (emulators)
 npm run build            # static site into dist/
 ```
 `test:rules`, `test:push` and `test:e2e` start their own emulators, so stop
@@ -84,6 +85,13 @@ approval, admin approves, members kept off admin pages, propose an event, live c
 between two people, Bahasa Melayu. Each test starts from an empty database
 (`tests/e2e/helpers.js` seeds users directly). They use the Microsoft Edge that comes
 with Windows, so no browser download; `PW_CHANNEL=chrome` uses Google Chrome instead.
+
+**Whole-system video** (`tests/e2e/system.spec.js`): one browser window, people taking
+turns: Aina signs up, the admin approves her, she proposes a multi-day trip and votes,
+Redz votes and chats, the admin confirms the dates, plans the itinerary and checklist,
+adds expenses and marks a payment, then changes his name, dark mode and Bahasa Melayu.
+Every step is checked, with Malay captions, and saved to `videos/planly-system-test.webm`
+(gitignored). `PAUSE_MS=0 SLOW_MO=0 npm run test:system` runs it fast.
 ```bash
 npm run test:e2e -- --headed          # watch it in a browser window
 npm run test:e2e -- --project phone   # phone size only (or desktop)
