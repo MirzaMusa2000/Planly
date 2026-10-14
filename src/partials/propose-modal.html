@@ -23,6 +23,20 @@
                            placeholder="Beach day, dinner, road trip…" class="input-dark">
                 </div>
 
+                <!-- Kind of plan: guessed from the title until one is tapped  -->
+                <div>
+                    <p id="propose-kind-label" class="label text-slate-200" data-t>Kind of plan</p>
+                    <div class="flex flex-wrap gap-1.5" role="radiogroup" aria-labelledby="propose-kind-label">
+                        <template x-for="k in KINDS" :key="k.id">
+                            <button type="button" role="radio" :aria-checked="chosenKind === k.id" @click="kind = k.id"
+                                    :class="chosenKind === k.id ? 'border-brand-400 bg-brand-500/25 text-white' : 'border-ink-700 text-slate-300 hover:border-slate-500'"
+                                    class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition">
+                                <span aria-hidden="true" x-text="k.emoji"></span><span x-text="$kindLabel(k)"></span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
                 <div>
                     <label for="propose-location" class="label text-slate-200" data-t>Location</label>
                     <div class="relative">

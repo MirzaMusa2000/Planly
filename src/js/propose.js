@@ -3,6 +3,7 @@
 import Alpine from 'alpinejs';
 import { dayCount, daysInRange, format, formatRange, formatShort, monthGrid, today, toUtcDate } from './dates';
 import { LIMITS, proposeEvent } from './events';
+import { guessKind, KINDS } from './kinds';
 import { t } from './i18n';
 
 Alpine.data('proposeModal', () => ({
@@ -13,6 +14,8 @@ Alpine.data('proposeModal', () => ({
     title: '',
     description: '',
     location: '',
+    kind: null, // picked kind; null = guessed from the title
+    KINDS,
     mode: 'day', // 'day': each tap is an option · 'range': tap the first, then the last day
     options: [], // [{ start, end }] sorted, never overlapping
     rangeStart: null, // first tap of a range in progress
@@ -40,6 +43,7 @@ Alpine.data('proposeModal', () => ({
         this.title = '';
         this.description = '';
         this.location = '';
+        this.kind = null;
         this.mode = 'day';
         this.options = start ? [{ start, end: start }] : [];
         this.rangeStart = null;
@@ -50,6 +54,10 @@ Alpine.data('proposeModal', () => ({
 
     close() {
         if (!this.busy) this.open = false;
+    },
+
+    get chosenKind() {
+        return this.kind ?? guessKind(this.title);
     },
 
     setMode(mode) {
@@ -211,6 +219,7 @@ Alpine.data('proposeModal', () => ({
                 title: this.title,
                 description: this.description,
                 location: this.location,
+                kind: this.chosenKind,
                 options: this.options,
             });
             this.busy = false;

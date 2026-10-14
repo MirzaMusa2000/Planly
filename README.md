@@ -166,6 +166,19 @@ npm run backfill-expiry              # dry run: what would change, what is alrea
 npm run backfill-expiry -- --apply   # write expireAt where it's missing
 ```
 
+## Event kinds, countdown, maps and weather
+
+- **Kinds** (`src/js/kinds.js`): each event has an emoji and colour (beach, food,
+  outdoors, birthday, trip, party, sport, other), picked when proposing (guessed from
+  the title until picked) and changeable by the proposer or admin from the event.
+  Older events get one guessed from their title. Push titles lead with it.
+- **Countdown**: the Home hero shows the next confirmed event ("In 3 days",
+  "Tomorrow", "Day 2 of 3").
+- **Waze / Google Maps** buttons on every location (plain links, no API).
+- **Weather** (`src/js/weather.js`): for confirmed events up to 16 days ahead, from
+  [Open-Meteo](https://open-meteo.com/) (free, no key, CC BY 4.0). The location text is
+  sent to Open-Meteo to find the place; results are cached on the device.
+
 ## Languages and dark mode
 
 - **English / Bahasa Melayu** (`src/js/i18n.js`): the English text is the key.

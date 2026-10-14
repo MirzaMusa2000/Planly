@@ -3,6 +3,7 @@ import Alpine from 'alpinejs';
 import { startEventsFeed } from './events';
 import { addDays } from './dates';
 import { lang, t } from './i18n';
+import { kindOf } from './kinds';
 
 // FullCalendar is loaded on demand so pages without a calendar stay light.
 const loadFullCalendar = () =>
@@ -40,7 +41,7 @@ function toCalendarEvents(store) {
                 end: addDays(event.finalEndDate, 1),
                 allDay: true,
                 classNames: ['ev', 'ev-confirmed'],
-                extendedProps: { eventId: event.id, kind: 'confirmed', star: false },
+                extendedProps: { eventId: event.id, kind: 'confirmed', star: false, emoji: kindOf(event).emoji },
                 ...COLOURS.confirmed,
             });
         }
@@ -55,7 +56,7 @@ function toCalendarEvents(store) {
                     end: addDays(store.endOf(event, date), 1),
                     allDay: true,
                     classNames: ['ev', 'ev-proposed', ...(star ? ['ev-star'] : [])],
-                    extendedProps: { eventId: event.id, kind: 'proposed', star },
+                    extendedProps: { eventId: event.id, kind: 'proposed', star, emoji: kindOf(event).emoji },
                     ...COLOURS.proposed,
                 });
             }
@@ -81,7 +82,7 @@ function renderEventContent(arg) {
 
     const title = document.createElement('span');
     title.className = 'ev-title';
-    title.textContent = arg.event.title;
+    title.textContent = `${arg.event.extendedProps.emoji} ${arg.event.title}`;
     wrap.append(title);
 
     if (kind === 'proposed') {

@@ -123,6 +123,11 @@ export async function setLocation(event, location) {
     return { message: value ? t('Location updated.') : t('Location removed.') };
 }
 
+/** Change what kind of plan an event is (proposer or admin). */
+export async function setKind(event, kind) {
+    await updateDoc(doc(db, 'events', event.id), { kind });
+}
+
 /** Friendly message for a failed vote/confirm/cancel. */
 export function errorMessage(error) {
     if (error?.code === 'permission-denied') return t('That change wasn’t allowed. Only the admin or the proposer can do that.');

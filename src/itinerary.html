@@ -33,7 +33,7 @@
                         <button type="button" role="tab" @click="select(option.id)" :aria-selected="option.id === e.id"
                                 :class="option.id === e.id ? 'bg-ink-950 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'"
                                 class="flex shrink-0 items-center gap-2 rounded-2xl px-3.5 py-2 text-sm font-semibold shadow-soft transition">
-                            <span x-text="option.title" class="max-w-40 truncate"></span>
+                            <span x-text="$kind(option).emoji + ' ' + option.title" class="max-w-40 truncate"></span>
                             <span class="text-xs font-medium opacity-70" x-text="$dates.range(option.finalDate, option.finalEndDate)"></span>
                         </button>
                     </template>
@@ -48,12 +48,15 @@
                         </span>
                         <div class="min-w-0 flex-1">
                             <span class="chip bg-white/20 text-white" x-text="countdown(e)"></span>
-                            <h2 class="mt-1.5 text-xl font-bold break-words sm:text-2xl" x-text="e.title"></h2>
+                            <h2 class="mt-1.5 text-xl font-bold break-words sm:text-2xl" x-text="$kind(e).emoji + ' ' + e.title"></h2>
                             <p class="mt-1 text-sm text-white/80" x-text="$store.planner.whenLong(e)"></p>
                             <p x-show="e.location" class="mt-1 flex items-center gap-1 text-sm text-white/80">
                                 <x-icon name="map-pin" class="h-4 w-4 shrink-0"/>
                                 <span class="break-words" x-text="e.location"></span>
                             </p>
+                            <div x-show="e.location" class="mt-2">
+                                <include src="partials/map-links.html" loc="e.location" btn="bg-white/15 text-white hover:bg-white/25"></include>
+                            </div>
                         </div>
                     </div>
                     <div class="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
@@ -62,6 +65,9 @@
                         <span class="rounded-full bg-white/15 px-3 py-1"
                               x-text="$tn(itemCount(e.id), '{n} activity', '{n} activities')"></span>
                         <span class="rounded-full bg-white/15 px-3 py-1" x-text="$t('{done}/{total} packed', { done: doneCount, total: checklist.length })"></span>
+                    </div>
+                    <div class="mt-4" x-show="$store.weather.for(e)">
+                        <include src="partials/weather-strip.html" ev="e" chip="bg-white/15 text-white" note="text-white/70"></include>
                     </div>
                 </section>
 

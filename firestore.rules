@@ -109,8 +109,10 @@ service cloud.firestore {
       let last = d.candidateDates[d.candidateDates.size() - 1];
       return d.get('candidateEnds', {}).get(last, last);
     }
+    // Kinds of plan (js/kinds.js): an emoji and colour each.
+    function isKind(v) { return v in ['beach', 'food', 'hike', 'birthday', 'trip', 'party', 'sport', 'other']; }
     function validNewEvent(d) {
-      return d.keys().hasOnly(['title', 'description', 'location', 'status', 'proposedBy',
+      return d.keys().hasOnly(['title', 'description', 'location', 'kind', 'status', 'proposedBy',
                                'proposedByName', 'createdAt', 'candidateDates', 'candidateEnds',
                                'finalDate', 'finalEndDate', 'availabilitySummary', 'rsvpSummary', 'expireAt'])
           && d.keys().hasAll(['title', 'status', 'proposedBy', 'candidateDates'])
@@ -119,6 +121,7 @@ service cloud.firestore {
           && isStr(d.title, 1, 120)
           && (!('description' in d) || isStr(d.description, 0, 2000))
           && (!('location' in d) || isStr(d.location, 0, 200))
+          && (!('kind' in d) || isKind(d.kind))
           && (!('proposedByName' in d) || isStr(d.proposedByName, 0, 60))
           && (!('createdAt' in d) || d.createdAt == request.time)
           && d.candidateDates is list
@@ -189,11 +192,12 @@ service cloud.firestore {
                         : request.resource.data.finalEndDate
                             == (chosenEnd() == null ? request.resource.data.finalDate : chosenEnd()));
 
-      // Edit the location: admin or proposer, while proposed or confirmed.
+      // Edit the location or the kind: admin or proposer, while proposed or confirmed.
       allow update: if approved() && canManage()
-                    && changed().hasOnly(['location']) && changed().size() == 1
+                    && changed().hasOnly(['location', 'kind']) && changed().size() >= 1
                     && resource.data.status in ['proposed', 'confirmed']
-                    && isStr(request.resource.data.location, 0, 200);
+                    && (!('location' in changed()) || isStr(request.resource.data.location, 0, 200))
+                    && (!('kind' in changed()) || isKind(request.resource.data.kind));
 
       // Cancel: admin or proposer, proposed/confirmed -> cancelled.
       allow update: if approved() && canManage()

@@ -21,16 +21,36 @@
                 <div class="flex-1 overflow-y-auto px-5 pb-6">
                     <!-- Title  -->
                     <div class="flex items-start gap-3 pt-2">
-                        <span class="grid h-11 w-11 shrink-0 place-items-center rounded-full"
-                              :class="e.status === 'confirmed' ? 'bg-emerald-400 text-ink-950' : 'bg-amber-300 text-ink-950'">
-                            <x-icon name="check" class="h-5 w-5" x-show="e.status === 'confirmed'"/>
-                            <x-icon name="calendar" class="h-5 w-5" x-show="e.status !== 'confirmed'"/>
-                        </span>
+                        <!-- Kind of plan: its emoji; the proposer or admin taps it to change it  -->
+                        <button type="button" @click="$store.planner.kindPicker = !$store.planner.kindPicker"
+                                :disabled="!$store.planner.canEdit(e)" :aria-expanded="$store.planner.kindPicker"
+                                :aria-label="$store.planner.canEdit(e) ? $t('Change the kind of plan ({kind})', { kind: $kindLabel($kind(e)) }) : $kindLabel($kind(e))"
+                                :title="$kindLabel($kind(e))"
+                                class="relative grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-2xl transition enabled:hover:scale-105"
+                                :class="$kind(e).ink">
+                            <span aria-hidden="true" x-text="$kind(e).emoji"></span>
+                            <span x-show="$store.planner.canEdit(e)" aria-hidden="true"
+                                  class="absolute -right-1 -bottom-1 grid h-5 w-5 place-items-center rounded-full bg-ink-700 text-slate-200 ring-2 ring-ink-900">
+                                <x-icon name="pencil" class="h-2.5 w-2.5"/>
+                            </span>
+                        </button>
                         <div class="min-w-0">
                             <h2 id="event-sheet-title" class="text-xl leading-tight font-bold break-words" x-text="e.title"></h2>
                             <span class="chip mt-2" :class="e.status === 'confirmed' ? 'bg-emerald-400/15 text-emerald-300' : 'bg-amber-300/15 text-amber-200'"
                                   x-text="e.status === 'confirmed' ? $t('Confirmed') : $t('Proposed')"></span>
                         </div>
+                    </div>
+
+                    <div x-show="$store.planner.kindPicker" x-transition.opacity x-cloak role="radiogroup"
+                         :aria-label="$t('Kind of plan')" class="mt-4 grid grid-cols-4 gap-1.5 rounded-2xl bg-ink-800/70 p-2">
+                        <template x-for="k in $kinds" :key="k.id">
+                            <button type="button" role="radio" :aria-checked="$kind(e).id === k.id" @click="$store.planner.changeKind(e, k.id)"
+                                    :class="$kind(e).id === k.id ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/10'"
+                                    class="flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[11px] font-semibold transition">
+                                <span class="text-xl leading-none" aria-hidden="true" x-text="k.emoji"></span>
+                                <span class="truncate" x-text="$kindLabel(k)"></span>
+                            </button>
+                        </template>
                     </div>
 
                     <!-- Facts  -->
@@ -48,14 +68,19 @@
                             <dd x-text="$tn(e.candidateDates.length, '{n} date option', '{n} date options')"></dd>
                         </div>
                         <!-- Location: the proposer or admin can change it after proposing  -->
-                        <div class="flex gap-3" x-show="e.location || $store.planner.canEditLocation(e)"
+                        <div class="flex gap-3" x-show="e.location || $store.planner.canEdit(e)"
                              :class="$store.planner.locationDraft === null ? 'items-center' : 'items-start'">
                             <dt :class="$store.planner.locationDraft === null ? '' : 'pt-2.5'"><x-icon name="map-pin" class="h-[18px] w-[18px] text-slate-400"/><span class="sr-only" data-t>Location</span></dt>
                             <dd class="min-w-0 flex-1">
                                 <template x-if="$store.planner.locationDraft === null">
                                     <div class="flex items-center gap-2">
-                                        <span class="min-w-0 break-words" :class="e.location ? '' : 'text-slate-400'" x-text="e.location || $t('No location yet')"></span>
-                                        <button type="button" x-show="$store.planner.canEditLocation(e)" @click="$store.planner.editLocation(e)"
+                                        <div class="min-w-0">
+                                            <span class="break-words" :class="e.location ? '' : 'text-slate-400'" x-text="e.location || $t('No location yet')"></span>
+                                            <div x-show="e.location" class="mt-1.5">
+                                                <include src="partials/map-links.html" loc="e.location" btn="bg-white/10 text-slate-200 hover:bg-white/20"></include>
+                                            </div>
+                                        </div>
+                                        <button type="button" x-show="$store.planner.canEdit(e)" @click="$store.planner.editLocation(e)"
                                                 :aria-label="e.location ? $t('Edit location') : $t('Add a location')" :title="e.location ? $t('Edit location') : $t('Add a location')"
                                                 class="-my-1 ml-auto grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 transition hover:bg-white/10 hover:text-white">
                                             <x-icon name="pencil" class="h-4 w-4"/>
@@ -83,6 +108,12 @@
                             <dd><span data-t>Proposed by</span> <span class="font-semibold" x-text="$store.people.name(e.proposedBy) || e.proposedByName || $t('someone')"></span></dd>
                         </div>
                     </dl>
+
+                    <!-- Weather (confirmed, within 16 days)  -->
+                    <section class="mt-5" x-show="$store.weather.for(e)">
+                        <h3 class="mb-2 text-sm font-semibold text-slate-300" data-t>Weather</h3>
+                        <include src="partials/weather-strip.html" ev="e" chip="bg-ink-800 text-slate-100" note="text-slate-500"></include>
+                    </section>
 
                     <!-- Description  -->
                     <section class="mt-5" x-show="e.description">

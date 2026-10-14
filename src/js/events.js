@@ -7,7 +7,8 @@ import { notify } from './push';
 import { expiryAfterDay } from './retention';
 import { db } from './firebase';
 import { dayCount, format, formatLong, formatRange, formatRangeLong, formatShort, today } from './dates';
-import { cancelEvent, confirmEvent, errorMessage, LOCATION_MAX, setAvailability, setLocation, setRsvp } from './voting';
+import { cancelEvent, confirmEvent, errorMessage, LOCATION_MAX, setAvailability, setKind, setLocation, setRsvp } from './voting';
+import { isKind } from './kinds';
 import { confirmDialog } from './ui';
 import { t, tn } from './i18n';
 
@@ -33,6 +34,7 @@ function normalise(snap) {
         title: d.title ?? '',
         description: d.description ?? '',
         location: d.location ?? '',
+        kind: d.kind ?? null,
         status: d.status,
         proposedBy: d.proposedBy,
         proposedByName: d.proposedByName ?? '',
@@ -60,6 +62,7 @@ Alpine.store('planner', {
     error: null,
     selectedId: null,
     locationDraft: null, // the open event's location while it is being edited, else null
+    kindPicker: false, // the open event's kind picker is showing
     myVotes: {}, // eventId -> { availableDates, rsvp } (my own vote per listed event)
     selectedVotes: [], // all votes of the selected event: { uid, displayName, availableDates, rsvp }
     votesLoading: false,
@@ -183,7 +186,7 @@ Alpine.store('planner', {
     // --- Location (proposer or admin, while proposed or confirmed) ---------------
     LOCATION_MAX,
 
-    canEditLocation(event) {
+    canEdit(event) {
         return this.canManage(event) && ['proposed', 'confirmed'].includes(event.status);
     },
 
@@ -193,6 +196,29 @@ Alpine.store('planner', {
 
     cancelLocation() {
         this.locationDraft = null;
+    },
+
+    async changeKind(event, kind) {
+        this.kindPicker = false;
+        if (kind === event.kind) return;
+        await this.run(`${event.id}:kind`, () => setKind(event, kind));
+    },
+
+    // --- Countdown to the next event -------------------------------------------
+    /** The next confirmed event (or the one happening now). */
+    get next() {
+        return this.upcoming[0] ?? null;
+    },
+
+    /** "In 5 days", "Tomorrow", "Today!", or "Day 2 of 3" while it's on. */
+    countdown(event) {
+        const now = today();
+        if (event.finalDate <= now) {
+            const total = dayCount(event.finalDate, event.finalEndDate);
+            return total > 1 ? t('Day {n} of {total}', { n: dayCount(event.finalDate, now), total }) : t('Today!');
+        }
+        const days = dayCount(now, event.finalDate) - 1;
+        return days === 1 ? t('Tomorrow') : tn(days, 'In {n} day', 'In {n} days');
     },
 
     async saveLocation(event) {
@@ -271,12 +297,14 @@ Alpine.store('planner', {
     open(id) {
         this.selectedId = id;
         this.locationDraft = null;
+        this.kindPicker = false;
         watchSelectedVotes(id);
     },
 
     close() {
         this.selectedId = null;
         this.locationDraft = null;
+        this.kindPicker = false;
         watchSelectedVotes(null);
     },
 });
@@ -391,7 +419,7 @@ export async function startEventsFeed() {
  * [{ start, end }] (end === start for a one-day option). Throws on validation
  * or permission errors.
  */
-export async function proposeEvent({ title, description, location, options }) {
+export async function proposeEvent({ title, description, location, kind, options }) {
     const me = window.Planly.user;
     const sorted = [...options].sort((a, b) => a.start.localeCompare(b.start));
     const dates = sorted.map((o) => o.start);
@@ -409,6 +437,7 @@ export async function proposeEvent({ title, description, location, options }) {
         title: title.trim().slice(0, LIMITS.title),
         description: description.trim().slice(0, LIMITS.description),
         location: location.trim().slice(0, LIMITS.location),
+        ...(isKind(kind) ? { kind } : {}),
         status: 'proposed',
         proposedBy: me.uid,
         proposedByName: (me.displayName || '').slice(0, 60),

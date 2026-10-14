@@ -276,7 +276,7 @@ describe('event reminders', () => {
     const find = (messages, title) => messages.find((m) => m.title === title);
 
     beforeEach(async () => {
-        await put('events/trip', confirmed({ title: 'Trip Port Dickson', location: 'Port Dickson', finalDate: '2026-10-21', finalEndDate: '2026-10-23' }));
+        await put('events/trip', confirmed({ title: 'Trip Port Dickson', kind: 'beach', location: 'Port Dickson', finalDate: '2026-10-21', finalEndDate: '2026-10-23' }));
         await put('events/trip/votes/ali', { availableDates: [], rsvp: 'not_available' });
         await put('events/trip/votes/mei', { availableDates: [], rsvp: 'join' });
         await put('events/dinner', confirmed({ title: 'Makan malam', finalDate: '2026-10-15', finalEndDate: '2026-10-15' }));
@@ -295,14 +295,15 @@ describe('event reminders', () => {
         assert.equal(box['gone-phone'], undefined);
 
         // Mei (Malay) already said she's coming: no question, just the plan.
-        assert.deepEqual(find(box['mei-phone'], 'Seminggu lagi: Trip Port Dickson'), {
-            title: 'Seminggu lagi: Trip Port Dickson',
+        // The trip is a beach plan: its emoji leads the title.
+        assert.deepEqual(find(box['mei-phone'], '🏖️ Seminggu lagi: Trip Port Dickson'), {
+            title: '🏖️ Seminggu lagi: Trip Port Dickson',
             body: 'Rab–Jum, 21–23 Okt · Port Dickson. Tekan untuk lihat rancangan.',
             url: '/#event=trip',
             tag: 'planly-reminder-trip',
         });
         // The admin hasn't replied: asked to.
-        assert.equal(find(box['admin-phone'], 'In 1 week: Trip Port Dickson').body,
+        assert.equal(find(box['admin-phone'], '🏖️ In 1 week: Trip Port Dickson').body,
             'Wed–Fri, 21–23 Oct · Port Dickson. Are you coming? Tap to reply.');
         assert.equal(find(box['admin-phone'], 'Tomorrow: Makan malam').body, 'Thu 15 Oct. Are you coming? Tap to reply.');
         assert.equal(find(box['mei-phone'], 'Esok: Makan malam').body, 'Kha 15 Okt. Anda datang? Tekan untuk jawab.');

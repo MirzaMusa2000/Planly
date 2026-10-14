@@ -355,6 +355,11 @@
     --color-violet-200: color-mix(in oklab, var(--color-violet-500) 32%, var(--surface));
     --color-violet-700: var(--color-violet-300);
     --color-violet-800: var(--color-violet-300);
+    --color-orange-50: color-mix(in oklab, var(--color-orange-500) 13%, var(--surface));
+    --color-orange-100: color-mix(in oklab, var(--color-orange-500) 21%, var(--surface));
+    --color-orange-200: color-mix(in oklab, var(--color-orange-500) 32%, var(--surface));
+    --color-orange-700: var(--color-orange-300);
+    --color-orange-800: var(--color-orange-300);
     --color-brand-50: color-mix(in oklab, var(--color-brand-500) 13%, var(--surface));
     --color-brand-100: color-mix(in oklab, var(--color-brand-500) 21%, var(--surface));
     --color-brand-200: color-mix(in oklab, var(--color-brand-500) 32%, var(--surface));

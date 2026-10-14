@@ -76,6 +76,10 @@ const TEXT = {
     },
 };
 const text = (lang) => TEXT[lang] ?? TEXT.en;
+
+// The event's kind (src/js/kinds.js) leads its notifications: "🏖️ New proposal: …".
+const KIND_EMOJI = { beach: '🏖️', food: '🍽️', hike: '⛰️', birthday: '🎂', trip: '✈️', party: '🎉', sport: '⚽', other: '📅' };
+const withKind = (event, title) => (KIND_EMOJI[event.kind] ? `${KIND_EMOJI[event.kind]} ${title}` : title);
 const truncate = (text, n) => (text.length > n ? `${text.slice(0, n - 1)}…` : text);
 
 /** What to send, and to whom, for a request from `uid`. */
@@ -119,7 +123,7 @@ async function plan(db, body, uid) {
                 lock: `proposal-${body.eventId}`,
                 recipients: (await approved()).filter((u) => u.id !== uid),
                 message: (lang) => ({
-                    title: text(lang).proposalTitle(params),
+                    title: withKind(event, text(lang).proposalTitle(params)),
                     body: text(lang).proposalBody(params),
                     url: `/#event=${body.eventId}`,
                     tag: `planly-event-${body.eventId}`,
@@ -260,7 +264,7 @@ function reminderMessage(kind, event, lang, rsvp) {
     const when = dateRange(event.finalDate, event.finalEndDate, lang in REMINDER_TEXT ? lang : 'en');
     const where = event.location ? ` · ${truncate(event.location, 60)}` : '';
     return {
-        title: text[kind](truncate(event.title, 80)),
+        title: withKind(event, text[kind](truncate(event.title, 80))),
         body: `${when}${where}. ${rsvp ? text.plan : text.ask}`,
         url: `/#event=${event.id}`,
         tag: `planly-reminder-${event.id}`,

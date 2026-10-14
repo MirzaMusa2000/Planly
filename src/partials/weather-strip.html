@@ -1,0 +1,23 @@
+<!-- Forecast for a confirmed event's days, up to 16 days ahead (js/weather.js).
+     Params: ev (expression), chip (classes per day), note (classes for the small print). -->
+<template x-if="$store.weather.for({{ ev }})">
+    <div x-data="{ get w() { return $store.weather.for({{ ev }}) } }" x-show="w && w.status !== 'none'">
+        <p x-show="w.status === 'loading'" class="text-xs {{ note }}" data-t>Checking the weather…</p>
+        <div x-show="w.status === 'ready'" class="flex flex-wrap gap-2">
+            <template x-for="d in w.days" :key="d.date">
+                <span class="inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-semibold {{ chip }}"
+                      :title="$store.weather.describe(d.code).label">
+                    <span class="text-base leading-none" aria-hidden="true" x-text="$store.weather.describe(d.code).emoji"></span>
+                    <span x-text="$dates.weekday(d.date)"></span>
+                    <span x-text="d.max + '° / ' + d.min + '°'"></span>
+                    <span class="opacity-75" x-text="'💧' + d.rain + '%'" :aria-label="$t('{n}% chance of rain', { n: d.rain })"></span>
+                    <span class="sr-only" x-text="$store.weather.describe(d.code).label"></span>
+                </span>
+            </template>
+        </div>
+        <p x-show="w.status === 'ready'" class="mt-1.5 text-[11px] {{ note }}">
+            <span x-text="$t('Forecast for {place}', { place: w.place })"></span> ·
+            <a href="https://open-meteo.com/" target="_blank" rel="noopener" class="underline">Open-Meteo</a>
+        </p>
+    </div>
+</template>

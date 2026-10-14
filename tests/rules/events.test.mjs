@@ -99,6 +99,15 @@ describe('events/{eventId}', () => {
         await assertFails(updateDoc(doc(as(env, 'ali'), 'events/x1'), { location: 'PD' })); // cancelled
     });
 
+    test('an event can have a kind, from the list only', async () => {
+        await assertSucceeds(propose(as(env, 'mei'), newEvent('mei', { kind: 'beach' })));
+        await assertFails(propose(as(env, 'mei'), newEvent('mei', { kind: 'rocket' })));
+        await assertSucceeds(updateDoc(doc(as(env, 'ali'), 'events/e1'), { kind: 'food' }));
+        await assertSucceeds(updateDoc(doc(asAdmin(env), 'events/c1'), { kind: 'trip', location: 'KLIA' })); // both at once
+        await assertFails(updateDoc(doc(as(env, 'ali'), 'events/e1'), { kind: 'rocket' }));
+        await assertFails(updateDoc(doc(as(env, 'mei'), 'events/e1'), { kind: 'party' })); // not the proposer
+    });
+
     test('the proposer or the admin cancels', async () => {
         await assertSucceeds(updateDoc(doc(as(env, 'ali'), 'events/e1'), { status: 'cancelled' }));
         await assertSucceeds(updateDoc(doc(asAdmin(env), 'events/c1'), { status: 'cancelled' }));

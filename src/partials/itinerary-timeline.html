@@ -24,6 +24,9 @@
                                     <x-icon name="map-pin" class="h-3.5 w-3.5 shrink-0"/>
                                     <span class="break-words" x-text="item.location"></span>
                                 </p>
+                                <div x-show="item.location" class="mt-1.5">
+                                    <include src="partials/map-links.html" loc="item.location" btn="bg-white/70 hover:bg-white"></include>
+                                </div>
                                 <p x-show="item.notes" class="mt-1 text-xs whitespace-pre-line break-words opacity-80" x-text="item.notes"></p>
                                 <p x-show="addedBy(item)" class="mt-1 text-[11px] opacity-60" x-text="$t('Added by {name}', { name: addedBy(item) })"></p>
                             </div>

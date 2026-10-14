@@ -1,0 +1,13 @@
+<!-- Open a location in Waze or Google Maps (js/weather.js mapLinks). Params: loc (expression), btn (classes). -->
+<span class="inline-flex flex-wrap gap-1.5">
+    <a :href="$maps({{ loc }}).waze" target="_blank" rel="noopener" @click.stop
+       :aria-label="$t('Open {place} in Waze', { place: {{ loc }} })"
+       class="inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[11px] font-bold transition {{ btn }}">
+        <x-icon name="map-pin" class="h-3 w-3"/>Waze
+    </a>
+    <a :href="$maps({{ loc }}).google" target="_blank" rel="noopener" @click.stop
+       :aria-label="$t('Open {place} in Google Maps', { place: {{ loc }} })"
+       class="inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[11px] font-bold transition {{ btn }}">
+        <x-icon name="map-pin" class="h-3 w-3"/>Google Maps
+    </a>
+</span>
