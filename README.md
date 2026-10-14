@@ -182,7 +182,9 @@ npm run backfill-expiry -- --apply   # write expireAt where it's missing
 ## Push notifications (Cloudflare Workers, free)
 
 Admins hear about new sign-ups; everyone hears about new proposals and chat
-messages, even with Planly closed. Each person turns them on per device (banner,
+messages, and gets **event reminders** a week and a day before a confirmed event
+starts (not those who said they can't come; anyone who hasn't replied is asked to),
+even with Planly closed. Each person turns them on per device (banner,
 bell in the sidebar, or the profile menu on phones). On iPhone this needs iOS 16.4+
 and Planly added to the Home Screen.
 
@@ -195,6 +197,9 @@ Firebase's free plan has no server to send pushes, so a small **Cloudflare Worke
    checks the caller created it in the last 10 minutes and that it wasn't announced
    already (`pushLog/`), then sends Web Push (VAPID + aes128gcm, `webpush.js`) to
    the recipients' devices in `users/{uid}/pushSubscriptions`.
+3. Reminders need no browser: a Cron Trigger runs `remind()` at 09:00 Malaysia time
+   (and again at 09:30 for anything the first run had no room for), finds confirmed
+   events whose first day is 7 or 1 days away, and sends each once (`pushLog/`).
 
 One-time setup:
 ```bash

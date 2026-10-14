@@ -98,7 +98,7 @@ Alpine.store('push', {
     get hint() {
         if (this.needsInstall) return t('Add Planly to your Home Screen first');
         if (this.permission === 'denied') return t('Blocked in your browser settings');
-        return this.enabled ? t('On for this device') : t('New plans, chat and approvals');
+        return this.enabled ? t('On for this device') : t('New plans, chat, reminders and approvals');
     },
 
     /** Once the approved user is known: is this device already subscribed? */

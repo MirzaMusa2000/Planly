@@ -8,6 +8,9 @@
 // token. The worker re-reads the document from Firestore and only notifies if
 // the caller really created it moments ago, once per document (a lock in
 // pushLog/), so it can't be used to send arbitrary or repeated pushes.
+//
+// Daily Cron Triggers (no browser involved): event reminders a week and a day
+// before a confirmed event (remind), and deleting expired data (cleanup).
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { firestore } from './firestore.js';
 import { sendPush } from './webpush.js';
@@ -146,13 +149,14 @@ async function plan(db, body, uid) {
     }
 }
 
-async function deliver(db, env, recipients, message) {
-    const langOf = new Map(recipients.map((u) => [u.id, u.lang === 'ms' ? 'ms' : 'en']));
-    const wanted = new Set(langOf.keys());
-    if (wanted.size === 0) return { devices: 0, sent: 0, removed: 0 };
+const langOf = (users) => new Map(users.map((u) => [u.id, u.lang === 'ms' ? 'ms' : 'en']));
 
-    // users/{uid}/pushSubscriptions/{id}. A device used by several accounts
-    // belongs to whoever turned notifications on last; older copies are removed.
+/**
+ * Every device that has notifications on: users/{uid}/pushSubscriptions/{id}.
+ * A device used by several accounts belongs to whoever turned notifications on
+ * last; the older copies come back as `stale`.
+ */
+async function loadDevices(db) {
     const subscriptions = await db.query('pushSubscriptions', { allDescendants: true });
     const byEndpoint = new Map();
     const stale = [];
@@ -166,22 +170,22 @@ async function deliver(db, env, recipients, message) {
             stale.push(s);
         }
     }
+    return { devices: [...byEndpoint.values()], stale };
+}
 
-    const targets = [...byEndpoint.values()].filter((s) => wanted.has(s.uid)).slice(0, MAX_DEVICES);
+/** Send `message(lang, uid)` to each target device; expired devices are removed. */
+async function sendAll(db, env, targets, langs, message) {
     const vapid = {
         publicKey: env.VAPID_PUBLIC_KEY,
         privateJwk: JSON.parse(env.VAPID_PRIVATE_JWK),
         subject: env.VAPID_SUBJECT,
     };
-
     const results = await Promise.allSettled(targets.map(async (s) => {
-        const result = await sendPush(s, message(langOf.get(s.uid)), vapid);
+        const result = await sendPush(s, message(langs.get(s.uid), s.uid), vapid);
         if (result.gone) await db.delete(s.path);
         else if (!result.ok) console.warn(`Push to ${new URL(s.endpoint).host} failed: ${result.status}`);
         return result;
     }));
-    await Promise.allSettled(stale.slice(0, 5).map((s) => db.delete(s.path)));
-
     const done = results.filter((r) => r.status === 'fulfilled').map((r) => r.value);
     return {
         devices: targets.length,
@@ -190,18 +194,134 @@ async function deliver(db, env, recipients, message) {
     };
 }
 
+async function deliver(db, env, recipients, message) {
+    const langs = langOf(recipients);
+    if (langs.size === 0) return { devices: 0, sent: 0, removed: 0 };
+    const { devices, stale } = await loadDevices(db);
+    const targets = devices.filter((s) => langs.has(s.uid)).slice(0, MAX_DEVICES);
+    const result = await sendAll(db, env, targets, langs, message);
+    await Promise.allSettled(stale.slice(0, 5).map((s) => db.delete(s.path)));
+    return result;
+}
+
+// ---------------------------------------------------------------------------
+// Event reminders (Cron Trigger, 09:00 Malaysia time): a week before and the
+// day before a confirmed event starts, to every approved member except those
+// who said they can't come. Members who haven't replied are asked to.
+// ---------------------------------------------------------------------------
+export const REMINDERS = { week: 7, tomorrow: 1 }; // days before the first day
+const REMINDER_BUDGET = 30; // devices per run: the free plan allows 50 outgoing requests
+const MALAYSIA_MS = 8 * 60 * 60 * 1000;
+
+const DAY_NAMES = { en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], ms: ['Ahd', 'Isn', 'Sel', 'Rab', 'Kha', 'Jum', 'Sab'] };
+const MONTH_NAMES = {
+    en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    ms: ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis'],
+};
+
+/** "2026-11-10" + n days, as a date string (calendar days, no time zone). */
+export function addDays(day, n) {
+    const [y, m, d] = day.split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
+}
+/** Today's date in Malaysia. */
+export const malaysiaToday = (now) => new Date(now.getTime() + MALAYSIA_MS).toISOString().slice(0, 10);
+
+/** "Tue 10 Nov", or "Tue–Thu, 10–12 Nov", or "Sat 31 Oct – Mon 2 Nov". */
+export function dateRange(start, end, lang) {
+    const parts = (day) => {
+        const date = new Date(`${day}T00:00:00Z`);
+        return { wd: DAY_NAMES[lang].at(date.getUTCDay()), d: date.getUTCDate(), mon: MONTH_NAMES[lang].at(date.getUTCMonth()) };
+    };
+    const a = parts(start);
+    if (!end || end === start) return `${a.wd} ${a.d} ${a.mon}`;
+    const b = parts(end);
+    if (a.mon === b.mon && start.slice(0, 4) === end.slice(0, 4)) return `${a.wd}–${b.wd}, ${a.d}–${b.d} ${a.mon}`;
+    return `${a.wd} ${a.d} ${a.mon} – ${b.wd} ${b.d} ${b.mon}`;
+}
+
+const REMINDER_TEXT = {
+    en: {
+        week: (title) => `In 1 week: ${title}`,
+        tomorrow: (title) => `Tomorrow: ${title}`,
+        ask: 'Are you coming? Tap to reply.',
+        plan: 'Tap to see the plan.',
+    },
+    ms: {
+        week: (title) => `Seminggu lagi: ${title}`,
+        tomorrow: (title) => `Esok: ${title}`,
+        ask: 'Anda datang? Tekan untuk jawab.',
+        plan: 'Tekan untuk lihat rancangan.',
+    },
+};
+
+function reminderMessage(kind, event, lang, rsvp) {
+    const text = REMINDER_TEXT[lang] ?? REMINDER_TEXT.en;
+    const when = dateRange(event.finalDate, event.finalEndDate, lang in REMINDER_TEXT ? lang : 'en');
+    const where = event.location ? ` · ${truncate(event.location, 60)}` : '';
+    return {
+        title: text[kind](truncate(event.title, 80)),
+        body: `${when}${where}. ${rsvp ? text.plan : text.ask}`,
+        url: `/#event=${event.id}`,
+        tag: `planly-reminder-${event.id}`,
+    };
+}
+
+export async function remind(env, now = new Date()) {
+    const db = connect(env);
+    const today = malaysiaToday(now);
+    const due = [];
+    for (const [kind, days] of Object.entries(REMINDERS)) {
+        for (const event of await db.query('events', { where: ['finalDate', addDays(today, days)] })) {
+            if (event.status === 'confirmed') due.push({ kind, event });
+        }
+    }
+    const report = {};
+    if (due.length === 0) return report;
+
+    const members = await db.query('users', { where: ['status', 'approved'] });
+    const langs = langOf(members);
+    const { devices } = await loadDevices(db);
+    let budget = REMINDER_BUDGET;
+    for (const { kind, event } of due) {
+        const lock = `reminder-${kind}-${event.id}`;
+        const votes = await db.query('votes', { parent: `events/${event.id}` });
+        const rsvp = new Map(votes.map((v) => [v.id, v.rsvp ?? null]));
+        const coming = new Set(members.filter((u) => rsvp.get(u.id) !== 'not_available').map((u) => u.id));
+        const targets = devices.filter((s) => coming.has(s.uid));
+        if (targets.length > budget) {
+            report[lock] = 'later'; // the second run picks it up
+            continue;
+        }
+        if (!(await db.createOnce('pushLog', lock, { type: 'reminder', by: 'cron', at: now.toISOString(), expireAt: new Date(now.getTime() + LOG_KEEP_MS) }))) {
+            report[lock] = 'already sent';
+            continue;
+        }
+        budget -= targets.length;
+        report[lock] = await sendAll(db, env, targets, langs, (lang, uid) => reminderMessage(kind, event, lang, rsvp.get(uid)));
+    }
+    console.log('Reminders:', JSON.stringify(report));
+    return report;
+}
+
+/** Firestore as the service account (or the emulator, in tests). */
+function connect(env) {
+    return env.FIRESTORE_EMULATOR_HOST // tests only; never set in production
+        ? firestore({ projectId: env.PROJECT_ID, emulatorHost: env.FIRESTORE_EMULATOR_HOST })
+        : firestore({ projectId: env.PROJECT_ID, serviceAccount: JSON.parse(env.FIREBASE_SERVICE_ACCOUNT) });
+}
+
 // ---------------------------------------------------------------------------
 // Daily cleanup (Cron Trigger in wrangler.toml): delete everything whose
 // expireAt has passed: chat after 3 months, an event and everything under it
 // 3 months after its last day (see src/js/retention.js). Users are never
 // touched. Firestore's own TTL would need a billing account; this is free.
 // ---------------------------------------------------------------------------
+export const CLEANUP_CRON = '0 19 * * *';
 export const EXPIRING = ['messages', 'votes', 'itinerary', 'checklist', 'expenses', 'settlements', 'events', 'pushLog'];
 
 export async function cleanup(env, now = new Date()) {
-    const db = env.FIRESTORE_EMULATOR_HOST // tests only
-        ? firestore({ projectId: env.PROJECT_ID, emulatorHost: env.FIRESTORE_EMULATOR_HOST })
-        : firestore({ projectId: env.PROJECT_ID, serviceAccount: JSON.parse(env.FIREBASE_SERVICE_ACCOUNT) });
+    const db = connect(env);
     const deleted = {};
     for (const collectionId of EXPIRING) {
         const paths = await db.expiredPaths(collectionId, now);
@@ -213,8 +333,11 @@ export async function cleanup(env, now = new Date()) {
 }
 
 export default {
+    // Cron Triggers (wrangler.toml): 19:00 UTC = 03:00 Malaysia cleanup; 01:00
+    // and 01:30 UTC = 09:00 / 09:30 reminders (the second sends whatever the
+    // first had to leave for lack of budget).
     async scheduled(controller, env, ctx) {
-        ctx.waitUntil(cleanup(env));
+        ctx.waitUntil(controller.cron === CLEANUP_CRON ? cleanup(env) : remind(env));
     },
 
     async fetch(request, env) {
@@ -237,9 +360,7 @@ export default {
         try {
             const uid = await verifyIdToken(request, env);
             const body = await request.json().catch(() => ({}));
-            const db = env.FIRESTORE_EMULATOR_HOST // tests only; never set in production
-                ? firestore({ projectId: env.PROJECT_ID, emulatorHost: env.FIRESTORE_EMULATOR_HOST })
-                : firestore({ projectId: env.PROJECT_ID, serviceAccount: JSON.parse(env.FIREBASE_SERVICE_ACCOUNT) });
+            const db = connect(env);
 
             const { lock, recipients, message } = await plan(db, body, uid);
             if (!(await db.createOnce('pushLog', lock, { type: body.type, by: uid, at: new Date().toISOString(), expireAt: new Date(Date.now() + LOG_KEEP_MS) }))) {

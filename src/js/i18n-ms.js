@@ -337,9 +337,9 @@ export const MS = {
 
     // --- Notifications -------------------------------------------------------------------
     'Get notified about new plans and messages': 'Dapatkan notifikasi tentang rancangan dan mesej baru',
-    'New proposals, chat messages and members waiting for approval, even when Planly is closed.':
-        'Cadangan baru, mesej sembang dan ahli yang menunggu kelulusan, walaupun Planly ditutup.',
-    'New proposals and chat messages, even when Planly is closed.': 'Cadangan baru dan mesej sembang, walaupun Planly ditutup.',
+    'New proposals, chat messages, event reminders and members waiting for approval, even when Planly is closed.':
+        'Cadangan baru, mesej sembang, peringatan acara dan ahli yang menunggu kelulusan, walaupun Planly ditutup.',
+    'New proposals, chat messages and event reminders, even when Planly is closed.': 'Cadangan baru, mesej sembang dan peringatan acara, walaupun Planly ditutup.',
     'On iPhone, first add Planly to your Home Screen: tap Share, then Add to Home Screen. Open it from there and turn notifications on.':
         'Di iPhone, tambah Planly ke Skrin Utama dahulu: tekan Kongsi, kemudian Tambah ke Skrin Utama. Buka dari situ dan hidupkan notifikasi.',
     'Turn on': 'Hidupkan',
@@ -347,7 +347,7 @@ export const MS = {
     'Add Planly to your Home Screen first': 'Tambah Planly ke Skrin Utama dahulu',
     'Blocked in your browser settings': 'Disekat dalam tetapan pelayar anda',
     'On for this device': 'Hidup untuk peranti ini',
-    'New plans, chat and approvals': 'Rancangan baru, sembang dan kelulusan',
+    'New plans, chat, reminders and approvals': 'Rancangan baru, sembang, peringatan dan kelulusan',
     'Notifications are blocked. Allow them for this site in your browser settings.': 'Notifikasi disekat. Benarkan untuk laman ini dalam tetapan pelayar anda.',
     'Notifications weren’t turned on.': 'Notifikasi tidak dihidupkan.',
     'Notifications are on for this device.': 'Notifikasi dihidupkan untuk peranti ini.',

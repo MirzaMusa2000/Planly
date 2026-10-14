@@ -25,7 +25,7 @@ globalThis.fetch = (input, init) => {
     }
     return realFetch(input, init);
 };
-const { default: worker } = await import('../../workers/push/src/index.js');
+const { default: worker, remind, dateRange, CLEANUP_CRON } = await import('../../workers/push/src/index.js');
 
 const idToken = (uid, { audience = PROJECT } = {}) => new SignJWT({ user_id: uid })
     .setProtectedHeader({ alg: 'RS256', kid: 'test-key' })
@@ -266,5 +266,71 @@ describe('push worker', () => {
         assert.equal(preflight.status, 204);
         assert.equal(preflight.headers.get('Access-Control-Allow-Origin'), preview);
         assert.match(preflight.headers.get('Access-Control-Allow-Headers'), /Authorization/);
+    });
+});
+
+describe('event reminders', () => {
+    // 09:00 on Wed 14 Oct 2026 in Malaysia (01:00 UTC): a week ahead is Wed 21 Oct, tomorrow Thu 15 Oct.
+    const nineAm = new Date('2026-10-14T01:00:00Z');
+    const confirmed = (fields) => ({ status: 'confirmed', proposedBy: 'ali', candidateDates: [], createdAt: hourAgo(), ...fields });
+    const find = (messages, title) => messages.find((m) => m.title === title);
+
+    beforeEach(async () => {
+        await put('events/trip', confirmed({ title: 'Trip Port Dickson', location: 'Port Dickson', finalDate: '2026-10-21', finalEndDate: '2026-10-23' }));
+        await put('events/trip/votes/ali', { availableDates: [], rsvp: 'not_available' });
+        await put('events/trip/votes/mei', { availableDates: [], rsvp: 'join' });
+        await put('events/dinner', confirmed({ title: 'Makan malam', finalDate: '2026-10-15', finalEndDate: '2026-10-15' }));
+        // Not reminded: still a proposal, or not a week / a day away.
+        await put('events/maybe', { title: 'Maybe', status: 'proposed', proposedBy: 'ali', candidateDates: ['2026-10-15'], finalDate: '2026-10-15', createdAt: hourAgo() });
+        await put('events/later', confirmed({ title: 'Later', finalDate: '2026-10-17', finalEndDate: '2026-10-17' }));
+    });
+
+    test('a week and a day before, in each member’s language, once', async () => {
+        const report = await remind(env, nineAm);
+        assert.deepEqual(Object.keys(report).sort(), ['reminder-tomorrow-dinner', 'reminder-week-trip']);
+
+        const box = await inbox();
+        // Ali said he can't come to the trip: only the dinner reminder. Rejected users get nothing.
+        assert.deepEqual(box['ali-laptop'].map((m) => m.title), ['Tomorrow: Makan malam']);
+        assert.equal(box['gone-phone'], undefined);
+
+        // Mei (Malay) already said she's coming: no question, just the plan.
+        assert.deepEqual(find(box['mei-phone'], 'Seminggu lagi: Trip Port Dickson'), {
+            title: 'Seminggu lagi: Trip Port Dickson',
+            body: 'Rab–Jum, 21–23 Okt · Port Dickson. Tekan untuk lihat rancangan.',
+            url: '/#event=trip',
+            tag: 'planly-reminder-trip',
+        });
+        // The admin hasn't replied: asked to.
+        assert.equal(find(box['admin-phone'], 'In 1 week: Trip Port Dickson').body,
+            'Wed–Fri, 21–23 Oct · Port Dickson. Are you coming? Tap to reply.');
+        assert.equal(find(box['admin-phone'], 'Tomorrow: Makan malam').body, 'Thu 15 Oct. Are you coming? Tap to reply.');
+        assert.equal(find(box['mei-phone'], 'Esok: Makan malam').body, 'Kha 15 Okt. Anda datang? Tekan untuk jawab.');
+        assert.equal(box['mei-phone'].length, 2);
+
+        // The second run of the morning sends nothing again.
+        const sent = deliveries.length;
+        const again = await remind(env, new Date('2026-10-14T01:30:00Z'));
+        assert.deepEqual(Object.values(again), ['already sent', 'already sent']);
+        assert.equal(deliveries.length, sent);
+    });
+
+    test('nothing due, nothing sent', async () => {
+        assert.deepEqual(await remind(env, new Date('2026-10-18T01:00:00Z')), {});
+        assert.equal(deliveries.length, 0);
+    });
+
+    test('the cron schedule picks the job', async () => {
+        const jobs = [];
+        await worker.scheduled({ cron: '0 1 * * *' }, env, { waitUntil: (p) => jobs.push(p) });
+        await Promise.all(jobs);
+        await worker.scheduled({ cron: CLEANUP_CRON }, env, { waitUntil: (p) => jobs.push(p) });
+        assert.deepEqual(await jobs[1], { messages: 0, votes: 0, itinerary: 0, checklist: 0, expenses: 0, settlements: 0, events: 0, pushLog: 0 });
+    });
+
+    test('date ranges read naturally', () => {
+        assert.equal(dateRange('2026-10-31', '2026-11-02', 'en'), 'Sat 31 Oct – Mon 2 Nov');
+        assert.equal(dateRange('2026-12-31', '2027-01-01', 'ms'), 'Kha 31 Dis – Jum 1 Jan');
+        assert.equal(dateRange('2026-11-10', undefined, 'en'), 'Tue 10 Nov');
     });
 });

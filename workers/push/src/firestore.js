@@ -73,9 +73,10 @@ export function firestore({ projectId, serviceAccount, emulatorHost }) {
 
         /**
          * Documents of a collection (or, with allDescendants, every collection
-         * with that id), optionally filtered by field == value.
+         * with that id), optionally filtered by field == value. `parent` is a
+         * document path for a subcollection ("events/e1" + "votes").
          */
-        async query(collectionId, { where = null, allDescendants = false } = {}) {
+        async query(collectionId, { where = null, allDescendants = false, parent = null } = {}) {
             const structuredQuery = { from: [{ collectionId, allDescendants }] };
             if (where) {
                 const [field, value] = where;
@@ -83,7 +84,8 @@ export function firestore({ projectId, serviceAccount, emulatorHost }) {
                     fieldFilter: { field: { fieldPath: field }, op: 'EQUAL', value: { stringValue: value } },
                 };
             }
-            const response = await call(`${base}:runQuery`, { method: 'POST', body: JSON.stringify({ structuredQuery }) });
+            const url = parent ? `${base}/${parent}:runQuery` : `${base}:runQuery`;
+            const response = await call(url, { method: 'POST', body: JSON.stringify({ structuredQuery }) });
             if (!response.ok) throw new Error(`Firestore query ${collectionId}: ${response.status}`);
             return (await response.json()).filter((r) => r.document).map((r) => toDoc(r.document));
         },

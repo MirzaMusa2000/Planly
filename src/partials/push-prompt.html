@@ -9,7 +9,7 @@
         <div class="min-w-0">
             <p class="font-semibold text-slate-900" data-t>Get notified about new plans and messages</p>
             <p x-show="!$store.push.needsInstall" class="text-sm text-slate-500"
-               x-text="$store.session.isAdmin ? $t('New proposals, chat messages and members waiting for approval, even when Planly is closed.') : $t('New proposals and chat messages, even when Planly is closed.')"></p>
+               x-text="$store.session.isAdmin ? $t('New proposals, chat messages, event reminders and members waiting for approval, even when Planly is closed.') : $t('New proposals, chat messages and event reminders, even when Planly is closed.')"></p>
             <p x-show="$store.push.needsInstall" class="text-sm text-slate-500"
                x-text="$t('On iPhone, first add Planly to your Home Screen: tap Share, then Add to Home Screen. Open it from there and turn notifications on.')"></p>
         </div>
