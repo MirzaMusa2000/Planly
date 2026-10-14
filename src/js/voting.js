@@ -1,7 +1,7 @@
 // Voting writes. Each vote change and the matching summary change are written
 // in one transaction; firestore.rules verifies the summary moved by exactly
 // the amount the caller's own vote changed.
-import { doc, FieldPath, increment, runTransaction, serverTimestamp } from 'firebase/firestore';
+import { doc, FieldPath, increment, runTransaction, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import { expiryAfterDay } from './retention';
 import { t } from './i18n';
@@ -112,6 +112,15 @@ export async function cancelEvent(event) {
         tx.update(ref, { status: 'cancelled' });
     });
     return { message: t('Cancelled “{title}”.', { title: event.title }) };
+}
+
+export const LOCATION_MAX = 200;
+
+/** Change where an event happens (proposer or admin; firestore.rules checks). */
+export async function setLocation(event, location) {
+    const value = location.trim().slice(0, LOCATION_MAX);
+    await updateDoc(doc(db, 'events', event.id), { location: value });
+    return { message: value ? t('Location updated.') : t('Location removed.') };
 }
 
 /** Friendly message for a failed vote/confirm/cancel. */

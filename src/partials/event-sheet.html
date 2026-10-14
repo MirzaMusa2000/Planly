@@ -47,9 +47,36 @@
                             <dt><x-icon name="calendar" class="h-[18px] w-[18px] text-slate-400"/><span class="sr-only" data-t>Dates</span></dt>
                             <dd x-text="$tn(e.candidateDates.length, '{n} date option', '{n} date options')"></dd>
                         </div>
-                        <div class="flex items-center gap-3" x-show="e.location">
-                            <dt><x-icon name="map-pin" class="h-[18px] w-[18px] text-slate-400"/><span class="sr-only" data-t>Location</span></dt>
-                            <dd class="break-words" x-text="e.location"></dd>
+                        <!-- Location: the proposer or admin can change it after proposing  -->
+                        <div class="flex gap-3" x-show="e.location || $store.planner.canEditLocation(e)"
+                             :class="$store.planner.locationDraft === null ? 'items-center' : 'items-start'">
+                            <dt :class="$store.planner.locationDraft === null ? '' : 'pt-2.5'"><x-icon name="map-pin" class="h-[18px] w-[18px] text-slate-400"/><span class="sr-only" data-t>Location</span></dt>
+                            <dd class="min-w-0 flex-1">
+                                <template x-if="$store.planner.locationDraft === null">
+                                    <div class="flex items-center gap-2">
+                                        <span class="min-w-0 break-words" :class="e.location ? '' : 'text-slate-400'" x-text="e.location || $t('No location yet')"></span>
+                                        <button type="button" x-show="$store.planner.canEditLocation(e)" @click="$store.planner.editLocation(e)"
+                                                :aria-label="e.location ? $t('Edit location') : $t('Add a location')" :title="e.location ? $t('Edit location') : $t('Add a location')"
+                                                class="-my-1 ml-auto grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 transition hover:bg-white/10 hover:text-white">
+                                            <x-icon name="pencil" class="h-4 w-4"/>
+                                        </button>
+                                    </div>
+                                </template>
+                                <template x-if="$store.planner.locationDraft !== null">
+                                    <form @submit.prevent="$store.planner.saveLocation(e)" class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                        <input type="text" x-model="$store.planner.locationDraft" :maxlength="$store.planner.LOCATION_MAX"
+                                               :aria-label="$t('Location')" :placeholder="$t('Where?')" x-init="$nextTick(() => $el.focus())"
+                                               @keydown.escape.stop.prevent="$store.planner.cancelLocation()"
+                                               class="input-dark min-w-0 flex-1 py-2">
+                                        <div class="flex gap-2">
+                                            <button type="submit" :disabled="$store.planner.isPending(e.id + ':location')"
+                                                    class="btn btn-primary flex-1 px-4 py-2 sm:flex-none" data-t>Save</button>
+                                            <button type="button" @click="$store.planner.cancelLocation()"
+                                                    class="btn flex-1 px-3 py-2 text-slate-300 hover:bg-white/10 sm:flex-none" data-t>Cancel</button>
+                                        </div>
+                                    </form>
+                                </template>
+                            </dd>
                         </div>
                         <div class="flex items-center gap-3">
                             <dt><x-icon name="user" class="h-[18px] w-[18px] text-slate-400"/><span class="sr-only" data-t>Proposed by</span></dt>

@@ -82,6 +82,23 @@ describe('events/{eventId}', () => {
         await assertSucceeds(updateDoc(doc(as(env, 'ali'), 'events/e1'), { status: 'confirmed', finalDate: D1 }));
     });
 
+    test('the proposer or the admin can change the location, while proposed or confirmed', async () => {
+        await assertSucceeds(updateDoc(doc(as(env, 'ali'), 'events/e1'), { location: 'Port Dickson' }));
+        await assertSucceeds(updateDoc(doc(as(env, 'ali'), 'events/c1'), { location: 'Lexis Hibiscus, Port Dickson' }));
+        await assertSucceeds(updateDoc(doc(asAdmin(env), 'events/e1'), { location: 'Bangsar' }));
+        await assertSucceeds(updateDoc(doc(as(env, 'ali'), 'events/e1'), { location: '' })); // cleared
+    });
+
+    test('changing the location is guarded', async () => {
+        await assertFails(updateDoc(doc(as(env, 'mei'), 'events/e1'), { location: 'Somewhere' })); // not the proposer
+        await assertFails(updateDoc(doc(asPending(env), 'events/e1'), { location: 'Somewhere' }));
+        await assertFails(updateDoc(doc(as(env, 'ali'), 'events/e1'), { location: 'x'.repeat(201) })); // too long
+        await assertFails(updateDoc(doc(as(env, 'ali'), 'events/e1'), { location: 42 })); // not text
+        await assertFails(updateDoc(doc(as(env, 'ali'), 'events/e1'), { location: 'PD', title: 'Renamed' })); // more than the location
+        await seed(env, (db) => setDoc(doc(db, 'events/x1'), { ...newEvent('ali', { status: 'cancelled' }), createdAt: new Date() }));
+        await assertFails(updateDoc(doc(as(env, 'ali'), 'events/x1'), { location: 'PD' })); // cancelled
+    });
+
     test('the proposer or the admin cancels', async () => {
         await assertSucceeds(updateDoc(doc(as(env, 'ali'), 'events/e1'), { status: 'cancelled' }));
         await assertSucceeds(updateDoc(doc(asAdmin(env), 'events/c1'), { status: 'cancelled' }));

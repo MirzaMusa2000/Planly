@@ -7,7 +7,7 @@ import { notify } from './push';
 import { expiryAfterDay } from './retention';
 import { db } from './firebase';
 import { dayCount, format, formatLong, formatRange, formatRangeLong, formatShort, today } from './dates';
-import { cancelEvent, confirmEvent, errorMessage, setAvailability, setRsvp } from './voting';
+import { cancelEvent, confirmEvent, errorMessage, LOCATION_MAX, setAvailability, setLocation, setRsvp } from './voting';
 import { confirmDialog } from './ui';
 import { t, tn } from './i18n';
 
@@ -59,6 +59,7 @@ Alpine.store('planner', {
     loading: true,
     error: null,
     selectedId: null,
+    locationDraft: null, // the open event's location while it is being edited, else null
     myVotes: {}, // eventId -> { availableDates, rsvp } (my own vote per listed event)
     selectedVotes: [], // all votes of the selected event: { uid, displayName, availableDates, rsvp }
     votesLoading: false,
@@ -162,6 +163,7 @@ Alpine.store('planner', {
         try {
             const result = await fn();
             if (success) toast(typeof success === 'function' ? success(result) : success);
+            return result ?? true;
         } catch (e) {
             toast(errorMessage(e), 'error');
         } finally {
@@ -176,6 +178,27 @@ Alpine.store('planner', {
 
     rsvp(event, choice) {
         return this.run(`${event.id}:rsvp`, () => setRsvp(event.id, choice));
+    },
+
+    // --- Location (proposer or admin, while proposed or confirmed) ---------------
+    LOCATION_MAX,
+
+    canEditLocation(event) {
+        return this.canManage(event) && ['proposed', 'confirmed'].includes(event.status);
+    },
+
+    editLocation(event) {
+        this.locationDraft = event.location ?? '';
+    },
+
+    cancelLocation() {
+        this.locationDraft = null;
+    },
+
+    async saveLocation(event) {
+        const draft = (this.locationDraft ?? '').trim();
+        if (draft === (event.location ?? '').trim()) return this.cancelLocation();
+        if (await this.run(`${event.id}:location`, () => setLocation(event, draft), (r) => r.message)) this.cancelLocation();
     },
 
     confirmDate(event, date) {
@@ -247,11 +270,13 @@ Alpine.store('planner', {
 
     open(id) {
         this.selectedId = id;
+        this.locationDraft = null;
         watchSelectedVotes(id);
     },
 
     close() {
         this.selectedId = null;
+        this.locationDraft = null;
         watchSelectedVotes(null);
     },
 });

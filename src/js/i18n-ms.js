@@ -335,6 +335,13 @@ export const MS = {
     'Message not sent: you may need to sign in again.': 'Mesej tidak dihantar: anda mungkin perlu log masuk semula.',
     'Message not sent. Check your connection and try again.': 'Mesej tidak dihantar. Semak sambungan anda dan cuba lagi.',
 
+    // --- Event location --------------------------------------------------------------
+    'No location yet': 'Belum ada lokasi',
+    'Edit location': 'Edit lokasi',
+    'Add a location': 'Tambah lokasi',
+    'Location updated.': 'Lokasi dikemas kini.',
+    'Location removed.': 'Lokasi dibuang.',
+
     // --- Notifications -------------------------------------------------------------------
     'Get notified about new plans and messages': 'Dapatkan notifikasi tentang rancangan dan mesej baru',
     'New proposals, chat messages, event reminders and members waiting for approval, even when Planly is closed.':
