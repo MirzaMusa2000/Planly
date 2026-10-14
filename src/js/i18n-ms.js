@@ -386,6 +386,13 @@ export const MS = {
     'Open {place} in Waze': 'Buka {place} dalam Waze',
     'Open {place} in Google Maps': 'Buka {place} dalam Google Maps',
 
+    // --- Event description -----------------------------------------------------------
+    'No description yet': 'Belum ada penerangan',
+    'Edit description': 'Edit penerangan',
+    'Add a description': 'Tambah penerangan',
+    'Description updated.': 'Penerangan dikemas kini.',
+    'Description removed.': 'Penerangan dibuang.',
+
     // --- Event location --------------------------------------------------------------
     'No location yet': 'Belum ada lokasi',
     'Edit location': 'Edit lokasi',

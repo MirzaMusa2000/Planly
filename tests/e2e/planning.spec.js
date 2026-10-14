@@ -150,3 +150,31 @@ test('the next event: kind, countdown, Waze / Maps and the weather', async ({ pa
     await expect(page.getByText('Plan it together, one date at a time.')).toBeVisible();
     await expect(page.getByText('🍽️ Beach day').first()).toBeVisible();
 });
+
+test('the proposer can change the description afterwards', async ({ page }) => {
+    await createUser({ name: 'Mirza', role: 'admin' });
+    const aina = await createUser({ name: 'Aina' });
+    await signIn(page, aina);
+    await propose(page, 'Beach day');
+    await page.getByRole('button', { name: /Beach day/ }).filter({ visible: true }).first().click();
+    const sheet = page.getByRole('dialog', { name: /Beach day/ });
+
+    await expect(sheet.getByText('No description yet')).toBeVisible();
+    await sheet.getByRole('button', { name: 'Add a description' }).click();
+    const box = sheet.getByRole('textbox', { name: 'Description' });
+    await expect(box).toBeFocused();
+    await box.fill('Bawa tikar dan payung.\nRM20 seorang untuk BBQ.');
+    await sheet.getByRole('button', { name: 'Save' }).click();
+    await expect(sheet.getByText('RM20 seorang untuk BBQ.')).toBeVisible();
+    await expect(box).toBeHidden();
+
+    // Ctrl+Enter saves too; Escape leaves the editor without closing the event.
+    await sheet.getByRole('button', { name: 'Edit description' }).click();
+    await box.fill('Bawa tikar sahaja.');
+    await box.press('Control+Enter');
+    await expect(sheet.getByText('Bawa tikar sahaja.')).toBeVisible();
+    await sheet.getByRole('button', { name: 'Edit description' }).click();
+    await box.press('Escape');
+    await expect(sheet).toBeVisible();
+    await expect(sheet.getByText('Bawa tikar sahaja.')).toBeVisible();
+});

@@ -7,7 +7,7 @@ import { notify } from './push';
 import { expiryAfterDay } from './retention';
 import { db } from './firebase';
 import { dayCount, format, formatLong, formatRange, formatRangeLong, formatShort, today } from './dates';
-import { cancelEvent, confirmEvent, errorMessage, LOCATION_MAX, setAvailability, setKind, setLocation, setRsvp } from './voting';
+import { cancelEvent, confirmEvent, DESCRIPTION_MAX, errorMessage, LOCATION_MAX, setAvailability, setDescription, setKind, setLocation, setRsvp } from './voting';
 import { isKind } from './kinds';
 import { confirmDialog } from './ui';
 import { t, tn } from './i18n';
@@ -63,6 +63,7 @@ Alpine.store('planner', {
     selectedId: null,
     locationDraft: null, // the open event's location while it is being edited, else null
     kindPicker: false, // the open event's kind picker is showing
+    descriptionDraft: null, // the open event's description while it is being edited, else null
     myVotes: {}, // eventId -> { availableDates, rsvp } (my own vote per listed event)
     selectedVotes: [], // all votes of the selected event: { uid, displayName, availableDates, rsvp }
     votesLoading: false,
@@ -198,6 +199,23 @@ Alpine.store('planner', {
         this.locationDraft = null;
     },
 
+    // --- Description (proposer or admin) -----------------------------------------
+    DESCRIPTION_MAX,
+
+    editDescription(event) {
+        this.descriptionDraft = event.description ?? '';
+    },
+
+    cancelDescription() {
+        this.descriptionDraft = null;
+    },
+
+    async saveDescription(event) {
+        const draft = (this.descriptionDraft ?? '').trim();
+        if (draft === (event.description ?? '').trim()) return this.cancelDescription();
+        if (await this.run(`${event.id}:description`, () => setDescription(event, draft), (r) => r.message)) this.cancelDescription();
+    },
+
     async changeKind(event, kind) {
         this.kindPicker = false;
         if (kind === event.kind) return;
@@ -300,6 +318,7 @@ Alpine.store('planner', {
     open(id) {
         this.selectedId = id;
         this.locationDraft = null;
+        this.descriptionDraft = null;
         this.kindPicker = false;
         watchSelectedVotes(id);
     },
@@ -307,6 +326,7 @@ Alpine.store('planner', {
     close() {
         this.selectedId = null;
         this.locationDraft = null;
+        this.descriptionDraft = null;
         this.kindPicker = false;
         watchSelectedVotes(null);
     },

@@ -99,6 +99,15 @@ describe('events/{eventId}', () => {
         await assertFails(updateDoc(doc(as(env, 'ali'), 'events/x1'), { location: 'PD' })); // cancelled
     });
 
+    test('the proposer or the admin can change the description', async () => {
+        await assertSucceeds(updateDoc(doc(as(env, 'ali'), 'events/e1'), { description: 'Bawa tikar.\nRM20 seorang.' }));
+        await assertSucceeds(updateDoc(doc(asAdmin(env), 'events/c1'), { description: 'Nota admin' }));
+        await assertSucceeds(updateDoc(doc(asAdmin(env), 'events/c1'), { description: '' })); // cleared
+        await assertFails(updateDoc(doc(as(env, 'mei'), 'events/e1'), { description: 'Not mine' })); // not the proposer
+        await assertFails(updateDoc(doc(as(env, 'ali'), 'events/e1'), { description: 'x'.repeat(2001) })); // too long
+        await assertFails(updateDoc(doc(as(env, 'ali'), 'events/e1'), { description: 'ok', title: 'Renamed' })); // more than allowed
+    });
+
     test('an event can have a kind, from the list only', async () => {
         await assertSucceeds(propose(as(env, 'mei'), newEvent('mei', { kind: 'beach' })));
         await assertFails(propose(as(env, 'mei'), newEvent('mei', { kind: 'rocket' })));

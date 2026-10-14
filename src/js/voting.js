@@ -123,6 +123,15 @@ export async function setLocation(event, location) {
     return { message: value ? t('Location updated.') : t('Location removed.') };
 }
 
+export const DESCRIPTION_MAX = 2000;
+
+/** Change an event's description (proposer or admin). */
+export async function setDescription(event, description) {
+    const value = description.trim().slice(0, DESCRIPTION_MAX);
+    await updateDoc(doc(db, 'events', event.id), { description: value });
+    return { message: value ? t('Description updated.') : t('Description removed.') };
+}
+
 /** Change what kind of plan an event is (proposer or admin). */
 export async function setKind(event, kind) {
     await updateDoc(doc(db, 'events', event.id), { kind });

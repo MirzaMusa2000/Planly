@@ -192,11 +192,12 @@ service cloud.firestore {
                         : request.resource.data.finalEndDate
                             == (chosenEnd() == null ? request.resource.data.finalDate : chosenEnd()));
 
-      // Edit the location or the kind: admin or proposer, while proposed or confirmed.
+      // Edit the location, description or kind: admin or proposer, while proposed or confirmed.
       allow update: if approved() && canManage()
-                    && changed().hasOnly(['location', 'kind']) && changed().size() >= 1
+                    && changed().hasOnly(['location', 'description', 'kind']) && changed().size() >= 1
                     && resource.data.status in ['proposed', 'confirmed']
                     && (!('location' in changed()) || isStr(request.resource.data.location, 0, 200))
+                    && (!('description' in changed()) || isStr(request.resource.data.description, 0, 2000))
                     && (!('kind' in changed()) || isKind(request.resource.data.kind));
 
       // Cancel: admin or proposer, proposed/confirmed -> cancelled.

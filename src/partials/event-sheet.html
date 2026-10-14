@@ -115,10 +115,42 @@
                         <include src="partials/weather-strip.html" ev="e" chip="bg-ink-800 text-slate-100" note="text-slate-500"></include>
                     </section>
 
-                    <!-- Description  -->
-                    <section class="mt-5" x-show="e.description">
-                        <h3 class="text-sm font-semibold text-slate-300" data-t>Description</h3>
-                        <p class="mt-1.5 text-sm whitespace-pre-line text-slate-200 break-words" x-text="e.description"></p>
+                    <!-- Description: the proposer or admin can change it after proposing  -->
+                    <section class="mt-5" x-show="e.description || $store.planner.canEdit(e)">
+                        <div class="flex items-center justify-between gap-2">
+                            <h3 class="text-sm font-semibold text-slate-300" data-t>Description</h3>
+                            <button type="button" x-show="$store.planner.canEdit(e) && $store.planner.descriptionDraft === null"
+                                    @click="$store.planner.editDescription(e)"
+                                    :aria-label="e.description ? $t('Edit description') : $t('Add a description')"
+                                    :title="e.description ? $t('Edit description') : $t('Add a description')"
+                                    class="-my-1 grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 transition hover:bg-white/10 hover:text-white">
+                                <x-icon name="pencil" class="h-4 w-4"/>
+                            </button>
+                        </div>
+                        <template x-if="$store.planner.descriptionDraft === null">
+                            <p class="mt-1.5 text-sm whitespace-pre-line break-words"
+                               :class="e.description ? 'text-slate-200' : 'text-slate-500'"
+                               x-text="e.description || $t('No description yet')"></p>
+                        </template>
+                        <template x-if="$store.planner.descriptionDraft !== null">
+                            <form @submit.prevent="$store.planner.saveDescription(e)" class="mt-2 space-y-2">
+                                <textarea x-model="$store.planner.descriptionDraft" rows="4" :maxlength="$store.planner.DESCRIPTION_MAX"
+                                          :aria-label="$t('Description')" :placeholder="$t('Add details, costs, what to bring…')"
+                                          x-init="$nextTick(() => { $el.focus(); $el.setSelectionRange($el.value.length, $el.value.length); })"
+                                          @keydown.escape.stop.prevent="$store.planner.cancelDescription()"
+                                          @keydown.ctrl.enter.prevent="$store.planner.saveDescription(e)"
+                                          @keydown.meta.enter.prevent="$store.planner.saveDescription(e)"
+                                          class="input-dark resize-y py-2 text-sm"></textarea>
+                                <div class="flex items-center gap-2">
+                                    <span class="mr-auto text-[11px] text-slate-500"
+                                          x-text="($store.planner.descriptionDraft ?? '').length + ' / ' + $store.planner.DESCRIPTION_MAX"></span>
+                                    <button type="button" @click="$store.planner.cancelDescription()"
+                                            class="btn px-3 py-2 text-slate-300 hover:bg-white/10" data-t>Cancel</button>
+                                    <button type="submit" :disabled="$store.planner.isPending(e.id + ':description')"
+                                            class="btn btn-primary px-4 py-2" data-t>Save</button>
+                                </div>
+                            </form>
+                        </template>
                     </section>
 
                     <!-- Availability voting (proposed)  -->
