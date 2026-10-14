@@ -1,5 +1,6 @@
 // Seeding and sign-in helpers for the e2e tests. Everything goes to the
 // emulators started by `npm run test:e2e` (demo-planly, never the live project).
+import fs from 'node:fs';
 import { expect } from '@playwright/test';
 
 const PROJECT = 'demo-planly';
@@ -61,15 +62,20 @@ export async function createUser({ name, role = 'member', status = 'approved' })
     return { uid, email, name };
 }
 
+// The newest "what's new" release (src/js/whats-new.js), marked as seen so the
+// popup stays out of the way; whats-new.spec.js checks the popup itself.
+const LATEST_RELEASE = fs.readFileSync(new URL('../../src/js/whats-new.js', import.meta.url), 'utf8').match(/id: '([\d-]+)'/)[1];
+
 /** Open the sign-in page once its form is live (typing earlier would be wiped by Alpine). */
-export async function openLogin(page) {
+export async function openLogin(page, { whatsNew = false } = {}) {
+    if (!whatsNew) await page.addInitScript((id) => localStorage.setItem('planly.seenRelease', id), LATEST_RELEASE);
     await page.goto('/login');
     await page.waitForFunction(() => Boolean(document.querySelector('[x-data="loginForm"]')?._x_dataStack));
 }
 
 /** Sign in through the real form and wait for the page it lands on. */
-export async function signIn(page, user, landing = '/') {
-    await openLogin(page);
+export async function signIn(page, user, landing = '/', options = {}) {
+    await openLogin(page, options);
     await page.getByLabel(/^(Email|E-mel)$/).fill(user.email);
     await page.getByLabel(/^(Password|Kata laluan)$/).fill(PASSWORD);
     await page.locator('form button[type="submit"]').click();

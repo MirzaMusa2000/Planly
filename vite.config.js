@@ -5,6 +5,17 @@ import htmlTemplates from './build/html-templates.js';
 
 const src = resolve(import.meta.dirname, 'src');
 
+// Every build gets an id, compiled into the code and written to /version.json:
+// a page that finds a different id there knows a newer version is deployed
+// (js/whats-new.js).
+const BUILD_ID = Date.now().toString(36);
+const buildInfo = () => ({
+    name: 'planly-build-info',
+    generateBundle() {
+        this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ build: BUILD_ID }) });
+    },
+});
+
 // One HTML entry per page; Firebase Hosting serves them with clean URLs.
 const pages = ['index', 'login', 'pending', 'itinerary', 'expenses', 'members', '404'];
 
@@ -15,7 +26,9 @@ export default defineConfig({
     plugins: [
         htmlTemplates({ srcDir: src, cleanUrls: ['/login', '/pending', '/itinerary', '/expenses', '/members'] }),
         tailwindcss(),
+        buildInfo(),
     ],
+    define: { __PLANLY_BUILD__: JSON.stringify(BUILD_ID) },
     build: {
         outDir: resolve(import.meta.dirname, 'dist'),
         emptyOutDir: true,

@@ -135,8 +135,18 @@ test('the next event: kind, countdown, Waze / Maps and the weather', async ({ pa
     await expect(sheet.getByRole('button', { name: /Change the kind of plan \(Food\)/ })).toBeVisible();
     await page.keyboard.press('Escape');
 
-    // The home page counts down to it.
+    // The home page counts down to it, and asks for an answer right there.
     await expect(page.getByText('Next up')).toBeVisible();
     await expect(page.getByText('In 3 days')).toBeVisible();
+    await expect(page.getByText('🍽️ Beach day').first()).toBeVisible();
+    const hero = page.locator('section', { has: page.getByText('Next up') });
+    await hero.getByRole('button', { name: 'Join', exact: true }).click();
+    await expect(hero.getByText('✓ You’re going')).toBeVisible();
+    await expect(hero.getByText('Are you coming?')).toBeHidden();
+
+    // Saying you can't come takes it off your countdown (it stays in the list).
+    await page.getByRole('button', { name: /^Not available ·/ }).click();
+    await expect(page.getByText('Next up')).toBeHidden();
+    await expect(page.getByText('Plan it together, one date at a time.')).toBeVisible();
     await expect(page.getByText('🍽️ Beach day').first()).toBeVisible();
 });

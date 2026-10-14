@@ -335,6 +335,27 @@ export const MS = {
     'Message not sent: you may need to sign in again.': 'Mesej tidak dihantar: anda mungkin perlu log masuk semula.',
     'Message not sent. Check your connection and try again.': 'Mesej tidak dihantar. Semak sambungan anda dan cuba lagi.',
 
+    // --- What's new / new version -------------------------------------------------------
+    'What’s new in Planly': 'Apa yang baru dalam Planly',
+    'Got it': 'Faham',
+    'A new version of Planly is ready.': 'Versi baru Planly sudah sedia.',
+    'Refresh': 'Muat semula',
+    'Later': 'Nanti',
+    '✓ You’re going': '✓ Anda datang',
+    'Kinds of plan': 'Jenis rancangan',
+    'Every event has an emoji and colour: beach, food, trip and more. Pick one when proposing, or change it from the event.':
+        'Setiap acara ada emoji dan warna: pantai, makan, percutian dan lain-lain. Pilih semasa mencadang, atau tukar dari acara.',
+    'Countdown on Home': 'Kiraan detik di Skrin Utama',
+    'Your next event and how many days to go. Not answered yet? Join or say you can’t, right there.':
+        'Acara anda yang seterusnya dan berapa hari lagi. Belum jawab? Sertai atau tolak terus di situ.',
+    'Waze and Google Maps': 'Waze dan Google Maps',
+    'Tap Waze or Google Maps under a location for directions.': 'Tekan Waze atau Google Maps di bawah lokasi untuk arah.',
+    'The forecast for each day of an event, up to 16 days ahead.': 'Ramalan cuaca untuk setiap hari acara, sehingga 16 hari ke hadapan.',
+    'Change the location': 'Tukar lokasi',
+    'Whoever proposed an event, or the admin, can change where it is.': 'Pencadang acara atau admin boleh menukar lokasinya.',
+    'Event reminders': 'Peringatan acara',
+    'A notification a week and a day before each event you’re coming to.': 'Notifikasi seminggu dan sehari sebelum setiap acara yang anda hadiri.',
+
     // --- Kinds of plan, countdown, weather, maps ----------------------------------------
     'Kind of plan': 'Jenis rancangan',
     'Change the kind of plan ({kind})': 'Tukar jenis rancangan ({kind})',

@@ -20,6 +20,7 @@ import './itinerary-page';
 import './expenses-page';
 import './chat';
 import './members';
+import './whats-new';
 
 Alpine.plugin(focus);
 window.Alpine = Alpine;

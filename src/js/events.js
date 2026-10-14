@@ -205,9 +205,12 @@ Alpine.store('planner', {
     },
 
     // --- Countdown to the next event -------------------------------------------
-    /** The next confirmed event (or the one happening now). */
+    /**
+     * The next confirmed event (or the one happening now) for me: one I'm
+     * joining or haven't answered yet, not one I said I can't make.
+     */
     get next() {
-        return this.upcoming[0] ?? null;
+        return this.upcoming.find((e) => this.myVote(e.id).rsvp !== 'not_available') ?? null;
     },
 
     /** "In 5 days", "Tomorrow", "Today!", or "Day 2 of 3" while it's on. */

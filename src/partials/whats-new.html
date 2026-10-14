@@ -1,0 +1,59 @@
+<!-- "What's new" popup (once per release) and the "new version ready" bar (js/whats-new.js). -->
+<div x-data="whatsNew">
+    <!-- A newer version is deployed than this page -->
+    <div x-show="updateReady" x-cloak x-transition.opacity role="status"
+         class="on-ink fixed inset-x-0 top-3 z-[90] mx-auto flex w-[min(28rem,calc(100%-2rem))] items-center gap-3 rounded-2xl bg-ink-900 py-2.5 pr-2 pl-4 text-sm text-white shadow-2xl">
+        <span aria-hidden="true">✨</span>
+        <p class="min-w-0 flex-1 font-semibold" data-t>A new version of Planly is ready.</p>
+        <button type="button" @click="refresh()" class="btn btn-primary shrink-0 px-3 py-1.5 text-xs" data-t>Refresh</button>
+        <button data-t-attr="aria-label" type="button" @click="updateReady = false" aria-label="Later"
+                class="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-white/10">
+            <x-icon name="x" class="h-4 w-4"/>
+        </button>
+    </div>
+
+    <!-- What's new -->
+    <div x-show="open" x-cloak class="fixed inset-0 z-[72] flex items-end justify-center sm:items-center sm:p-4"
+         @keydown.escape.window="open && close()">
+        <div class="absolute inset-0 bg-ink-950/55 backdrop-blur-sm" x-show="open" x-transition.opacity.duration.200ms @click="close()"></div>
+
+        <section x-show="open" x-trap.noscroll="open"
+                 x-transition:enter="transition duration-200 ease-out"
+                 x-transition:enter-start="translate-y-6 opacity-0 sm:translate-y-0 sm:scale-95"
+                 x-transition:enter-end="translate-y-0 opacity-100 sm:scale-100"
+                 x-transition:leave="transition duration-150 ease-in"
+                 x-transition:leave-end="translate-y-6 opacity-0 sm:translate-y-0 sm:scale-95"
+                 role="dialog" aria-modal="true" aria-labelledby="whats-new-title"
+                 class="relative flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:max-w-md sm:rounded-3xl">
+            <!-- Header -->
+            <div class="on-ink relative overflow-hidden bg-gradient-to-br from-brand-500 via-brand-600 to-violet-600 px-6 pt-6 pb-5 text-white">
+                <div class="pointer-events-none absolute -top-12 -right-10 h-40 w-40 rounded-full bg-white/10" aria-hidden="true"></div>
+                <span class="mx-auto -mt-2 mb-3 block h-1.5 w-10 rounded-full bg-white/30 sm:hidden" aria-hidden="true"></span>
+                <p class="text-3xl" aria-hidden="true">🎉</p>
+                <h2 id="whats-new-title" class="mt-2 text-xl font-bold" data-t>What’s new in Planly</h2>
+                <p class="mt-0.5 text-sm text-white/80" x-text="$dates.long(release.id)"></p>
+                <button data-t-attr="aria-label" type="button" @click="close()" aria-label="Close"
+                        class="absolute top-4 right-4 grid h-9 w-9 place-items-center rounded-xl text-white/80 hover:bg-white/15">
+                    <x-icon name="x"/>
+                </button>
+            </div>
+
+            <!-- Items -->
+            <ul class="flex-1 space-y-3.5 overflow-y-auto px-6 py-5">
+                <template x-for="item in items" :key="item.title">
+                    <li class="flex gap-3">
+                        <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-xl" aria-hidden="true" x-text="item.emoji"></span>
+                        <div class="min-w-0">
+                            <p class="font-semibold text-slate-900" x-text="item.title"></p>
+                            <p class="text-sm text-slate-500" x-text="item.body"></p>
+                        </div>
+                    </li>
+                </template>
+            </ul>
+
+            <div class="border-t border-slate-100 px-6 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+                <button type="button" @click="close()" autofocus class="btn btn-primary w-full py-3" data-t>Got it</button>
+            </div>
+        </section>
+    </div>
+</div>
