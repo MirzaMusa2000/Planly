@@ -11,6 +11,7 @@ import { errorMessage } from './voting';
 import { confirmDialog } from './ui';
 import { sameExpiryAs } from './retention';
 import { locale, t } from './i18n';
+import { downloadExpenses } from './export';
 
 export const EXPENSE_LIMITS = { item: 120, notes: 300 };
 
@@ -39,6 +40,7 @@ Alpine.data('expensesPage', () => {
         formOpen: false,
         formError: '',
         formBusy: false,
+        exporting: false,
 
         init() {
             startEventsFeed();
@@ -420,6 +422,26 @@ Alpine.data('expensesPage', () => {
                 lines.push('', t('All settled up ✅'));
             }
             return lines.join('\n');
+        },
+
+        /** Everything on this page as an Excel file, the maths kept as formulas. */
+        async exportExcel() {
+            if (this.exporting || !this.event) return;
+            this.exporting = true;
+            try {
+                await downloadExpenses({
+                    event: this.event,
+                    members: this.store.members,
+                    expenses: this.expenses,
+                    settlements: this.settlements,
+                    paidDate: (s) => this.paidOn(s),
+                });
+            } catch (e) {
+                console.error(e);
+                toast(t('Couldn’t create the Excel file.'), 'error');
+            } finally {
+                this.exporting = false;
+            }
         },
 
         async copySummary() {

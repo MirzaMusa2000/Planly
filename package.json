@@ -47,6 +47,7 @@
         "@fullcalendar/list": "^6.1.21",
         "@fullcalendar/timegrid": "^6.1.21",
         "alpinejs": "^3.17.4",
+        "exceljs": "^4.4.0",
         "firebase": "^12.19.0"
     },
     "name": "planly"

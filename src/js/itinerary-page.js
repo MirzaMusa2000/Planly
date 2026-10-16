@@ -10,6 +10,7 @@ import { daysInRange, format, today, toUtcDate } from './dates';
 import { errorMessage } from './voting';
 import { confirmDialog } from './ui';
 import { t } from './i18n';
+import { downloadChecklist } from './export';
 import { sameExpiryAs } from './retention';
 
 const tr = t; // countdown() has a local `t` (today)
@@ -32,6 +33,7 @@ Alpine.data('itineraryPage', () => {
         selectedId: new URLSearchParams(window.location.search).get('event'),
 
         checklist: [],
+        exporting: false,
         checklistLoading: true,
         filter: 'all', // 'all' | 'todo' | 'mine'
         listForm: emptyListForm(),
@@ -144,6 +146,21 @@ Alpine.data('itineraryPage', () => {
                 this.checklistLoading = false;
                 toast(t('Couldn’t load the checklist.'), 'error');
             });
+        },
+
+        /** The checklist as an Excel file (No / Item / Qty / PIC / Done / Notes). */
+        async exportChecklist() {
+            if (this.exporting || !this.event) return;
+            this.exporting = true;
+            try {
+                const items = [...this.checklist].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+                await downloadChecklist({ event: this.event, members: Alpine.store('planner').members, items });
+            } catch (e) {
+                console.error(e);
+                toast(t('Couldn’t create the Excel file.'), 'error');
+            } finally {
+                this.exporting = false;
+            }
         },
 
         get doneCount() {

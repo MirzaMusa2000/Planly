@@ -386,6 +386,36 @@ export const MS = {
     'Open {place} in Waze': 'Buka {place} dalam Waze',
     'Open {place} in Google Maps': 'Buka {place} dalam Google Maps',
 
+    // --- Excel export --------------------------------------------------------------------
+    'Download as Excel': 'Muat turun sebagai Excel',
+    'Download as Excel, with the sums as formulas': 'Muat turun sebagai Excel, dengan kiraan sebagai formula',
+    'Preparing…': 'Menyediakan…',
+    'Couldn’t create the Excel file.': 'Fail Excel tidak dapat dihasilkan.',
+    'Exported from Planly on {date}': 'Dieksport dari Planly pada {date}',
+    'Amount (RM)': 'Jumlah (RM)',
+    'People': 'Orang',
+    'Each (RM)': 'Seorang (RM)',
+    'Split between (✓)': 'Dibahagi antara (✓)',
+    'Share (RM)': 'Bahagian (RM)',
+    'Add rows above the total: type the item and amount, pick who paid, and put ✓ under everyone who shares it.':
+        'Tambah baris di atas jumlah: taip item dan jumlah, pilih siapa yang bayar, dan letak ✓ di bawah setiap orang yang berkongsi.',
+    'Paid': 'Dibayar',
+    'Share': 'Bahagian',
+    'Sent': 'Dihantar',
+    'Received': 'Diterima',
+    'Balance': 'Baki',
+    'Status': 'Status',
+    'Should receive': 'Patut terima',
+    'Should pay': 'Perlu bayar',
+    'Balance = paid − share + payments sent − payments received. Green: should receive; red: should pay.':
+        'Baki = dibayar − bahagian + bayaran dihantar − bayaran diterima. Hijau: patut terima; merah: perlu bayar.',
+    'From': 'Daripada',
+    'To': 'Kepada',
+    'Payments recorded in Planly. Add any made since; Balances updates.':
+        'Bayaran yang direkodkan dalam Planly. Tambah bayaran baru di sini; helaian Baki dikira semula.',
+    'The fewest payments that settle everyone, worked out when exported. After changing the sheets, check Balances.':
+        'Bayaran paling sedikit untuk melangsaikan semua, dikira semasa eksport. Selepas mengubah helaian lain, semak helaian Baki.',
+
     // --- Event description -----------------------------------------------------------
     'No description yet': 'Belum ada penerangan',
     'Edit description': 'Edit penerangan',

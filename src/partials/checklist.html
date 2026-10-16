@@ -8,6 +8,11 @@
         <h2 id="checklist-title" class="text-base font-bold text-slate-900" data-t>Checklist</h2>
         <span class="ml-auto text-sm font-semibold text-slate-500" x-show="checklist.length"
               x-text="$t('{done} / {total} done', { done: doneCount, total: checklist.length })"></span>
+        <button type="button" @click="exportChecklist()" x-show="checklist.length" :disabled="exporting"
+                :title="$t('Download as Excel')" :aria-label="$t('Download as Excel')"
+                class="btn btn-secondary px-3 py-1.5 text-xs disabled:opacity-60">
+            <x-icon name="download" class="h-3.5 w-3.5"/> <span x-text="exporting ? $t('Preparing…') : 'Excel'"></span>
+        </button>
     </div>
 
     <!-- Progress -->

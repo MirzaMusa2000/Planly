@@ -179,6 +179,25 @@ npm run backfill-expiry -- --apply   # write expireAt where it's missing
   [Open-Meteo](https://open-meteo.com/) (free, no key, CC BY 4.0). The location text is
   sent to Open-Meteo to find the place; results are cached on the device.
 
+## Excel export
+
+**Excel** buttons on the Expenses page and on the checklist download an `.xlsx`
+made in the browser (`src/js/export.js`, `src/js/xlsx-sheets.js`; ExcelJS loads only
+when someone exports). The expenses file keeps the app's maths as formulas, so
+editing an amount or a ✓ recalculates everything:
+
+| Sheet | What it holds |
+|---|---|
+| Expenses | each expense, ✓ for who shares it, each person's share (whole sen, leftover sen to the first by uid, as `money.js`), totals; 5 empty rows to add more |
+| Balances | paid − share + payments sent − payments received, per person |
+| Payments made | payments recorded in Planly; add more and Balances follows |
+| Settle up | the fewest payments, worked out when exported |
+
+The checklist file has No / Item / Qty / PIC / Done (✓) / Notes, drop-downs for PIC
+and ✓, done rows struck through, and a live done count. Excel's recalculation of
+the formulas was checked against `money.js` (`tests/unit/xlsx.test.mjs` checks the
+formulas and their saved results).
+
 ## Languages and dark mode
 
 - **English / Bahasa Melayu** (`src/js/i18n.js`): the English text is the key.

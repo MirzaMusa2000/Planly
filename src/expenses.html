@@ -42,17 +42,24 @@
                 <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 via-teal-600 to-cyan-600 p-5 text-white shadow-lift sm:p-6">
                     <div class="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full bg-white/10" aria-hidden="true"></div>
                     <div class="relative flex flex-wrap items-start gap-4">
-                        <div class="min-w-0 flex-1">
+                        <div class="min-w-48 flex-1">
                             <p class="text-sm font-medium text-white/80">
                                 <span x-text="$kind(e).emoji + ' ' + e.title"></span> · <span x-text="when(e)"></span>
                             </p>
                             <p class="mt-2 text-4xl font-bold tracking-tight" x-text="formatRM(totalCents)"></p>
                             <p class="text-sm text-white/80" data-t>Total spent</p>
                         </div>
+                        <div class="flex flex-wrap gap-2">
                         <button type="button" @click="copySummary()" x-show="expenses.length"
                                 class="btn bg-white/15 py-2 text-white backdrop-blur hover:bg-white/25">
                             <x-icon name="copy" class="h-4 w-4"/> <span data-t>Copy summary</span>
                         </button>
+                        <button type="button" @click="exportExcel()" x-show="expenses.length" :disabled="exporting"
+                                class="btn bg-white/15 py-2 text-white backdrop-blur hover:bg-white/25 disabled:opacity-60"
+                                :title="$t('Download as Excel, with the sums as formulas')">
+                            <x-icon name="download" class="h-4 w-4"/> <span x-text="exporting ? $t('Preparing…') : 'Excel'"></span>
+                        </button>
+                        </div>
                     </div>
                     <div class="relative mt-4 flex flex-wrap gap-2 text-xs font-semibold">
                         <span class="rounded-full bg-white/15 px-3 py-1"
